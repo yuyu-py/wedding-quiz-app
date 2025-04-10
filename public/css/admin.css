@@ -1,0 +1,228 @@
+/* 管理画面のスタイル */
+body {
+  background-color: #f8f9fa;
+  color: #333;
+  font-family: 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif;
+}
+
+#app {
+  min-height: 100vh;
+  padding: 20px;
+}
+
+.admin-panel {
+  max-width: 800px;
+  margin: 0 auto;
+  background-color: #fff;
+  border-radius: 10px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.header {
+  background-color: #007bff;
+  color: white;
+  padding: 15px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header h1 {
+  font-size: 20px;
+  margin: 0;
+}
+
+.connection-info {
+  font-size: 14px;
+}
+
+.current-screen-info {
+  padding: 20px;
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #eee;
+}
+
+.current-screen-info h2 {
+  font-size: 18px;
+  margin-bottom: 10px;
+  color: #333;
+}
+
+.current-info {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.current-info p {
+  margin: 0;
+  font-size: 14px;
+}
+
+/* クイズ5設定パネル */
+.quiz5-panel {
+  padding: 20px;
+  background-color: #fff8e1;
+  border-bottom: 1px solid #ffe082;
+}
+
+.quiz5-panel h3 {
+  font-size: 16px;
+  margin-bottom: 10px;
+  color: #ff6f00;
+}
+
+.quiz5-panel p {
+  margin: 0 0 10px 0;
+  font-size: 14px;
+}
+
+.quiz5-options {
+  display: flex;
+  gap: 10px;
+  margin: 15px 0;
+}
+
+.option-button {
+  background-color: #e0e0e0;
+  border: none;
+  border-radius: 5px;
+  padding: 12px 20px;
+  font-size: 14px;
+  cursor: pointer;
+  flex: 1;
+}
+
+.option-button:hover {
+  background-color: #d0d0d0;
+}
+
+.option-button.selected {
+  background-color: #4caf50;
+  color: white;
+}
+
+.quiz5-status {
+  font-size: 14px;
+  color: #4caf50;
+  margin-top: 10px;
+}
+
+.hidden {
+  display: none;
+}
+
+.navigation-buttons {
+  padding: 20px;
+  display: flex;
+  gap: 15px;
+  justify-content: space-between;
+}
+
+.nav-button {
+  background-color: #f0f0f0;
+  border: none;
+  border-radius: 5px;
+  padding: 15px 0;
+  font-size: 18px;
+  transition: all 0.2s;
+  flex: 1;
+}
+
+.nav-button:hover {
+  background-color: #e0e0e0;
+}
+
+.nav-button.primary {
+  background-color: #007bff;
+  color: white;
+}
+
+.nav-button.primary:hover {
+  background-color: #0069d9;
+}
+
+.sequence-display {
+  padding: 20px;
+  background-color: #f8f9fa;
+  border-top: 1px solid #eee;
+}
+
+.sequence-display h3 {
+  font-size: 16px;
+  margin-bottom: 15px;
+  color: #333;
+}
+
+.sequence-items {
+  display: flex;
+  overflow-x: auto;
+  padding-bottom: 10px;
+  gap: 5px;
+}
+
+.sequence-item {
+  flex: 0 0 auto;
+  background-color: #e9ecef;
+  border-radius: 5px;
+  padding: 10px 15px;
+  font-size: 14px;
+  white-space: nowrap;
+  color: #495057;
+}
+
+.sequence-item.active {
+  background-color: #007bff;
+  color: white;
+}
+
+.sequence-item.completed {
+  background-color: #28a745;
+  color: white;
+}
+
+@media (max-width: 600px) {
+  .current-info {
+    flex-direction: column;
+  }
+  
+  .navigation-buttons {
+    flex-direction: row;
+  }
+  
+  .quiz5-options {
+    flex-direction: column;
+  }
+}
+/* リセットボタン用スタイル */
+.reset-section {
+  padding: 20px;
+  background-color: #fff8f8;
+  border-top: 1px solid #ffcccc;
+  margin-top: 20px;
+}
+
+.danger-button {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  padding: 12px 15px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  display: block;
+  width: 100%;
+}
+
+.danger-button:hover {
+  background-color: #c82333;
+}
+
+.reset-status {
+  font-size: 14px;
+  color: #dc3545;
+  margin-top: 10px;
+  text-align: center;
+}

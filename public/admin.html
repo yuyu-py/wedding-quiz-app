@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>結婚式クイズ大会 - 管理画面</title>
+  <link rel="stylesheet" href="/css/reset.css">
+  <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+  <div id="app">
+    <!-- 管理画面コンテナ -->
+    <div class="admin-panel">
+      <!-- ヘッダー -->
+      <header class="header">
+        <h1>クイズ管理画面</h1>
+        <div class="connection-info">
+          <p>参加者数: <span id="participant-count">0</span>/39</p>
+        </div>
+      </header>
+      
+      <!-- 現在の表示情報 -->
+      <div class="current-screen-info">
+        <h2>現在の表示</h2>
+        <div class="current-info">
+          <p>表示モード: <span id="current-mode">待機中</span></p>
+          <p>問題番号: <span id="current-quiz-number">-</span></p>
+          <p>回答数: <span id="current-answers-count">0</span></p>
+        </div>
+      </div>
+      
+      <!-- クイズ5の設定パネル（問題5の時だけ表示） -->
+      <div id="quiz5-panel" class="quiz5-panel hidden">
+        <h3>問題5の答えを設定</h3>
+        <p>ストップウォッチの結果を選択してください</p>
+        <div class="quiz5-options">
+          <button id="quiz5-option1" class="option-button">新郎が勝利</button>
+          <button id="quiz5-option2" class="option-button">新婦が勝利</button>
+        </div>
+        <p class="quiz5-status" id="quiz5-status"></p>
+      </div>
+      
+      <!-- ナビゲーションボタン -->
+      <div class="navigation-buttons">
+        <button id="prev-slide" class="nav-button">前へ</button>
+        <button id="next-slide" class="nav-button primary">次へ</button>
+      </div>
+      
+      <!-- シーケンス表示 -->
+      <div class="sequence-display">
+        <h3>進行状況</h3>
+        <div class="sequence-items">
+          <div id="step-welcome" class="sequence-item active">参加者募集</div>
+          <div id="step-explanation" class="sequence-item">クイズ説明</div>
+          <div id="step-quiz1" class="sequence-item">問題1</div>
+          <div id="step-quiz2" class="sequence-item">問題2</div>
+          <div id="step-quiz3" class="sequence-item">問題3</div>
+          <div id="step-quiz4" class="sequence-item">問題4</div>
+          <div id="step-quiz5" class="sequence-item">問題5</div>
+          <div id="step-ranking" class="sequence-item">ランキング</div>
+        </div>
+      </div>
+      
+      <!-- リセットボタン -->
+      <div class="reset-section">
+        <button id="reset-button" class="danger-button">データをリセット</button>
+        <p id="reset-status" class="reset-status"></p>
+      </div>
+    </div>
+  </div>
+  
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/admin.js"></script>
+</body>
+</html>

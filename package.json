@@ -1,0 +1,27 @@
+{
+  "name": "wedding-quiz-app",
+  "version": "1.0.0",
+  "description": "結婚式用クイズアプリ",
+  "main": "server/index.js",
+  "engines": {
+    "node": ">=18.x"
+  },
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "nodemon server/index.js",
+    "build": "npm run build-client"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.9.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^5.1.0",
+    "nanoid": "^5.1.5",
+    "pg": "^8.14.1",
+    "qrcode": "^1.5.4",
+    "socket.io": "^4.8.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.9"
+  }
+}
