@@ -9,10 +9,6 @@ document.addEventListener('DOMContentLoaded', function() {
   const rankingScreen = document.getElementById('ranking-screen');
   const homeButton = document.getElementById('home-button');
   
-  // フローティングタイマー要素
-  const floatingTimer = document.getElementById('floating-timer');
-  const floatingTimerValue = document.getElementById('floating-timer-value');
-  
   // 参加者カウント表示
   const participantCount = document.getElementById('participant-count');
   
@@ -21,7 +17,8 @@ document.addEventListener('DOMContentLoaded', function() {
   const questionText = document.getElementById('question-text');
   const questionImage = document.getElementById('question-image').querySelector('img');
   const optionsContainer = document.getElementById('options-container');
-  const timerValue = document.getElementById('timer-value');
+  const floatingTimer = document.getElementById('floating-timer');
+  const floatingTimerValue = document.getElementById('floating-timer-value');
   const answerText = document.getElementById('answer-text');
   const answerImage = document.getElementById('answer-image').querySelector('img');
   const answerExplanation = document.getElementById('answer-explanation');
@@ -38,6 +35,8 @@ document.addEventListener('DOMContentLoaded', function() {
   // 画像のプリロード処理
   function preloadImages() {
     const imagePaths = [
+      '/images/qr-code.png',
+      '/images/backgrounds/main-bg.jpg',
       '/images/quiz-images/quiz1_question.png',
       '/images/quiz-images/quiz1_answer.png',
       '/images/quiz-images/quiz2_question.png',
@@ -58,29 +57,17 @@ document.addEventListener('DOMContentLoaded', function() {
     imagePaths.forEach(path => {
       const img = new Image();
       img.src = path;
-      console.log(`プリロード: ${path}`);
     });
   }
   
-  // 即時実行してプリロード開始
+  // 初期化時に画像をプリロード
   preloadImages();
   
   // 画面を表示する関数
   function showScreen(screen) {
-    // フェードアウト効果
-    currentScreen.style.opacity = 0;
-    
-    setTimeout(() => {
-      currentScreen.classList.add('hidden');
-      screen.classList.remove('hidden');
-      
-      // フェードイン効果
-      setTimeout(() => {
-        screen.style.opacity = 1;
-      }, 50);
-      
-      currentScreen = screen;
-    }, 300);
+    currentScreen.classList.add('hidden');
+    screen.classList.remove('hidden');
+    currentScreen = screen;
   }
   
   // ホーム画面に戻る
@@ -100,30 +87,24 @@ document.addEventListener('DOMContentLoaded', function() {
   function startTimer(seconds = 30) {
     clearInterval(timerInterval);
     timeLeft = seconds;
-    timerValue.textContent = timeLeft;
     floatingTimerValue.textContent = timeLeft;
     
     // フローティングタイマーを表示
     floatingTimer.classList.remove('hidden');
-    floatingTimer.style.backgroundColor = 'rgba(255, 51, 51, 0.9)';
     
     timerInterval = setInterval(() => {
       timeLeft--;
-      timerValue.textContent = timeLeft;
       floatingTimerValue.textContent = timeLeft;
       
       // 残り時間が10秒以下で警告色に
       if (timeLeft <= 10) {
         floatingTimer.style.backgroundColor = 'rgba(255, 0, 0, 0.9)';
-        floatingTimer.style.transform = 'scale(1.1)';
       } else {
         floatingTimer.style.backgroundColor = 'rgba(255, 51, 51, 0.9)';
-        floatingTimer.style.transform = 'scale(1)';
       }
       
       if (timeLeft <= 0) {
         clearInterval(timerInterval);
-        floatingTimer.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
         // 時間切れ時の処理があればここに追加
       }
     }, 1000);
@@ -160,12 +141,31 @@ document.addEventListener('DOMContentLoaded', function() {
         optionsContainer.innerHTML = '';
         optionsContainer.className = 'options-container';
         
-        quizData.options.forEach(option => {
-          const optionDiv = document.createElement('div');
-          optionDiv.className = 'option';
-          optionDiv.textContent = option;
-          optionsContainer.appendChild(optionDiv);
-        });
+        // 問題5の場合は選択肢に色を付ける
+        if (parseInt(quizId) === 5) {
+          quizData.options.forEach(option => {
+            const optionDiv = document.createElement('div');
+            optionDiv.className = 'option';
+            
+            // 新郎・新婦別のクラスを追加
+            if (option === '新郎') {
+              optionDiv.classList.add('groom');
+            } else if (option === '新婦') {
+              optionDiv.classList.add('bride');
+            }
+            
+            optionDiv.textContent = option;
+            optionsContainer.appendChild(optionDiv);
+          });
+        } else {
+          // 通常のテキスト選択肢
+          quizData.options.forEach(option => {
+            const optionDiv = document.createElement('div');
+            optionDiv.className = 'option';
+            optionDiv.textContent = option;
+            optionsContainer.appendChild(optionDiv);
+          });
+        }
       } else {
         // 画像選択肢の問題表示
         questionImage.style.display = 'none';
@@ -185,11 +185,6 @@ document.addEventListener('DOMContentLoaded', function() {
           const optionImg = document.createElement('img');
           optionImg.src = imagePath;
           optionImg.alt = `選択肢 ${index + 1}`;
-          
-          // 画像の読み込み完了時の処理を追加
-          optionImg.onload = function() {
-            console.log(`画像読み込み完了: ${imagePath}`);
-          };
           
           optionDiv.appendChild(optionNumber);
           optionDiv.appendChild(optionImg);
@@ -287,11 +282,18 @@ document.addEventListener('DOMContentLoaded', function() {
         answerContainer.insertBefore(beforeAfterContainer, answerExplanation);
         
       } else if (parseInt(quizId) === 5) {
-        // クイズ5の場合: 大きなテキスト表示
-        // 大きなテキスト答えを作成
+        // クイズ5の場合: 大きなテキスト表示（新郎・新婦色分け）
         const bigTextAnswer = document.createElement('div');
         bigTextAnswer.className = 'big-text-answer';
-        bigTextAnswer.textContent = answerData.correct_answer; // 新郎 or 新婦
+        
+        // 新郎・新婦別のクラスを追加
+        if (answerData.correct_answer === '新郎') {
+          bigTextAnswer.classList.add('groom');
+        } else if (answerData.correct_answer === '新婦') {
+          bigTextAnswer.classList.add('bride');
+        }
+        
+        bigTextAnswer.textContent = answerData.correct_answer;
         
         // 解説の前に挿入
         answerContainer.insertBefore(bigTextAnswer, answerExplanation);
@@ -306,96 +308,84 @@ document.addEventListener('DOMContentLoaded', function() {
       const statsData = await statsResponse.json();
       
       // 問題4と5の場合は画像選択肢の回答状況表示を変更
-      if (parseInt(quizId) === 4) {
-        // 画像選択肢用のスタイル適用
-        answerStatsContainer.className = 'image-stats-container';
-        answerStatsContainer.innerHTML = '';
-        
-        // 画像パスの配列
-        const optionImages = [
-          '/images/quiz-images/quiz4_option1.png', // 痴漢
-          '/images/quiz-images/quiz4_option2.png', // 不法侵入
-          '/images/quiz-images/quiz4_option3.png', // 万引き
-          '/images/quiz-images/quiz4_option4.png'  // 器物損壊
-        ];
-        
-        statsData.stats.forEach((stat, index) => {
-          const statDiv = document.createElement('div');
-          statDiv.className = 'image-stat-item';
-          if (stat.isCorrect) {
-            statDiv.classList.add('correct');
-          }
+      if (parseInt(quizId) === 4 || parseInt(quizId) === 5) {
+        if (parseInt(quizId) === 5) {
+          // 問題5の場合は特別なテキスト表示
+          answerStatsContainer.className = 'stats-container';
+          answerStatsContainer.innerHTML = '';
           
-          const img = document.createElement('img');
-          img.src = optionImages[index] || '';
-          img.alt = `選択肢 ${index + 1}`;
+          statsData.stats.forEach((stat, index) => {
+            const statDiv = document.createElement('div');
+            statDiv.className = 'stat-item';
+            
+            // 新郎・新婦別のクラスを追加
+            if (stat.option === '新郎') {
+              statDiv.classList.add('groom');
+            } else if (stat.option === '新婦') {
+              statDiv.classList.add('bride');
+            }
+            
+            if (stat.isCorrect) {
+              statDiv.classList.add('correct');
+            }
+            
+            const optionSpan = document.createElement('span');
+            optionSpan.className = 'stat-option';
+            optionSpan.textContent = stat.option;
+            
+            const countSpan = document.createElement('span');
+            countSpan.className = 'stat-count';
+            countSpan.textContent = `${stat.count}人`;
+            
+            statDiv.appendChild(optionSpan);
+            statDiv.appendChild(countSpan);
+            answerStatsContainer.appendChild(statDiv);
+          });
+        } else {
+          // 問題4の場合は画像表示
+          answerStatsContainer.className = 'image-stats-container';
+          answerStatsContainer.innerHTML = '';
           
-          const overlay = document.createElement('div');
-          overlay.className = 'image-stat-overlay';
+          // 画像パスの設定
+          const optionImages = [
+            '/images/quiz-images/quiz4_option1.png',
+            '/images/quiz-images/quiz4_option2.png',
+            '/images/quiz-images/quiz4_option3.png',
+            '/images/quiz-images/quiz4_option4.png'
+          ];
           
-          const optionNumber = document.createElement('span');
-          optionNumber.className = 'image-stat-number';
-          optionNumber.textContent = `選択肢 ${index + 1}`;
-          
-          const countSpan = document.createElement('span');
-          countSpan.className = 'image-stat-count';
-          countSpan.textContent = `${stat.count}人`;
-          
-          overlay.appendChild(optionNumber);
-          overlay.appendChild(countSpan);
-          
-          statDiv.appendChild(img);
-          statDiv.appendChild(overlay);
-          answerStatsContainer.appendChild(statDiv);
-        });
-      } else if (parseInt(quizId) === 5) {
-        // クイズ5も画像選択肢表示
-        answerStatsContainer.className = 'image-stats-container';
-        answerStatsContainer.innerHTML = '';
-        
-        // 選択肢は「新郎」「新婦」の2つだけ
-        const labels = ['新郎', '新婦'];
-        
-        statsData.stats.forEach((stat, index) => {
-          const statDiv = document.createElement('div');
-          statDiv.className = 'image-stat-item';
-          if (stat.isCorrect) {
-            statDiv.classList.add('correct');
-          }
-          
-          // 画像が実際にない場合はテキストで代用
-          const textDisplay = document.createElement('div');
-          textDisplay.style.height = '100%';
-          textDisplay.style.display = 'flex';
-          textDisplay.style.justifyContent = 'center';
-          textDisplay.style.alignItems = 'center';
-          textDisplay.style.backgroundColor = index === 0 ? '#2196F3' : '#E91E63';
-          textDisplay.style.color = 'white';
-          textDisplay.style.fontSize = '48px';
-          textDisplay.style.fontWeight = 'bold';
-          textDisplay.style.padding = '40px 0';
-          textDisplay.textContent = labels[index];
-          
-          const overlay = document.createElement('div');
-          overlay.className = 'image-stat-overlay';
-          
-          const optionLabel = document.createElement('span');
-          optionLabel.className = 'image-stat-number';
-          optionLabel.textContent = labels[index];
-          
-          const countSpan = document.createElement('span');
-          countSpan.className = 'image-stat-count';
-          countSpan.textContent = `${stat.count}人`;
-          
-          overlay.appendChild(optionLabel);
-          overlay.appendChild(countSpan);
-          
-          statDiv.appendChild(textDisplay);
-          statDiv.appendChild(overlay);
-          answerStatsContainer.appendChild(statDiv);
-        });
+          statsData.stats.forEach((stat, index) => {
+            const statDiv = document.createElement('div');
+            statDiv.className = 'image-stat-item';
+            if (stat.isCorrect) {
+              statDiv.classList.add('correct');
+            }
+            
+            const img = document.createElement('img');
+            img.src = optionImages[index] || '';
+            img.alt = `選択肢 ${index + 1}`;
+            
+            const overlay = document.createElement('div');
+            overlay.className = 'image-stat-overlay';
+            
+            const optionNumber = document.createElement('span');
+            optionNumber.className = 'image-stat-number';
+            optionNumber.textContent = `選択肢 ${index + 1}`;
+            
+            const countSpan = document.createElement('span');
+            countSpan.className = 'image-stat-count';
+            countSpan.textContent = `${stat.count}人`;
+            
+            overlay.appendChild(optionNumber);
+            overlay.appendChild(countSpan);
+            
+            statDiv.appendChild(img);
+            statDiv.appendChild(overlay);
+            answerStatsContainer.appendChild(statDiv);
+          });
+        }
       } else {
-        // 通常の選択肢の場合は標準表示
+        // 通常の選択肢の場合
         answerStatsContainer.className = 'stats-container';
         answerStatsContainer.innerHTML = '';
         
@@ -436,6 +426,43 @@ document.addEventListener('DOMContentLoaded', function() {
     } catch (error) {
       console.error('解答データの取得に失敗しました:', error);
     }
+  }
+  
+  // ランキングアイテムを作成する関数
+  function createRankingItem(ranking, position) {
+    const rankingItem = document.createElement('div');
+    rankingItem.className = 'ranking-item';
+    rankingItem.dataset.position = position;
+    
+    const positionDiv = document.createElement('div');
+    positionDiv.className = 'ranking-position';
+    positionDiv.textContent = `${position}位`;
+    
+    const nameDiv = document.createElement('div');
+    nameDiv.className = 'ranking-name';
+    nameDiv.textContent = ranking.player_name;
+    
+    const scoreDiv = document.createElement('div');
+    scoreDiv.className = 'ranking-score';
+    
+    const correctSpan = document.createElement('span');
+    correctSpan.className = 'correct-count';
+    correctSpan.textContent = `${ranking.correct_count}問正解`;
+    
+    const timeSpan = document.createElement('span');
+    timeSpan.className = 'response-time';
+    // ミリ秒から秒に変換して表示（小数点2桁）
+    const seconds = (ranking.total_time / 1000).toFixed(2);
+    timeSpan.textContent = `${seconds}秒`;
+    
+    scoreDiv.appendChild(correctSpan);
+    scoreDiv.appendChild(timeSpan);
+    
+    rankingItem.appendChild(positionDiv);
+    rankingItem.appendChild(nameDiv);
+    rankingItem.appendChild(scoreDiv);
+    
+    return rankingItem;
   }
   
   // ランキングを表示する関数
@@ -490,59 +517,13 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
   
-  // ランキングアイテムを作成する関数
-  function createRankingItem(ranking, position) {
-    const rankingItem = document.createElement('div');
-    rankingItem.className = 'ranking-item';
-    rankingItem.dataset.position = position;
-    
-    // 位置表示
-    const positionDiv = document.createElement('div');
-    positionDiv.className = 'ranking-position';
-    positionDiv.textContent = `${position}位`;
-    
-    // 名前表示
-    const nameDiv = document.createElement('div');
-    nameDiv.className = 'ranking-name';
-    nameDiv.textContent = ranking.player_name;
-    
-    // スコア表示
-    const scoreDiv = document.createElement('div');
-    scoreDiv.className = 'ranking-score';
-    
-    const correctSpan = document.createElement('span');
-    correctSpan.className = 'correct-count';
-    correctSpan.textContent = `${ranking.correct_count}問正解`;
-    
-    const timeSpan = document.createElement('span');
-    timeSpan.className = 'response-time';
-    // ミリ秒から秒に変換して小数点2桁まで表示
-    const seconds = (ranking.total_time / 1000).toFixed(2);
-    timeSpan.textContent = `${seconds}秒`;
-    
-    scoreDiv.appendChild(correctSpan);
-    scoreDiv.appendChild(timeSpan);
-    
-    rankingItem.appendChild(positionDiv);
-    rankingItem.appendChild(nameDiv);
-    rankingItem.appendChild(scoreDiv);
-    
-    return rankingItem;
-  }
-  
   // Socket.io接続
   const socket = io();
   
   // 接続時の処理
   socket.on('connect', () => {
     console.log('Socket.io に接続しました');
-    // ディスプレイとして登録
     socket.emit('register', { type: 'display' });
-  });
-  
-  // 登録完了時の処理
-  socket.on('registered', (data) => {
-    console.log('登録が完了しました:', data);
   });
   
   // 接続数の更新
@@ -556,12 +537,10 @@ document.addEventListener('DOMContentLoaded', function() {
     
     switch (event) {
       case 'quiz_started':
-        // クイズ開始イベント
         showScreen(explanationScreen);
         break;
         
       case 'show_question':
-        // 問題表示イベント
         if (quizId) {
           currentQuizId = quizId;
           showScreen(quizTitleScreen);
@@ -570,7 +549,6 @@ document.addEventListener('DOMContentLoaded', function() {
         break;
         
       case 'next_slide':
-        // 次のスライドに進むイベント
         if (currentScreen === quizTitleScreen && currentQuizId) {
           showQuestion(currentQuizId);
         } else if (currentScreen === quizQuestionScreen && currentQuizId) {
@@ -579,7 +557,6 @@ document.addEventListener('DOMContentLoaded', function() {
         break;
         
       case 'prev_slide':
-        // 前のスライドに戻るイベント
         if (currentScreen === quizQuestionScreen) {
           stopTimer();
           showScreen(quizTitleScreen);
@@ -589,32 +566,21 @@ document.addEventListener('DOMContentLoaded', function() {
         break;
         
       case 'show_answer':
-        // 解答表示イベント
         if (currentQuizId) {
           showAnswer(currentQuizId);
         }
         break;
         
       case 'show_ranking':
-        // ランキング表示イベント
         showRanking(position);
         break;
         
       case 'reset_all':
-        // リセットイベント
         goToHome();
         break;
     }
   });
   
   // ホームボタンのクリックイベント
-  homeButton.addEventListener('click', () => {
-    goToHome();
-  });
-  
-  // 初期画面を表示
-  // ページロード時にフェードイン効果
-  setTimeout(() => {
-    currentScreen.style.opacity = 1;
-  }, 100);
+  homeButton.addEventListener('click', goToHome);
 });
