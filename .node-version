@@ -1,0 +1,4 @@
+# プロジェクトのルートに .node-version ファイルを作成
+echo "18.17.1" > .node-version
+
+# package.json に engines フィールドを追加

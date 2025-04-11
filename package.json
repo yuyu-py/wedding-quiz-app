@@ -1,6 +1,9 @@
 {
   "name": "wedding-quiz-app",
   "version": "1.0.0",
+  "engines": {
+    "node": "18.x"
+  },
   "description": "結婚式用クイズアプリ",
   "main": "server/index.js",
   "scripts": {
