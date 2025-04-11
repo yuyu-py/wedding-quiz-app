@@ -9,6 +9,9 @@ document.addEventListener('DOMContentLoaded', function() {
   const rankingScreen = document.getElementById('ranking-screen');
   const homeButton = document.getElementById('home-button');
   
+  // タイマー表示エレメント
+  const timerDisplay = document.getElementById('timer-display');
+  
   // 参加者カウント表示
   const participantCount = document.getElementById('participant-count');
   
@@ -23,6 +26,9 @@ document.addEventListener('DOMContentLoaded', function() {
   const answerExplanation = document.getElementById('answer-explanation');
   const answerStatsContainer = document.getElementById('answer-stats-container');
   const rankingContainer = document.getElementById('ranking-container');
+  
+  // QRコード画像
+  const qrCodeImage = document.getElementById('qr-code-image');
   
   // 現在の状態
   let currentScreen = welcomeScreen;
@@ -47,6 +53,9 @@ document.addEventListener('DOMContentLoaded', function() {
     currentQuizId = null;
     displayedRankings = [];
     
+    // タイマー表示を非表示
+    timerDisplay.classList.add('hidden');
+    
     // ホーム画面を表示
     showScreen(welcomeScreen);
   }
@@ -56,6 +65,9 @@ document.addEventListener('DOMContentLoaded', function() {
     clearInterval(timerInterval);
     timeLeft = seconds;
     timerValue.textContent = timeLeft;
+    
+    // タイマー表示を表示
+    timerDisplay.classList.remove('hidden');
     
     timerInterval = setInterval(() => {
       timeLeft--;
@@ -71,6 +83,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // タイマーを停止する関数
   function stopTimer() {
     clearInterval(timerInterval);
+    timerDisplay.classList.add('hidden');
   }
   
   // クイズの問題を表示する関数
@@ -254,8 +267,16 @@ document.addEventListener('DOMContentLoaded', function() {
         optionSpan.className = 'stat-option';
         
         if (isImageOptions) {
-          // 画像選択肢の場合は番号を表示
-          optionSpan.textContent = `選択肢 ${index + 1}`;
+          // 画像選択肢の場合は画像を表示
+          const optionImage = document.createElement('img');
+          optionImage.src = stat.option; // 選択肢の画像パス
+          optionImage.alt = `選択肢 ${index + 1}`;
+          
+          const optionText = document.createElement('span');
+          optionText.textContent = `選択肢 ${index + 1}`;
+          
+          optionSpan.appendChild(optionImage);
+          optionSpan.appendChild(optionText);
         } else {
           // 通常選択肢の場合はテキストを表示
           optionSpan.textContent = stat.option;
@@ -281,6 +302,9 @@ document.addEventListener('DOMContentLoaded', function() {
   // ランキングを表示する関数
   async function showRanking(position = 'all') {
     try {
+      // タイマーを停止
+      stopTimer();
+      
       // まだランキングデータを取得していない場合は取得
       if (displayedRankings.length === 0) {
         const response = await fetch('/api/quiz/ranking/all');
@@ -336,35 +360,72 @@ document.addEventListener('DOMContentLoaded', function() {
     rankingItem.className = 'ranking-item';
     rankingItem.dataset.position = position;
     
-    const positionDiv = document.createElement('div');
-    positionDiv.className = 'ranking-position';
-    positionDiv.textContent = `${position}位`;
+    const rankingPosition = document.createElement('div');
+    rankingPosition.className = 'ranking-position';
+    rankingPosition.textContent = `${position}位`;
     
-    const nameDiv = document.createElement('div');
-    nameDiv.className = 'ranking-name';
-    nameDiv.textContent = ranking.player_name;
+    const rankingName = document.createElement('div');
+    rankingName.className = 'ranking-name';
+    rankingName.textContent = ranking.player_name;
     
-    const scoreDiv = document.createElement('div');
-    scoreDiv.className = 'ranking-score';
+    const rankingScore = document.createElement('div');
+    rankingScore.className = 'ranking-score';
     
-    const correctSpan = document.createElement('span');
-    correctSpan.className = 'correct-count';
-    correctSpan.textContent = `${ranking.correct_count}問正解`;
+    const correctCount = document.createElement('span');
+    correctCount.className = 'correct-count';
+    correctCount.textContent = `${ranking.correct_count}問正解`;
     
-    const timeSpan = document.createElement('span');
-    timeSpan.className = 'response-time';
+    const responseTime = document.createElement('span');
+    responseTime.className = 'response-time';
     // ミリ秒から秒に変換して小数点2桁まで表示
     const seconds = (ranking.total_time / 1000).toFixed(2);
-    timeSpan.textContent = `${seconds}秒`;
+    responseTime.textContent = `${seconds}秒`;
     
-    scoreDiv.appendChild(correctSpan);
-    scoreDiv.appendChild(timeSpan);
+    rankingScore.appendChild(correctCount);
+    rankingScore.appendChild(responseTime);
     
-    rankingItem.appendChild(positionDiv);
-    rankingItem.appendChild(nameDiv);
-    rankingItem.appendChild(scoreDiv);
+    rankingItem.appendChild(rankingPosition);
+    rankingItem.appendChild(rankingName);
+    rankingItem.appendChild(rankingScore);
     
     return rankingItem;
+  }
+  
+  // QRコードを更新する関数
+  function updateQRCode() {
+    // タイムスタンプをパラメータに追加して、キャッシュを防ぐ
+    const timestamp = new Date().getTime();
+    qrCodeImage.src = `/images/qr-code.png?t=${timestamp}`;
+  }
+  
+  // 画像を事前に読み込む関数
+  function preloadImages() {
+    // クイズ画像のリスト
+    const imagesToPreload = [
+      '/images/quiz-images/quiz1_question.png',
+      '/images/quiz-images/quiz1_answer.png',
+      '/images/quiz-images/quiz2_question.png',
+      '/images/quiz-images/quiz2_answer.png',
+      '/images/quiz-images/quiz3_option1.jpg',
+      '/images/quiz-images/quiz3_option2.JPG',
+      '/images/quiz-images/quiz3_option3.JPG',
+      '/images/quiz-images/quiz3_option4.jpg',
+      '/images/quiz-images/quiz3_before.JPG',
+      '/images/quiz-images/quiz3_after.JPG',
+      '/images/quiz-images/quiz4_option1.png',
+      '/images/quiz-images/quiz4_option2.png',
+      '/images/quiz-images/quiz4_option3.png',
+      '/images/quiz-images/quiz4_option4.png',
+      '/images/quiz-images/quiz4_answer.png'
+    ];
+    
+    // 各画像を事前に読み込む
+    imagesToPreload.forEach(src => {
+      const img = new Image();
+      img.src = src;
+      img.className = 'preload-image';
+      document.body.appendChild(img);
+    });
   }
   
   // Socket.io接続
@@ -387,68 +448,55 @@ document.addEventListener('DOMContentLoaded', function() {
     participantCount.textContent = stats.players;
   });
   
-  // クイズイベントの処理
-  socket.on('quiz_event', async (data) => {
+  // クイズイベントを受信
+  socket.on('quiz_event', (data) => {
     const { event, quizId, position } = data;
+    
+    // リセットイベント時にQRコードを更新
+    if (event === 'reset_all') {
+      updateQRCode();
+      goToHome();
+      return;
+    }
     
     switch (event) {
       case 'quiz_started':
-        // クイズ開始時の処理
+        currentScreen = explanationScreen;
         showScreen(explanationScreen);
         break;
         
       case 'show_question':
-        // 問題表示の処理
         if (quizId) {
           currentQuizId = quizId;
-          // まず問題タイトル画面を表示
-          quizTitle.textContent = `問題 ${quizId}`;
           showScreen(quizTitleScreen);
         }
         break;
         
       case 'next_slide':
-        // 次のスライドに進む処理
-        if (currentScreen === quizTitleScreen && currentQuizId) {
-          await showQuestion(currentQuizId);
-        } else if (currentScreen === quizQuestionScreen && currentQuizId) {
-          await showAnswer(currentQuizId);
+        if (currentScreen === quizTitleScreen) {
+          showQuestion(currentQuizId);
+        } else if (currentScreen === quizQuestionScreen) {
+          showAnswer(currentQuizId);
         }
         break;
         
       case 'prev_slide':
-        // 前のスライドに戻る処理
         if (currentScreen === quizQuestionScreen) {
-          stopTimer();
-          quizTitle.textContent = `問題 ${currentQuizId}`;
           showScreen(quizTitleScreen);
+          stopTimer();
         } else if (currentScreen === quizAnswerScreen) {
-          await showQuestion(currentQuizId);
+          showQuestion(currentQuizId);
         }
         break;
         
       case 'show_answer':
-        // 解答表示の処理
-        if (currentQuizId) {
-          await showAnswer(currentQuizId);
-        }
+        showAnswer(currentQuizId);
         break;
         
       case 'show_ranking':
-        // ランキング表示の処理
-        await showRanking(position);
-        break;
-        
-      case 'reset_all':
-        // リセット処理
-        goToHome();
+        showRanking(position);
         break;
     }
-  });
-  
-  // ホーム画面に戻るイベント
-  socket.on('go_home_event', () => {
-    goToHome();
   });
   
   // ホームボタンのクリックイベント
@@ -456,6 +504,9 @@ document.addEventListener('DOMContentLoaded', function() {
     goToHome();
   });
   
-  // 初期画面を表示
-  showScreen(welcomeScreen);
+  // 初期化時に画像を事前読み込み
+  preloadImages();
+  
+  // 初回のQRコード更新
+  updateQRCode();
 });

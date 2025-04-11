@@ -1,13 +1,11 @@
 /* メイン表示画面のスタイル */
 body {
-  background-color: #0a1629;
-  color: #333;
-  font-family: 'M PLUS Rounded 1c', 'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif;
+  background-color: #000;
+  color: #fff;
+  font-family: 'Noto Sans JP', sans-serif;
   overflow: hidden;
-  height: 100vh;
-  width: 100vw;
-  margin: 0;
   padding: 0;
+  margin: 0;
 }
 
 #app {
@@ -21,14 +19,18 @@ body {
 }
 
 .main-display {
-  width: 95%;
-  height: 95%;
+  width: 90%;
+  height: 90%;
   max-width: 1600px;
   background-color: rgba(255, 255, 255, 0.9);
-  border-radius: 24px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  border-radius: 20px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
   overflow: hidden;
   position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 .screen {
@@ -51,31 +53,56 @@ body {
   width: 100%;
   max-width: 1400px;
   text-align: center;
-  position: relative;
+  color: #333;
+  padding: 30px;
+  box-sizing: border-box;
 }
 
 h1 {
-  font-size: 64px;
-  margin-bottom: 50px;
-  color: #222;
-  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2);
-  font-weight: 800;
-  letter-spacing: 0.05em;
+  font-size: 80px;
+  margin-bottom: 60px;
+  color: #333;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.1);
+  font-weight: 700;
 }
 
 h2 {
-  font-size: 48px;
+  font-size: 64px;
   margin-bottom: 40px;
-  color: #222;
+  color: #333;
   font-weight: 700;
-  line-height: 1.4;
 }
 
 h3 {
-  font-size: 36px;
-  margin-bottom: 20px;
-  color: #222;
+  font-size: 48px;
+  margin-bottom: 30px;
+  color: #333;
   font-weight: 700;
+}
+
+/* タイマー表示 - 白い範囲の右上に配置 */
+.timer-display {
+  position: absolute;
+  top: 30px;
+  right: 30px;
+  background-color: rgba(255, 0, 0, 0.8);
+  color: white;
+  font-size: 72px;
+  font-weight: bold;
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  animation: pulse 1s infinite alternate;
+}
+
+@keyframes pulse {
+  from { transform: scale(1); }
+  to { transform: scale(1.05); }
 }
 
 /* QRコードセクション */
@@ -83,141 +110,81 @@ h3 {
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-bottom: 50px;
+  margin-bottom: 60px;
 }
 
 .qr-code {
-  width: 320px;
-  height: 320px;
+  width: 350px;
+  height: 350px;
   margin-bottom: 30px;
   padding: 20px;
   background-color: white;
-  border-radius: 16px;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
-  position: relative;
+  border-radius: 15px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
 }
 
 .qr-code img {
   width: 100%;
-  height: 100%;
+  height: auto;
   object-fit: contain;
 }
 
 .qr-instruction {
-  font-size: 28px;
+  font-size: 36px;
   color: #333;
-  font-weight: 500;
+  margin-top: 20px;
 }
 
 .participants {
-  font-size: 32px;
-  color: #333;
-  margin-top: 30px;
-  font-weight: 700;
-}
-
-/* タイマーのスタイル */
-.timer-container {
-  position: absolute;
-  top: 20px;
-  right: 20px;
-  z-index: 100;
-}
-
-.timer {
   font-size: 48px;
-  color: white;
-  font-weight: 800;
-  background-color: #ff5555;
-  padding: 10px 20px;
-  border-radius: 16px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
-  display: flex;
-  align-items: center;
-  flex-direction: column;
+  color: #333;
+  margin-top: 40px;
+  background-color: rgba(0, 0, 255, 0.1);
+  padding: 20px 40px;
+  border-radius: 50px;
+  display: inline-block;
 }
 
-.timer-unit {
-  font-size: 36px;
-  margin-left: 5px;
-}
-
-.timer-bar {
-  width: 100%;
-  height: 8px;
-  background-color: rgba(255, 255, 255, 0.3);
-  border-radius: 4px;
-  margin-top: 10px;
-  overflow: hidden;
-}
-
-.timer-progress {
-  height: 100%;
-  width: 100%;
-  background-color: white;
-  border-radius: 4px;
-  transform-origin: left;
-  transition: width 1s linear;
-}
-
-/* クイズ説明 */
+/* 説明テキスト */
 .explanation {
-  font-size: 36px;
-  line-height: 1.7;
+  font-size: 48px;
+  line-height: 1.8;
   text-align: center;
-  max-width: 1200px;
-  margin: 0 auto;
-  font-weight: 500;
+  margin: 30px 0;
 }
 
 .explanation p {
-  margin-bottom: 20px;
+  margin-bottom: 30px;
 }
 
 /* 問題画像 */
-.question-image, .answer-image {
+.question-image {
   margin: 30px 0;
   max-width: 100%;
   max-height: 50vh;
   display: flex;
   justify-content: center;
-  position: relative;
 }
 
 .question-image img, .answer-image img {
   max-width: 100%;
   max-height: 50vh;
   object-fit: contain;
-  border-radius: 12px;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  border-radius: 15px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
 }
 
-/* 画像プレースホルダーとローダー */
-.image-placeholder, .qr-loader {
+/* 画像を事前読み込みするためのスタイル */
+.preload-image {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background-color: rgba(245, 245, 245, 0.8);
-  border-radius: 12px;
-  z-index: 5;
-}
-
-.spinner {
-  width: 50px;
-  height: 50px;
-  border: 6px solid rgba(0, 123, 255, 0.2);
-  border-radius: 50%;
-  border-top-color: #007bff;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  z-index: -1;
 }
 
 /* 選択肢コンテナ */
@@ -231,58 +198,69 @@ h3 {
 
 .option {
   background-color: #fff;
-  padding: 25px;
+  padding: 30px;
   border-radius: 15px;
-  font-size: 32px;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-  font-weight: 500;
-  transition: transform 0.2s;
+  font-size: 36px;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+  border: 3px solid #eee;
+  transition: all 0.3s ease;
 }
 
 .option:hover {
   transform: translateY(-5px);
-  box-shadow: 0 12px 25px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
 }
 
-/* 解説 */
-.explanation {
-  font-size: 32px;
-  margin: 30px 0;
-  line-height: 1.6;
-}
-
-/* 回答統計 */
+/* 解答統計 */
 .answer-stats {
-  margin-top: 50px;
+  margin-top: 60px;
 }
 
 .stats-container {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 25px;
-  margin-top: 25px;
+  gap: 30px;
+  margin-top: 30px;
 }
 
 .stat-item {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   background-color: #fff;
-  padding: 20px 25px;
+  padding: 25px 30px;
   border-radius: 15px;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-  font-size: 28px;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+  border: 3px solid #eee;
+  transition: all 0.2s ease;
+}
+
+.stat-item.correct {
+  border-color: #4caf50;
+  background-color: rgba(76, 175, 80, 0.1);
 }
 
 .stat-option {
-  font-size: 28px;
+  font-size: 32px;
+  flex: 1;
+  text-align: left;
+  display: flex;
+  align-items: center;
+}
+
+.stat-option img {
+  max-height: 80px;
+  margin-right: 20px;
+  border-radius: 8px;
 }
 
 .stat-count {
-  font-size: 28px;
+  font-size: 32px;
   font-weight: bold;
+  color: #333;
 }
 
-/* ランキング表示 */
+/* ランキング */
 .ranking-container {
   margin-top: 40px;
 }
@@ -292,47 +270,49 @@ h3 {
   justify-content: space-between;
   align-items: center;
   background-color: #fff;
-  padding: 25px 30px;
-  border-radius: 18px;
-  margin-bottom: 25px;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+  padding: 30px 40px;
+  border-radius: 20px;
+  margin-bottom: 30px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
   transform-origin: center;
-  animation: fadeInUp 0.5s ease forwards;
+  animation: fadeInUp 0.7s ease forwards;
   opacity: 0;
+  border: 3px solid #eee;
 }
 
 .ranking-item.highlight {
-  background-color: #fffbd6;
+  background-color: rgba(255, 215, 0, 0.2);
   border: 3px solid #ffd700;
 }
 
 .ranking-position {
-  font-size: 42px;
-  font-weight: 800;
-  min-width: 80px;
+  font-size: 64px;
+  font-weight: bold;
+  min-width: 100px;
+  color: #333;
 }
 
 .ranking-name {
-  font-size: 36px;
+  font-size: 48px;
   text-align: left;
   flex-grow: 1;
-  margin: 0 25px;
-  font-weight: 700;
+  margin: 0 30px;
+  color: #333;
 }
 
 .ranking-score {
-  font-size: 30px;
+  font-size: 36px;
+  color: #333;
 }
 
 .correct-count {
   color: #007bff;
-  font-weight: 800;
-  margin-right: 20px;
+  font-weight: bold;
+  margin-right: 30px;
 }
 
 .response-time {
   color: #ff5555;
-  font-weight: 700;
 }
 
 @keyframes fadeInUp {
@@ -366,16 +346,22 @@ h3 {
   position: relative;
   background-color: #fff;
   border-radius: 15px;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
   overflow: hidden;
   aspect-ratio: 4/3;
+  border: 3px solid #eee;
+  transition: all 0.3s ease;
+}
+
+.image-option:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
 }
 
 .image-option img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.3s;
 }
 
 .option-number {
@@ -384,8 +370,8 @@ h3 {
   left: 15px;
   background-color: rgba(0, 0, 0, 0.7);
   color: white;
-  width: 40px;
-  height: 40px;
+  width: 50px;
+  height: 50px;
   border-radius: 50%;
   display: flex;
   justify-content: center;
@@ -398,9 +384,8 @@ h3 {
 .before-after-container {
   display: flex;
   justify-content: space-between;
-  gap: 30px;
-  margin: 30px 0;
-  width: 100%;
+  gap: 40px;
+  margin: 40px 0;
 }
 
 .before-after-item {
@@ -412,66 +397,49 @@ h3 {
   max-width: 100%;
   height: auto;
   border-radius: 15px;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
-  margin-bottom: 15px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  margin-bottom: 20px;
 }
 
 .before-after-item .label {
-  font-size: 24px;
+  font-size: 32px;
   font-weight: bold;
   margin-top: 15px;
 }
 
 /* クイズ5の大きなテキスト答え用スタイル */
 .big-text-answer {
-  font-size: 80px;
-  font-weight: 800;
+  font-size: 100px;
+  font-weight: bold;
   color: #007bff;
   text-align: center;
-  margin: 50px 0;
+  margin: 60px 0;
   padding: 40px;
-  background-color: #f8f9fa;
+  background-color: rgba(240, 248, 255, 0.8);
   border-radius: 20px;
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
 }
 
-/* ホームボタンのスタイル */
+/* ホームボタンのスタイル - ブラウザ右上に配置 */
 .home-button {
   position: fixed;
   top: 20px;
   right: 20px;
-  background-color: rgba(0, 123, 255, 0.8);
+  background-color: rgba(0, 123, 255, 0.9);
   color: white;
   border: none;
-  border-radius: 8px;
-  padding: 12px 20px;
-  font-size: 18px;
-  font-weight: 700;
+  border-radius: 50px;
+  padding: 15px 30px;
+  font-size: 24px;
   cursor: pointer;
   z-index: 1000;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-  transition: all 0.2s;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+  font-family: 'Noto Sans JP', sans-serif;
 }
 
 .home-button:hover {
   background-color: #0056b3;
   transform: translateY(-3px);
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
-}
-
-/* 画面サイズに応じた調整 */
-@media (max-width: 1400px) {
-  h1 { font-size: 54px; }
-  h2 { font-size: 42px; }
-  .explanation { font-size: 30px; }
-  .option { font-size: 28px; }
-  .timer { font-size: 42px; }
-}
-
-@media (max-width: 1200px) {
-  h1 { font-size: 48px; }
-  h2 { font-size: 36px; }
-  .explanation { font-size: 26px; }
-  .option { font-size: 24px; }
-  .timer { font-size: 38px; }
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
 }
