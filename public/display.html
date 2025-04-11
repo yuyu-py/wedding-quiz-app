@@ -29,15 +29,15 @@
   <button id="home-button" class="home-button">
     ホームに戻る
   </button>
-
-  <!-- タイマー表示：固定位置（右上のみ） -->
-  <div id="floating-timer" class="floating-timer hidden">
-    <span id="floating-timer-value">30</span><span class="timer-unit">秒</span>
-  </div>
   
   <div id="app">
     <!-- メイン画面コンテナ -->
     <div class="main-display">
+      <!-- タイマー表示：白い枠内右上に配置 -->
+      <div id="floating-timer" class="floating-timer hidden">
+        <span id="floating-timer-value">30</span><span class="timer-unit">秒</span>
+      </div>
+      
       <!-- QRコード表示画面 -->
       <div id="welcome-screen" class="screen">
         <div class="content">
@@ -86,7 +86,6 @@
               <!-- 選択肢がここに表示されます -->
             </div>
           </div>
-          <!-- 下部のタイマーは削除 -->
         </div>
       </div>
       
