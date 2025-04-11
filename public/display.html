@@ -6,15 +6,26 @@
   <title>結婚式クイズ大会 - メイン画面</title>
   <link rel="stylesheet" href="/css/reset.css">
   <link rel="stylesheet" href="/css/display.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@500;700;800&family=Noto+Sans+JP:wght@500;700;900&display=swap" rel="stylesheet">
 </head>
 <body>
   <div id="app">
+    <!-- ホームに戻るボタン (ブラウザ右上に配置) -->
+    <button id="home-button" class="home-button">
+      ホームに戻る
+    </button>
+    
     <!-- メイン画面コンテナ -->
     <div class="main-display">
-      <!-- ホームに戻るボタン -->
-      <button id="home-button" class="home-button">
-        ホームに戻る
-      </button>
+      <!-- タイマー (絶対位置で右上に配置) -->
+      <div id="timer-container" class="timer-container">
+        <div class="timer">
+          <span id="timer-value">30</span><span class="timer-unit">秒</span>
+          <div class="timer-bar"><div class="timer-progress"></div></div>
+        </div>
+      </div>
     
       <!-- QRコード表示画面 -->
       <div id="welcome-screen" class="screen">
@@ -22,7 +33,10 @@
           <h1>結婚式クイズ大会</h1>
           <div class="qr-section">
             <div class="qr-code">
-              <img src="/images/qr-code.png" alt="参加用QRコード">
+              <img id="qr-code-image" src="/images/qr-code.png" alt="参加用QRコード">
+              <div class="qr-loader">
+                <div class="spinner"></div>
+              </div>
             </div>
             <p class="qr-instruction">こちらのQRコードをスキャンして参加してください</p>
           </div>
@@ -57,15 +71,15 @@
         <div class="content">
           <h2 id="question-text">問題文がここに表示されます</h2>
           <div id="question-image" class="question-image">
-            <img src="" alt="問題画像">
+            <div class="image-placeholder">
+              <div class="spinner"></div>
+            </div>
+            <img src="" alt="問題画像" loading="eager">
           </div>
           <div class="options">
             <div id="options-container" class="options-container">
               <!-- 選択肢がここに表示されます -->
             </div>
-          </div>
-          <div class="timer">
-            <span id="timer-value">30</span>秒
           </div>
         </div>
       </div>
@@ -75,7 +89,10 @@
         <div class="content">
           <h2 id="answer-text">答えは〇〇です</h2>
           <div id="answer-image" class="answer-image">
-            <img src="" alt="解答画像">
+            <div class="image-placeholder">
+              <div class="spinner"></div>
+            </div>
+            <img src="" alt="解答画像" loading="eager">
           </div>
           <p id="answer-explanation" class="explanation">解説がここに表示されます</p>
           <div class="answer-stats">
