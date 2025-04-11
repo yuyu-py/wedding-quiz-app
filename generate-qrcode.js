@@ -2,8 +2,9 @@ const QRCode = require('qrcode');
 const fs = require('fs');
 const path = require('path');
 
-// 現在のホスト名を取得（ローカル開発用）
-const host = 'localhost:3000';
+// 開発環境ではlocalhostを使用、本番環境ではデプロイURLを使用
+const isDevelopment = process.env.NODE_ENV !== 'production';
+const host = isDevelopment ? 'localhost:3000' : 'あなたの本番URLをここに入力';
 const url = `http://${host}/play`;
 
 // QRコードの保存先ディレクトリ

@@ -4,7 +4,9 @@ const fs = require('fs');
 const path = require('path');
 
 // QRコードに埋め込むURL（ホスト名やポート番号は環境に合わせて変更してください）
-const url = 'http://localhost:3000/play';
+const host = '192.168.0.255:3000';  // ここを実際のIPアドレスに変更
+const url = `http://${host}/play`;
+
 
 // 出力先ディレクトリがなければ作成
 const outputDir = path.join(__dirname, 'public', 'images');
