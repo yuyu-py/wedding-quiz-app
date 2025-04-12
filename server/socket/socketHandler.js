@@ -1,3 +1,4 @@
+// server/socket/socketHandler.js
 const { getDb } = require('../database/db');
 
 // ソケット接続の管理

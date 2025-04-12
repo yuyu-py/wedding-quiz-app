@@ -1,3 +1,4 @@
+// generate-qrcode.js
 const QRCode = require('qrcode');
 const fs = require('fs');
 const path = require('path');

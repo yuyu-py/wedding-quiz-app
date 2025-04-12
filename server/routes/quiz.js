@@ -1,3 +1,4 @@
+// server/routes/quiz.js
 const express = require('express');
 const router = express.Router();
 const db = require('../database/db'); // db.jsから直接インポート

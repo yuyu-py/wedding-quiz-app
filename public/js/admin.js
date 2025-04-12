@@ -1,3 +1,4 @@
+//public/js/admin.js
 // 管理画面用のJavaScript
 document.addEventListener('DOMContentLoaded', function() {
   // 要素の取得

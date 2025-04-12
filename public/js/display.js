@@ -1,3 +1,4 @@
+//public/js/display.js
 // メイン画面用のJavaScript
 document.addEventListener('DOMContentLoaded', function() {
   // 画面要素

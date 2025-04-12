@@ -1,3 +1,5 @@
+// generateQRCode.js
+
 // QRコード生成スクリプト
 const QRCode = require('qrcode');
 const fs = require('fs');
