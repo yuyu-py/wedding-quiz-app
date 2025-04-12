@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>結婚式クイズ大会 - 参加者画面</title>
   <link rel="stylesheet" href="/css/reset.css">
   <link rel="stylesheet" href="/css/player.css">
@@ -24,6 +24,22 @@
       </div>
     </div>
     
+    <!-- クイズ説明画面（新規追加） -->
+    <div id="explanation-screen" class="screen hidden">
+      <div class="content">
+        <h1>クイズ大会</h1>
+        <div class="explanation">
+          <p>これから5問の問題を出します。</p>
+          <p>それぞれの問題の解答時間は30秒です。</p>
+          <p>結果は正答数と速さの二点で順位が決まります。</p>
+          <p>一度ボタンを押したら戻れないので注意！</p>
+        </div>
+        <div class="player-info">
+          <p>参加者名: <span id="display-name-explanation"></span></p>
+        </div>
+      </div>
+    </div>
+    
     <!-- 待機画面 -->
     <div id="waiting-screen" class="screen hidden">
       <div class="content">
@@ -35,26 +51,16 @@
       </div>
     </div>
     
-    <!-- クイズ説明画面 -->
-    <div id="explanation-screen" class="screen hidden">
-      <div class="content">
-        <h1>クイズ大会</h1>
-        <div class="explanation">
-          <p>これから5問の問題を出します。</p>
-          <p>それぞれの問題の解答時間は30秒です。</p>
-          <p>結果は正答数と速さの二点で順位が決まります。</p>
-          <p>一度ボタンを押したら戻れないので注意！</p>
-        </div>
-      </div>
-    </div>
-    
-    <!-- 問題タイトル待機画面 -->
+    <!-- タイトル待機画面（新規追加） -->
     <div id="quiz-title-screen" class="screen hidden">
       <div class="content">
-        <h1 id="quiz-title">問題 1</h1>
-        <p id="quiz-title-message" class="quiz-title-message">
+        <h1 id="quiz-title-heading">問題 1</h1>
+        <div class="quiz-title-message" id="quiz-title-message">
           画面が遷移したら、早押しできるよ！頑張って！
-        </p>
+        </div>
+        <div class="player-info">
+          <p>参加者名: <span id="display-name-title"></span></p>
+        </div>
       </div>
     </div>
     
@@ -77,24 +83,33 @@
       </div>
     </div>
     
-    <!-- 回答後の待機画面 -->
+    <!-- 回答後の待機画面（改良） -->
     <div id="answered-screen" class="screen hidden">
       <div class="content">
         <h2>回答完了</h2>
-        <div id="answer-result" class="answer-result">
-          <!-- 正解/不正解の表示 -->
-        </div>
-        <div class="your-answer-container">
-          <div id="answers-review" class="answers-review">
-            <!-- 選択肢と正解表示 -->
-          </div>
-        </div>
         <p class="waiting-text">他の参加者の回答をお待ちください...</p>
+        <div class="your-answer">
+          <p>あなたの回答: <span id="your-answer"></span></p>
+        </div>
       </div>
     </div>
     
-    <!-- 結果画面 -->
-    <div id="result-screen" class="screen hidden">
+    <!-- 回答結果画面（新規追加） -->
+    <div id="result-screen-answer" class="screen hidden">
+      <div class="content">
+        <h2 id="result-status" class="result-status">正解！</h2>
+        <p class="result-explanation">正解は以下です：</p>
+        <div id="result-options-container" class="result-options-container">
+          <!-- 解答の選択肢がここに表示されます -->
+        </div>
+        <div class="waiting-text">
+          <p>次の問題をお待ちください...</p>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 最終結果画面 -->
+    <div id="final-result-screen" class="screen hidden">
       <div class="content">
         <h2>結果発表</h2>
         <div class="result-details">
