@@ -510,6 +510,9 @@ document.addEventListener('DOMContentLoaded', function() {
       const response = await fetch('/api/quiz/ranking/all');
       const rankings = await response.json();
       
+      console.log('取得したランキングデータ:', rankings);
+      console.log('現在のプレイヤーID:', playerId);
+      
       // 自分の順位を探す
       let playerRanking = null;
       let playerPosition = 0;
@@ -518,35 +521,63 @@ document.addEventListener('DOMContentLoaded', function() {
         if (rankings[i].player_id === playerId) {
           playerRanking = rankings[i];
           playerPosition = i + 1;
+          console.log('プレイヤーランキング情報:', playerRanking, '順位:', playerPosition);
           break;
         }
       }
-
+  
       // ランキング情報を表示
       if (playerRanking) {
-        correctCount.textContent = playerRanking.correct_count;
-        waitingCorrectCount.textContent = playerRanking.correct_count;
+        // DOMが存在することを確認
+        const correctCountElements = document.querySelectorAll('#correct-count, #waiting-correct-count');
+        const totalTimeElements = document.querySelectorAll('#total-time, #waiting-total-time');
+        const rankNumberElement = document.getElementById('rank-number');
+        const topRankDisplayElement = document.getElementById('top-rank-display');
         
-        // ミリ秒から秒に変換して表示（小数点2桁）
+        // 正答数の更新
+        correctCountElements.forEach(element => {
+          if (element) element.textContent = playerRanking.correct_count;
+        });
+        
+        // 合計時間の更新（ミリ秒から秒に変換）
         const seconds = (playerRanking.total_time / 1000).toFixed(2);
-        totalTime.textContent = seconds;
-        waitingTotalTime.textContent = seconds;
+        totalTimeElements.forEach(element => {
+          if (element) element.textContent = seconds;
+        });
         
-        // 上位入賞者専用の大きな順位表示（5位以内）
+        // 順位情報
+        if (rankNumberElement) rankNumberElement.textContent = playerPosition;
+        
+        // ランキングメッセージと表示設定
+        let rankingMessage = '';
+        
         if (playerPosition <= 5) {
           // 上位表示を有効化
-          rankNumber.textContent = playerPosition;
-          topRankDisplay.classList.remove('hidden');
+          if (topRankDisplayElement) topRankDisplayElement.classList.remove('hidden');
           rankingMessage = `おめでとうございます！あなたは${playerPosition}位です！景品があるので、指示がありましたら前に来てください！`;
         } else {
           // 上位表示を非表示
-          topRankDisplay.classList.add('hidden');
+          if (topRankDisplayElement) topRankDisplayElement.classList.add('hidden');
           rankingMessage = '自分の順位が知りたい方は、新郎まで！一緒に遊んでくれてありがとう！';
         }
         
-        rankingPosition.textContent = rankingMessage;
+        if (rankingPosition) {
+          rankingPosition.textContent = rankingMessage;
+        }
+        
+        // プレイヤーの順位を保存（他の場所でも使える）
+        playerRank = playerPosition;
+        
+        // 結果画面にも順位を表示（削除済みのDOMに代わる表示）
+        const playerRankElement = document.getElementById('player-rank');
+        if (playerRankElement) {
+          playerRankElement.textContent = playerPosition;
+        }
       } else {
-        rankingPosition.textContent = 'ランキングデータが取得できませんでした';
+        console.warn('ランキング内にプレイヤーが見つかりません。playerId:', playerId);
+        if (rankingPosition) {
+          rankingPosition.textContent = 'ランキングデータが取得できませんでした';
+        }
       }
       
       // 待機画面を表示
@@ -554,7 +585,9 @@ document.addEventListener('DOMContentLoaded', function() {
       
     } catch (error) {
       console.error('ランキングの取得に失敗しました:', error);
-      rankingPosition.textContent = 'ランキングデータの取得に失敗しました';
+      if (rankingPosition) {
+        rankingPosition.textContent = 'ランキングデータの取得に失敗しました';
+      }
       showScreen(rankingWaitingScreen);
     }
   }
