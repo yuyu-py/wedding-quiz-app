@@ -23,6 +23,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const answerText = document.getElementById('answer-text');
   const answerImage = document.getElementById('answer-image').querySelector('img');
   const answerExplanation = document.getElementById('answer-explanation');
+  const answerStatsContainer = document.getElementById('answer-stats-container');
   const rankingContainer = document.getElementById('ranking-container');
   
   // 現在の状態
@@ -31,6 +32,7 @@ document.addEventListener('DOMContentLoaded', function() {
   let timerInterval = null;
   let timeLeft = 30;
   let displayedRankings = [];
+  let refreshInterval = null;
   
   // 画像のプリロード処理
   function preloadImages() {
@@ -65,9 +67,50 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // 画面を表示する関数
   function showScreen(screen) {
+    // 前の画面を非表示
     currentScreen.classList.add('hidden');
+    
+    // 新しい画面を表示
     screen.classList.remove('hidden');
     currentScreen = screen;
+    
+    // QRコード画面の場合は、10秒ごとの更新を開始
+    if (screen === welcomeScreen) {
+      startParticipantCountRefresh();
+    } else {
+      // QRコード画面以外では更新を停止
+      stopParticipantCountRefresh();
+    }
+  }
+  
+  // 参加者数の更新を10秒ごとに行う関数
+  function startParticipantCountRefresh() {
+    // まず既存の更新を停止
+    stopParticipantCountRefresh();
+    
+    // 10秒ごとに参加者数を更新する間隔を設定
+    refreshInterval = setInterval(async () => {
+      try {
+        // サーバーから最新の参加者数を取得
+        const response = await fetch('/api/quiz/stats/participants');
+        const data = await response.json();
+        
+        // 参加者数を更新（API対応がなければSocket.ioイベントを使用）
+        if (data && data.count !== undefined) {
+          participantCount.textContent = data.count;
+        }
+      } catch (error) {
+        console.log('参加者数の更新中にエラーが発生しました。Socket.ioイベントを使用します。');
+      }
+    }, 10000); // 10秒間隔
+  }
+  
+  // 参加者数更新の停止
+  function stopParticipantCountRefresh() {
+    if (refreshInterval) {
+      clearInterval(refreshInterval);
+      refreshInterval = null;
+    }
   }
   
   // ホーム画面に戻る
@@ -126,7 +169,7 @@ document.addEventListener('DOMContentLoaded', function() {
       // 問題のタイトルを設定
       quizTitle.textContent = `問題 ${quizId}`;
       
-      // 問題文を設定 - 常に表示するため条件分岐の前に移動
+      // 問題文を設定 - 常に表示するよう移動
       questionText.textContent = quizData.question;
       
       // 画像選択肢か通常選択肢かで表示方法を変える
@@ -303,6 +346,12 @@ document.addEventListener('DOMContentLoaded', function() {
         answerImageContainer.style.display = answerData.answer_image_path ? 'block' : 'none';
       }
       
+      // 回答状況セクションを非表示に設定（要件に従い削除）
+      const answerStats = document.querySelector('.answer-stats');
+      if (answerStats) {
+        answerStats.style.display = 'none';
+      }
+      
       // 画面を解答画面に切り替え
       showScreen(quizAnswerScreen);
       
@@ -466,4 +515,9 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // ホームボタンのクリックイベント
   homeButton.addEventListener('click', goToHome);
+  
+  // 初期表示時に参加者数の更新を開始
+  if (currentScreen === welcomeScreen) {
+    startParticipantCountRefresh();
+  }
 });
