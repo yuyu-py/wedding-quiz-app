@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>結婚式クイズ大会 - 参加者画面</title>
   <link rel="stylesheet" href="/css/reset.css">
   <link rel="stylesheet" href="/css/player.css">
@@ -24,18 +24,7 @@
       </div>
     </div>
     
-    <!-- 待機画面 -->
-    <div id="waiting-screen" class="screen hidden">
-      <div class="content">
-        <h1>参加登録完了</h1>
-        <p class="waiting-text">クイズの開始をお待ちください...</p>
-        <div class="player-info">
-          <p>参加者名: <span id="display-name"></span></p>
-        </div>
-      </div>
-    </div>
-    
-    <!-- クイズ説明画面 -->
+    <!-- クイズ説明画面（新規追加） -->
     <div id="explanation-screen" class="screen hidden">
       <div class="content">
         <h1>クイズ大会</h1>
@@ -44,6 +33,17 @@
           <p>それぞれの問題の解答時間は30秒です。</p>
           <p>結果は正答数と速さの二点で順位が決まります。</p>
           <p>一度ボタンを押したら戻れないので注意！</p>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 待機画面 -->
+    <div id="waiting-screen" class="screen hidden">
+      <div class="content">
+        <h1>参加登録完了</h1>
+        <p class="waiting-text">クイズの開始をお待ちください...</p>
+        <div class="player-info">
+          <p>参加者名: <span id="display-name"></span></p>
         </div>
       </div>
     </div>
@@ -77,17 +77,17 @@
         </div>
       </div>
     </div>
-
-    <!-- 解答表示画面 -->
-    <div id="answer-result-screen" class="screen hidden">
+    
+    <!-- クイズ答え合わせ画面（新規追加） -->
+    <div id="answer-check-screen" class="screen hidden">
       <div class="content">
-        <h2 id="result-status">正解！</h2>
-        <div class="result-container">
-          <div id="result-options" class="result-options">
-            <!-- 結果の選択肢がここに表示されます -->
-          </div>
+        <h2 id="result-text" class="result-text">結果</h2>
+        <div class="result-explanation">
+          <p>正解: <span id="correct-answer"></span></p>
         </div>
-        <p id="answer-explanation" class="explanation"></p>
+        <div id="answer-options-container" class="answer-options-container">
+          <!-- 答え合わせ用の選択肢がここに表示されます -->
+        </div>
       </div>
     </div>
     

@@ -1,11 +1,12 @@
 /* 参加者画面のスタイル */
 body {
-  background-color: #f8f9fa;
+  background-color: #f0f8ff;
   color: #333;
   font-family: 'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif;
-  overflow-x: hidden;
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
   font-weight: 400;
-  -webkit-tap-highlight-color: transparent;
 }
 
 #app {
@@ -14,14 +15,13 @@ body {
   justify-content: center;
   align-items: center;
   padding: 20px;
-  background: linear-gradient(to bottom, #f0f8ff, #e6f2ff);
 }
 
 .screen {
   width: 100%;
   max-width: 500px;
   background-color: #fff;
-  border-radius: 20px;
+  border-radius: 15px;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
   overflow: hidden;
   transition: all 0.3s ease;
@@ -32,14 +32,14 @@ body {
 }
 
 .content {
-  padding: 30px 25px;
+  padding: 30px;
 }
 
 h1 {
   font-size: 28px;
   text-align: center;
   margin-bottom: 25px;
-  color: #007bff;
+  color: #333;
   font-weight: 700;
 }
 
@@ -51,12 +51,16 @@ h2 {
   font-weight: 700;
 }
 
-.welcome-text, .waiting-text {
+.welcome-text, .waiting-text, .explanation p {
   text-align: center;
   margin-bottom: 25px;
-  font-size: 18px;
-  line-height: 1.5;
-  color: #666;
+  font-size: 16px;
+  color: #555;
+  line-height: 1.6;
+}
+
+.explanation p {
+  margin-bottom: 15px;
 }
 
 .register-form {
@@ -66,87 +70,59 @@ h2 {
 }
 
 .question-text {
-  margin: 10px 0 20px;
+  margin: 15px 0 20px;
   font-size: 18px;
-  line-height: 1.6;
+  line-height: 1.5;
   text-align: center;
   font-weight: 500;
-  background-color: #f8f9fa;
-  padding: 15px;
-  border-radius: 12px;
 }
 
 #player-name {
-  padding: 16px 18px;
-  border: 2px solid #ddd;
-  border-radius: 12px;
-  font-size: 18px;
-  transition: border-color 0.3s;
-}
-
-#player-name:focus {
-  border-color: #007bff;
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+  padding: 15px;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  font-size: 16px;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
 }
 
 .primary-button {
   background-color: #007bff;
   color: white;
   border: none;
-  padding: 16px 20px;
-  border-radius: 12px;
+  padding: 15px 20px;
+  border-radius: 10px;
   font-size: 18px;
   font-weight: 700;
   cursor: pointer;
-  transition: background-color 0.3s, transform 0.2s;
+  transition: background-color 0.2s;
+  text-align: center;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
 }
 
 .primary-button:hover {
   background-color: #0069d9;
-}
-
-.primary-button:active {
-  transform: translateY(2px);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 8px rgba(0,0,0,0.15);
 }
 
 .player-info {
-  margin-top: 25px;
-  background-color: #f0f7ff;
-  padding: 18px;
-  border-radius: 12px;
+  margin-top: 20px;
+  background-color: #f8f9fa;
+  padding: 15px;
+  border-radius: 10px;
   text-align: center;
-  border: 1px solid #c9e2ff;
-}
-
-.player-info p {
-  font-size: 18px;
   font-weight: 500;
-  color: #0056b3;
-}
-
-/* クイズ説明 */
-.explanation {
-  font-size: 18px;
-  line-height: 1.6;
-  text-align: center;
-  margin: 20px 0;
-}
-
-.explanation p {
-  margin-bottom: 15px;
 }
 
 .timer {
   text-align: center;
-  font-size: 24px;
+  font-size: 28px;
   color: #ff5555;
   font-weight: 700;
-  margin: 15px 0 25px;
-  background-color: #fff0f0;
-  padding: 12px;
-  border-radius: 12px;
-  border: 1px solid #ffcccc;
+  margin: 20px 0;
+  background-color: rgba(255, 85, 85, 0.1);
+  padding: 10px;
+  border-radius: 10px;
 }
 
 .options-container {
@@ -158,27 +134,35 @@ h2 {
 
 .option-button {
   background-color: #f8f9fa;
-  border: 2px solid #e6e6e6;
-  border-radius: 12px;
-  padding: 18px;
-  font-size: 18px;
+  border: 2px solid #e9ecef;
+  border-radius: 10px;
+  padding: 15px;
+  font-size: 16px;
   text-align: left;
   cursor: pointer;
   transition: all 0.2s;
   position: relative;
+  overflow: hidden;
   font-weight: 500;
 }
 
-.option-button:hover, .option-button:active {
-  background-color: #f0f0f0;
-  border-color: #cccccc;
+.option-button:hover {
+  background-color: #e9ecef;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
 
 .option-button.selected {
-  background-color: #e6f2ff;
-  color: #0056b3;
+  background-color: #007bff;
+  color: white;
   border-color: #007bff;
-  font-weight: 700;
+}
+
+.option-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 /* 画像選択肢のスタイル */
@@ -192,8 +176,8 @@ h2 {
 .image-option-button {
   position: relative;
   background-color: transparent;
-  border: 2px solid #ddd;
-  border-radius: 12px;
+  border: 2px solid #e9ecef;
+  border-radius: 10px;
   overflow: hidden;
   padding: 0;
   cursor: pointer;
@@ -204,14 +188,6 @@ h2 {
   width: 100%;
   height: auto;
   display: block;
-  object-fit: contain;
-}
-
-/* 問題3の画像アスペクト比を保持 */
-.image-option-button.preserve-ratio {
-  width: 100%;
-  height: auto;
-  padding-bottom: 0; /* 元のアスペクト比を維持 */
 }
 
 .image-option-button .option-number {
@@ -230,9 +206,16 @@ h2 {
 }
 
 .image-option-button.selected {
-  border-color: #007bff;
+  border: 3px solid #007bff;
   transform: scale(1.02);
-  box-shadow: 0 5px 15px rgba(0, 123, 255, 0.2);
+  box-shadow: 0 4px 10px rgba(0,123,255,0.3);
+}
+
+.image-option-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 .answer-status {
@@ -244,86 +227,24 @@ h2 {
 
 .your-answer {
   margin-top: 25px;
-  padding: 18px;
-  background-color: #f0f7ff;
-  border-radius: 12px;
-  text-align: center;
-  border: 1px solid #c9e2ff;
-}
-
-.your-answer p {
-  font-size: 18px;
-  font-weight: 500;
-  color: #0056b3;
-}
-
-/* 解答結果画面 */
-#result-status {
-  font-size: 32px;
-  font-weight: 700;
-  text-align: center;
-  margin-bottom: 25px;
-  padding: 15px 20px;
-  border-radius: 15px;
-  display: inline-block;
-}
-
-#result-status.correct {
-  color: #28a745;
-  background-color: #e6fff0;
-  border: 1px solid #c3e6cb;
-}
-
-#result-status.incorrect {
-  color: #dc3545;
-  background-color: #fff0f0;
-  border: 1px solid #f5c6cb;
-}
-
-.result-container {
-  margin: 0 auto 25px;
-}
-
-.result-options {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.result-option {
-  padding: 16px;
-  border-radius: 12px;
-  font-size: 18px;
-  position: relative;
-  border: 2px solid #e6e6e6;
+  padding: 15px;
   background-color: #f8f9fa;
-}
-
-.result-option.correct {
-  border-color: #28a745;
-  background-color: #e6fff0;
-  color: #155724;
-  font-weight: 600;
-}
-
-.result-option.incorrect {
-  border-color: #dc3545;
-  background-color: #fff0f0;
-  color: #721c24;
-  font-weight: 600;
+  border-radius: 10px;
+  text-align: center;
+  font-weight: 500;
 }
 
 .result-details {
   background-color: #f8f9fa;
   padding: 20px;
-  border-radius: 12px;
+  border-radius: 10px;
   margin-bottom: 25px;
-  border: 1px solid #e6e6e6;
+  font-size: 18px;
+  line-height: 1.6;
 }
 
 .result-details p {
   margin: 10px 0;
-  font-size: 18px;
   font-weight: 500;
 }
 
@@ -331,22 +252,12 @@ h2 {
   text-align: center;
   margin-top: 30px;
   padding: 25px;
-  border-radius: 12px;
-  font-size: 20px;
-  line-height: 1.6;
-  animation: fadeIn 1s ease;
-}
-
-.ranking-position.winner {
   background-color: #fffbd6;
-  border: 2px solid #ffd700;
-  color: #856404;
-}
-
-.ranking-position.normal {
-  background-color: #f0f7ff;
-  border: 2px solid #c9e2ff;
-  color: #0056b3;
+  border-radius: 10px;
+  font-size: 18px;
+  animation: fadeIn 1s ease;
+  line-height: 1.6;
+  font-weight: 500;
 }
 
 @keyframes fadeIn {
@@ -354,15 +265,114 @@ h2 {
   to { opacity: 1; }
 }
 
-/* 解説テキスト */
-#answer-explanation {
-  font-size: 16px;
-  line-height: 1.6;
-  color: #666;
-  margin-top: 20px;
-  text-align: left;
-  padding: 15px;
+/* 答え合わせ画面用のスタイル */
+.result-text {
+  font-size: 32px;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 20px;
+  padding: 10px 20px;
+  border-radius: 10px;
+  display: inline-block;
+}
+
+.result-text.correct {
+  color: #28a745;
+  background-color: rgba(40, 167, 69, 0.1);
+}
+
+.result-text.incorrect {
+  color: #dc3545;
+  background-color: rgba(220, 53, 69, 0.1);
+}
+
+.result-explanation {
+  text-align: center;
+  margin-bottom: 20px;
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.answer-options-container {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin: 25px 0;
+}
+
+.answer-option {
   background-color: #f8f9fa;
-  border-radius: 12px;
-  border: 1px solid #e6e6e6;
+  border: 2px solid #e9ecef;
+  border-radius: 10px;
+  padding: 15px;
+  font-size: 16px;
+  position: relative;
+  font-weight: 500;
+}
+
+.answer-option.correct {
+  border-color: #28a745;
+  background-color: rgba(40, 167, 69, 0.05);
+}
+
+.answer-option.your-incorrect {
+  border-color: #dc3545;
+  background-color: rgba(220, 53, 69, 0.05);
+}
+
+/* 画像答え合わせ用のスタイル */
+.image-answer-options-container {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin: 25px 0;
+}
+
+.image-answer-option {
+  position: relative;
+  background-color: #f8f9fa;
+  border: 2px solid #e9ecef;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.image-answer-option img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.image-answer-option .option-number {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: bold;
+}
+
+.image-answer-option.correct {
+  border-color: #28a745;
+  background-color: rgba(40, 167, 69, 0.05);
+  box-shadow: 0 4px 8px rgba(40, 167, 69, 0.2);
+}
+
+.image-answer-option.your-incorrect {
+  border-color: #dc3545;
+  background-color: rgba(220, 53, 69, 0.05);
+  box-shadow: 0 4px 8px rgba(220, 53, 69, 0.2);
+}
+
+/* 問題3の画像修正用 */
+.preserve-aspect-ratio img {
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  aspect-ratio: auto; /* 元の画像比を維持 */
 }
