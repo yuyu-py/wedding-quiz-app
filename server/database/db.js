@@ -79,7 +79,7 @@ async function insertSampleQuizData() {
       question: '下記の記号の法則を見つけ、?に入るものを選択しろ。',
       options: JSON.stringify(['UCC', 'USJ', 'URL', 'USA']),
       correct_answer: 'USA',
-      explanation: '答えはUSAです。U○○の形式で、国や組織の略称になっています。',
+      explanation: 'それぞれの記号は同じアルファベット4つを回転させて組み合わせたものとなっており、上の段は「U」「F」「O」となります。同じように下の段も考えると「U」「S」「A」となります。',
       question_image_path: '/images/quiz-images/quiz1_question.png',
       answer_image_path: '/images/quiz-images/quiz1_answer.png',
       is_image_options: 0,
@@ -130,7 +130,7 @@ async function insertSampleQuizData() {
     },
     {
       id: '5',
-      question: 'ストップウォッチ15秒に近く止められるのはどっち？',
+      question: 'ストップウォッチ15秒に近く止められるのはどっち？実戦なので直感で選ぼう！',
       options: JSON.stringify(['新郎', '新婦']),
       correct_answer: '',
       explanation: '実際に計測した結果です。', 

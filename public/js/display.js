@@ -1,4 +1,3 @@
-//public/js/display.js
 // メイン画面用のJavaScript
 document.addEventListener('DOMContentLoaded', function() {
   // 画面要素
@@ -127,7 +126,7 @@ document.addEventListener('DOMContentLoaded', function() {
       // 問題のタイトルを設定
       quizTitle.textContent = `問題 ${quizId}`;
       
-      // 問題文と画像を設定
+      // 問題文を設定 - 常に表示するため条件分岐の前に移動
       questionText.textContent = quizData.question;
       
       // 画像選択肢か通常選択肢かで表示方法を変える
