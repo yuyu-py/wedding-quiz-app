@@ -77,7 +77,7 @@ async function insertSampleQuizData() {
     {
       id: '1',
       question: '下記の記号の法則を見つけ、?に入るものを選択しろ。',
-      options: JSON.stringify(['UCC', 'USJ', 'URL', 'USA']),
+      options: JSON.stringify(['①UCC', '②USJ', '③URL', '④USA']),
       correct_answer: 'USA',
       explanation: 'それぞれの記号は同じアルファベット4つを回転させて組み合わせたものとなっており、上の段は「U」「F」「O」となります。同じように下の段も考えると「U」「S」「A」となります。',
       question_image_path: '/images/quiz-images/quiz1_question.png',
@@ -88,9 +88,9 @@ async function insertSampleQuizData() {
     {
       id: '2',
       question: '下記の中国語で表されるキャラクターは？',
-      options: JSON.stringify(['ピカチュウ(Pokemon)', 'ジェリー(Tom and Jerry)', 'ミッキーマウス(Disney)', 'ハム太郎(とっとこハム太郎)']),
-      correct_answer: 'ミッキーマウス(Disney)',
-      explanation: '答えはミッキーマウスです。中国語では「米老鼠」と表記されます。',
+      options: JSON.stringify(['①ピカチュウ(Pokemon)', '②ジェリー(Tom and Jerry)', '③ミッキーマウス(Disney)', '④ハム太郎(とっとこハム太郎)']),
+      correct_answer: '③ミッキーマウス(Disney)',
+      explanation: '中国語では「米老鼠」と表記されます。',
       question_image_path: '/images/quiz-images/quiz2_question.png',
       answer_image_path: '/images/quiz-images/quiz2_answer.png',
       is_image_options: 0,
