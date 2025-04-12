@@ -4,10 +4,10 @@ document.addEventListener('DOMContentLoaded', function() {
   const registerScreen = document.getElementById('register-screen');
   const explanationScreen = document.getElementById('explanation-screen');
   const waitingScreen = document.getElementById('waiting-screen');
-  const quizTitleScreen = document.getElementById('quiz-title-screen'); // 新規追加
+  const quizTitleScreen = document.getElementById('quiz-title-screen');
   const quizScreen = document.getElementById('quiz-screen');
   const answeredScreen = document.getElementById('answered-screen');
-  const resultScreenAnswer = document.getElementById('result-screen-answer'); // 新規追加
+  const resultScreenAnswer = document.getElementById('result-screen-answer');
   const finalResultScreen = document.getElementById('final-result-screen');
   
   // フォーム要素
@@ -44,6 +44,7 @@ document.addEventListener('DOMContentLoaded', function() {
   let playerAnswers = {};  // クイズIDと回答を保存
   let quizStartTimes = {}; // 問題の表示開始時間を保存
   let isAnswering = false; // 回答中かどうかのフラグ
+  let currentDisplayMode = ''; // display画面の現在のモード
   
   // URLからプレイヤーIDを取得（既存ユーザーの場合）
   const urlParams = new URLSearchParams(window.location.search);
@@ -369,6 +370,9 @@ document.addEventListener('DOMContentLoaded', function() {
   // 解答結果画面を表示する関数
   async function showAnswerResult(quizId) {
     try {
+      // タイマーを確実に停止
+      stopTimer();
+      
       // 解答情報を取得
       const response = await fetch(`/api/admin/quiz/${quizId}/answer`);
       const answerData = await response.json();
@@ -521,40 +525,60 @@ document.addEventListener('DOMContentLoaded', function() {
         case 'quiz_started':
           // クイズ開始時の処理 - 説明画面表示
           showScreen(explanationScreen);
+          currentDisplayMode = 'explanation';
           break;
           
         case 'show_question':
-          // 問題表示の準備 - タイトル待機画面表示
+          // 問題タイトル画面表示 - 必ずタイトル画面に切り替え
           if (quizId) {
             currentQuizId = quizId;
             setTitleMessage(quizId);
             showScreen(quizTitleScreen);
+            currentDisplayMode = 'title';
+            stopTimer(); // タイマーを停止
           }
           break;
           
         case 'next_slide':
-          // 次のスライドに進む
-          if (currentQuizId) {
-            if (currentScreen === quizTitleScreen) {
-              // タイトル画面 → 問題画面
-              fetchAndShowQuestion(currentQuizId);
-            } else if (currentScreen === quizScreen || currentScreen === answeredScreen) {
-              // 問題画面/回答済み画面 → 解答結果画面
-              showAnswerResult(currentQuizId);
-            }
+          // displayの状態によって処理を変える
+          if (currentDisplayMode === 'title') {
+            // タイトル → 問題
+            fetchAndShowQuestion(currentQuizId);
+            currentDisplayMode = 'question';
+          } 
+          else if (currentDisplayMode === 'question') {
+            // 問題 → 回答
+            showAnswerResult(currentQuizId);
+            currentDisplayMode = 'answer';
           }
           break;
           
         case 'show_answer':
-          // 解答画面表示
-          if (currentQuizId) {
-            showAnswerResult(currentQuizId);
+          // 明示的に回答画面を表示
+          showAnswerResult(currentQuizId);
+          currentDisplayMode = 'answer';
+          break;
+          
+        case 'prev_slide':
+          // 前に戻る処理
+          if (currentDisplayMode === 'question') {
+            // 問題 → タイトル
+            setTitleMessage(currentQuizId);
+            showScreen(quizTitleScreen);
+            currentDisplayMode = 'title';
+            stopTimer(); // タイマーを停止
+          } 
+          else if (currentDisplayMode === 'answer') {
+            // 答え → 問題
+            fetchAndShowQuestion(currentQuizId);
+            currentDisplayMode = 'question';
           }
           break;
           
         case 'show_ranking':
           // ランキング表示
           fetchAndShowRanking();
+          currentDisplayMode = 'ranking';
           break;
           
         case 'reset_all':
@@ -562,6 +586,11 @@ document.addEventListener('DOMContentLoaded', function() {
           location.reload(); // ページをリロード
           break;
       }
+    });
+    
+    // 回答イベントの処理
+    socket.on('answer_submitted', (data) => {
+      console.log('回答イベント:', data);
     });
   }
   
