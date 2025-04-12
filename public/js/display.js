@@ -168,7 +168,7 @@ document.addEventListener('DOMContentLoaded', function() {
       // 問題のタイトルを設定
       quizTitle.textContent = `問題 ${quizId}`;
       
-      // 問題文を設定
+      // 問題文を設定 - 常に表示するよう移動
       questionText.textContent = quizData.question;
       
       // 画像選択肢か通常選択肢かで表示方法を変える
@@ -187,7 +187,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (parseInt(quizId) === 5) {
           quizData.options.forEach(option => {
             const optionDiv = document.createElement('div');
-            optionDiv.className = 'option large-option'; // 大きいサイズのクラスを追加
+            optionDiv.className = 'option';
             
             // 新郎・新婦別のクラスを追加
             if (option === '新郎') {
@@ -200,27 +200,11 @@ document.addEventListener('DOMContentLoaded', function() {
             optionsContainer.appendChild(optionDiv);
           });
         } else {
-          // 通常のテキスト選択肢（問題1,2用の番号付き選択肢）
-          quizData.options.forEach((option, index) => {
+          // 通常のテキスト選択肢
+          quizData.options.forEach(option => {
             const optionDiv = document.createElement('div');
             optionDiv.className = 'option';
-            
-            // 選択肢の番号（丸付き）を作成
-            const numberSpan = document.createElement('span');
-            numberSpan.className = 'option-index';
-            
-            // 漢数字で番号を表示
-            const numbers = ['①', '②', '③', '④'];
-            numberSpan.textContent = numbers[index];
-            
-            // テキスト部分を作成
-            const textSpan = document.createElement('span');
-            textSpan.className = 'option-text';
-            textSpan.textContent = option;
-            
-            // 要素を追加
-            optionDiv.appendChild(numberSpan);
-            optionDiv.appendChild(textSpan);
+            optionDiv.textContent = option;
             optionsContainer.appendChild(optionDiv);
           });
         }
@@ -361,7 +345,7 @@ document.addEventListener('DOMContentLoaded', function() {
         answerImageContainer.style.display = answerData.answer_image_path ? 'block' : 'none';
       }
       
-      // 回答状況セクションを非表示に設定
+      // 回答状況セクションを非表示に設定（要件に従い削除）
       const answerStats = document.querySelector('.answer-stats');
       if (answerStats) {
         answerStats.style.display = 'none';

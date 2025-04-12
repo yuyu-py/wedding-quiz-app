@@ -22,8 +22,8 @@ body {
 }
 
 .main-display {
-  width: 90%;
-  height: 90%;
+  width: 95%;
+  height: 95%;
   max-width: 1800px;
   background-color: rgba(255, 255, 255, 0.92);
   border-radius: 20px;
@@ -42,7 +42,7 @@ body {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  padding: 4vh 4vw;
+  padding: 2vh 2vw;
   box-sizing: border-box;
   transition: opacity 0.3s ease;
   overflow: hidden;
@@ -54,7 +54,7 @@ body {
 
 .content {
   width: 100%;
-  max-width: 90%;
+  max-width: 95%;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -134,25 +134,10 @@ h3 {
   margin: 3vh 0;
 }
 
-/* 問題文 */
-.question-text {
-  font-size: min(36px, 4vw);
-  font-weight: 600;
-  line-height: 1.5;
-  text-align: center;
-  margin-bottom: 3vh;
-  color: #222;
-  background-color: rgba(248, 249, 250, 0.7);
-  padding: 15px 20px;
-  border-radius: 15px;
-  width: 90%;
-  max-width: 1400px;
-}
-
 /* 画像関連 */
 .question-image {
-  margin: 3vh 0;
-  max-width: 90%;
+  margin: 2vh 0;
+  max-width: 100%;
   max-height: 40vh;
   display: flex;
   justify-content: center;
@@ -160,7 +145,7 @@ h3 {
 
 .question-image img, .answer-image img {
   max-width: 100%;
-  max-height: 40vh;
+  max-height: 45vh;
   object-fit: contain;
   border-radius: 10px;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
@@ -172,45 +157,21 @@ h3 {
   grid-template-columns: repeat(2, 1fr);
   gap: 3vh 3vw;
   margin: 3vh 0;
-  width: 90%;
-  max-width: 1400px;
+  width: 100%;
 }
 
 .option {
   background-color: #fff;
-  padding: 20px 25px;
+  padding: 20px;
   border-radius: 15px;
-  font-size: min(32px, 3.5vw);
+  font-size: min(32px, 4vw);
   font-weight: 500;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
   border: 2px solid #e0e0e0;
-  text-align: left;
+  text-align: center;
   display: flex;
   align-items: center;
-  min-height: 100px;
-}
-
-/* 選択肢の番号 */
-.option-index {
-  font-size: min(36px, 4vw);
-  color: #007bff;
-  margin-right: 15px;
-  font-weight: 700;
-  min-width: 40px;
-  text-align: center;
-}
-
-.option-text {
-  flex: 1;
-}
-
-/* 問題5用の大きい選択肢 */
-.large-option {
-  font-size: min(48px, 5vw);
-  padding: 30px;
-  min-height: 150px;
   justify-content: center;
-  text-align: center;
 }
 
 /* フローティングタイマー - 右上固定 */
@@ -324,8 +285,7 @@ h3 {
   grid-template-columns: repeat(2, 1fr);
   gap: 2vh 2vw;
   margin: 2vh 0;
-  width: 90%;
-  max-width: 1400px;
+  width: 100%;
 }
 
 .image-option {
@@ -336,7 +296,7 @@ h3 {
   overflow: hidden;
   aspect-ratio: 4/3;
   border: 2px solid #e0e0e0;
-  height: 35vh;
+  height: 35vh; /* 高さを大きく設定 */
 }
 
 .image-option img {
@@ -365,9 +325,9 @@ h3 {
 .before-after-container {
   display: flex;
   justify-content: center;
-  gap: 4vw;
-  margin: 3vh 0;
-  width: 90%;
+  gap: 3vw;
+  margin: 2vh 0;
+  width: 100%;
 }
 
 .before-after-item {
@@ -424,19 +384,15 @@ h3 {
 .option.groom {
   background-color: #e6f0ff;
   border-color: #0066cc;
-  border-width: 3px;
   color: #0066cc;
   font-weight: 700;
-  font-size: min(56px, 6vw);
 }
 
 .option.bride {
   background-color: #ffebf2;
   border-color: #cc3366;
-  border-width: 3px;
   color: #cc3366;
   font-weight: 700;
-  font-size: min(56px, 6vw);
 }
 
 /* ホームボタン */
