@@ -36,7 +36,8 @@ document.addEventListener('DOMContentLoaded', function() {
   const waitingTotalTime = document.getElementById('waiting-total-time');
   const correctCount = document.getElementById('correct-count');
   const totalTime = document.getElementById('total-time');
-  const playerRank = document.getElementById('player-rank');
+  const topRankDisplay = document.getElementById('top-rank-display');
+  const rankNumber = document.getElementById('rank-number');
   const rankingPosition = document.getElementById('ranking-position');
   
   // 状態管理
@@ -531,16 +532,15 @@ document.addEventListener('DOMContentLoaded', function() {
         totalTime.textContent = seconds;
         waitingTotalTime.textContent = seconds;
         
-        // 順位を表示
-        playerRank.textContent = playerPosition;
-        this.playerRanking = playerPosition;
-        
-        // 順位によってメッセージを変更
-        let rankingMessage = '';
-        
+        // 上位入賞者専用の大きな順位表示（5位以内）
         if (playerPosition <= 5) {
+          // 上位表示を有効化
+          rankNumber.textContent = playerPosition;
+          topRankDisplay.classList.remove('hidden');
           rankingMessage = `おめでとうございます！あなたは${playerPosition}位です！景品があるので、指示がありましたら前に来てください！`;
         } else {
+          // 上位表示を非表示
+          topRankDisplay.classList.add('hidden');
           rankingMessage = '自分の順位が知りたい方は、新郎まで！一緒に遊んでくれてありがとう！';
         }
         

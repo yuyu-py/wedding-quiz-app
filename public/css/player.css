@@ -616,3 +616,20 @@ h2 {
   aspect-ratio: auto;
   object-fit: contain;
 }
+
+/* 上位入賞者の大きな順位表示 */
+.top-rank-display {
+  font-size: 120px;
+  font-weight: 700;
+  color: #ffc107;
+  text-align: center;
+  margin-bottom: 30px;
+  text-shadow: 2px 2px 10px rgba(0, 0, 0, 0.2);
+  animation: rank-pulse 2s infinite;
+}
+
+@keyframes rank-pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
