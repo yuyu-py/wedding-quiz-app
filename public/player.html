@@ -24,7 +24,7 @@
       </div>
     </div>
     
-    <!-- クイズ説明画面（新規追加） -->
+    <!-- クイズ説明画面 -->
     <div id="explanation-screen" class="screen hidden">
       <div class="content">
         <h1>クイズ大会</h1>
@@ -44,6 +44,17 @@
         <p class="waiting-text">クイズの開始をお待ちください...</p>
         <div class="player-info">
           <p>参加者名: <span id="display-name"></span></p>
+        </div>
+      </div>
+    </div>
+    
+    <!-- クイズ問題タイトル画面（新規追加） -->
+    <div id="quiz-title-screen" class="screen hidden">
+      <div class="content">
+        <h1 id="quiz-title">問題 1</h1>
+        <p class="title-text">準備はいいですか？</p>
+        <div class="title-animation">
+          <div class="pulse-circle"></div>
         </div>
       </div>
     </div>
@@ -78,7 +89,7 @@
       </div>
     </div>
     
-    <!-- クイズ答え合わせ画面（新規追加） -->
+    <!-- クイズ答え合わせ画面 -->
     <div id="answer-check-screen" class="screen hidden">
       <div class="content">
         <h2 id="result-text" class="result-text">結果</h2>

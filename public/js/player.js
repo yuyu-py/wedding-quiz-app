@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const registerScreen = document.getElementById('register-screen');
   const explanationScreen = document.getElementById('explanation-screen');
   const waitingScreen = document.getElementById('waiting-screen');
+  const quizTitleScreen = document.getElementById('quiz-title-screen');
   const quizScreen = document.getElementById('quiz-screen');
   const answeredScreen = document.getElementById('answered-screen');
   const answerCheckScreen = document.getElementById('answer-check-screen');
@@ -15,6 +16,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const displayName = document.getElementById('display-name');
   
   // クイズ要素
+  const quizTitle = document.getElementById('quiz-title');
   const questionNumber = document.getElementById('question-number');
   const questionText = document.getElementById('question-text');
   const timerValue = document.getElementById('timer-value');
@@ -42,7 +44,6 @@ document.addEventListener('DOMContentLoaded', function() {
   let playerAnswers = {};  // クイズIDと回答を保存
   let quizStartTimes = {}; // 問題の表示開始時間を保存
   let quizDataCache = {};  // クイズデータをキャッシュ
-  let currentScreen = null; // 現在表示中の画面を追跡
   
   // URLからプレイヤーIDを取得（既存ユーザーの場合）
   const urlParams = new URLSearchParams(window.location.search);
@@ -59,6 +60,7 @@ document.addEventListener('DOMContentLoaded', function() {
     registerScreen.classList.add('hidden');
     explanationScreen.classList.add('hidden');
     waitingScreen.classList.add('hidden');
+    quizTitleScreen.classList.add('hidden');
     quizScreen.classList.add('hidden');
     answeredScreen.classList.add('hidden');
     answerCheckScreen.classList.add('hidden');
@@ -66,23 +68,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 指定された画面を表示
     screen.classList.remove('hidden');
-    
-    // 現在の画面を更新
-    currentScreen = screen;
-    
-    console.log('画面を切り替えました:', getScreenName(screen));
-  }
-  
-  // 画面名を取得する関数（デバッグ用）
-  function getScreenName(screen) {
-    if (screen === registerScreen) return 'register-screen';
-    if (screen === explanationScreen) return 'explanation-screen';
-    if (screen === waitingScreen) return 'waiting-screen';
-    if (screen === quizScreen) return 'quiz-screen';
-    if (screen === answeredScreen) return 'answered-screen';
-    if (screen === answerCheckScreen) return 'answer-check-screen';
-    if (screen === resultScreen) return 'result-screen';
-    return 'unknown-screen';
   }
   
   // タイマーを開始する関数
@@ -360,7 +345,6 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!quizId) return;
     
     try {
-      console.log(`答え合わせ画面を表示します: 問題 ${quizId}`);
       // クイズデータと答えを取得
       let answerData;
       const response = await fetch(`/api/admin/quiz/${quizId}/answer`);
@@ -506,6 +490,17 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
   
+  // 問題タイトル画面を表示
+  function showQuizTitle(quizId) {
+    if (!quizId) return;
+    
+    // タイトルを設定
+    quizTitle.textContent = `問題 ${quizId}`;
+    
+    // 問題タイトル画面を表示
+    showScreen(quizTitleScreen);
+  }
+  
   // Socket.io接続の初期化
   let socket;
   function initSocketConnection() {
@@ -527,9 +522,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // クイズイベントの処理
     socket.on('quiz_event', (data) => {
-      const { event, quizId, position } = data;
-      
-      console.log(`クイズイベントを受信しました: ${event}`, data);
+      const { event, quizId } = data;
       
       switch (event) {
         case 'quiz_started':
@@ -538,52 +531,40 @@ document.addEventListener('DOMContentLoaded', function() {
           break;
           
         case 'show_question':
-          // 問題表示の準備
+          // 問題表示の準備：問題タイトル画面を表示
           if (quizId) {
             currentQuizId = quizId;
-            showScreen(waitingScreen);
+            showQuizTitle(quizId);
           }
           break;
           
         case 'next_slide':
-          // このイベントは複数の状態遷移を処理する必要がある
-          if (currentScreen === waitingScreen && currentQuizId) {
-            // 待機画面から問題画面への遷移
+          // 画面遷移処理
+          if (currentScreen === quizTitleScreen && currentQuizId) {
+            // 問題タイトルから問題へ
             fetchAndShowQuestion(currentQuizId);
-          } 
-          else if (currentScreen === quizScreen && currentQuizId) {
-            // 問題画面から答え合わせ画面への遷移
-            stopTimer(); // タイマー停止
-            disableOptions(); // 選択肢を無効化
-            showAnswerCheck(currentQuizId);
-          }
-          else if (currentScreen === answeredScreen && currentQuizId) {
-            // 回答済み待機画面から答え合わせ画面への遷移
-            showAnswerCheck(currentQuizId);
+          } else if (currentScreen === quizScreen || currentScreen === answeredScreen) {
+            // 問題から答えへ（答え合わせ画面を表示）
+            stopTimer(); // 重要：タイマーを確実に停止
+            if (currentQuizId) {
+              showAnswerCheck(currentQuizId);
+            }
           }
           break;
           
         case 'prev_slide':
-          // 前のスライドに戻る処理
+          // 前の画面に戻る処理
           if (currentScreen === quizScreen) {
-            stopTimer();
-            showScreen(waitingScreen);
+            stopTimer(); // タイマーを停止
+            showQuizTitle(currentQuizId);
           } else if (currentScreen === answerCheckScreen) {
-            // 答え合わせ画面から問題画面に戻る（通常は使用しないが念のため）
             fetchAndShowQuestion(currentQuizId);
           }
           break;
           
         case 'show_answer':
-          // 解答表示時の処理（displayの解答画面と連動）
-          console.log('解答表示イベントを受信しました');
-          stopTimer(); // タイマーを停止
-          
-          // 問題画面または回答待機画面から答え合わせ画面へ遷移
-          if (currentScreen === quizScreen) {
-            disableOptions(); // 選択肢を無効化
-          }
-          
+          // 解答表示時の処理（答え合わせ画面を表示）
+          stopTimer(); // 重要：タイマーを確実に停止
           if (currentQuizId) {
             showAnswerCheck(currentQuizId);
           }
@@ -596,7 +577,7 @@ document.addEventListener('DOMContentLoaded', function() {
           
         case 'reset_all':
           // リセット処理
-          stopTimer(); // タイマーを停止
+          stopTimer(); // 重要：タイマーを確実に停止
           showScreen(registerScreen);
           break;
       }

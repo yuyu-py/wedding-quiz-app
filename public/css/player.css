@@ -51,7 +51,7 @@ h2 {
   font-weight: 700;
 }
 
-.welcome-text, .waiting-text, .explanation p {
+.welcome-text, .waiting-text, .explanation p, .title-text {
   text-align: center;
   margin-bottom: 25px;
   font-size: 16px;
@@ -163,6 +163,54 @@ h2 {
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
+}
+
+/* クイズ問題タイトル画面のスタイル */
+#quiz-title-screen h1 {
+  font-size: 42px;
+  font-weight: 700;
+  margin-bottom: 20px;
+  color: #007bff;
+  text-shadow: 0 2px 4px rgba(0, 123, 255, 0.2);
+}
+
+.title-text {
+  font-size: 20px;
+  font-weight: 500;
+  margin-bottom: 30px;
+}
+
+.title-animation {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100px;
+  margin-top: 20px;
+}
+
+.pulse-circle {
+  width: 60px;
+  height: 60px;
+  background-color: rgba(0, 123, 255, 0.2);
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(0, 123, 255, 0.4);
+  }
+  
+  70% {
+    transform: scale(1.1);
+    box-shadow: 0 0 0 15px rgba(0, 123, 255, 0);
+  }
+  
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(0, 123, 255, 0);
+  }
 }
 
 /* 画像選択肢のスタイル */
