@@ -24,22 +24,6 @@
       </div>
     </div>
     
-    <!-- クイズ説明画面（新規追加） -->
-    <div id="explanation-screen" class="screen hidden">
-      <div class="content">
-        <h1>クイズ大会</h1>
-        <div class="explanation">
-          <p>これから5問の問題を出します。</p>
-          <p>それぞれの問題の解答時間は30秒です。</p>
-          <p>結果は正答数と速さの二点で順位が決まります。</p>
-          <p>一度ボタンを押したら戻れないので注意！</p>
-        </div>
-        <div class="player-info">
-          <p>参加者名: <span id="display-name-explanation"></span></p>
-        </div>
-      </div>
-    </div>
-    
     <!-- 待機画面 -->
     <div id="waiting-screen" class="screen hidden">
       <div class="content">
@@ -51,15 +35,15 @@
       </div>
     </div>
     
-    <!-- タイトル待機画面（新規追加） -->
-    <div id="quiz-title-screen" class="screen hidden">
+    <!-- クイズ説明画面 -->
+    <div id="explanation-screen" class="screen hidden">
       <div class="content">
-        <h1 id="quiz-title-heading">問題 1</h1>
-        <div class="quiz-title-message" id="quiz-title-message">
-          画面が遷移したら、早押しできるよ！頑張って！
-        </div>
-        <div class="player-info">
-          <p>参加者名: <span id="display-name-title"></span></p>
+        <h1>クイズ大会</h1>
+        <div class="explanation">
+          <p>これから5問の問題を出します。</p>
+          <p>それぞれの問題の解答時間は30秒です。</p>
+          <p>結果は正答数と速さの二点で順位が決まります。</p>
+          <p>一度ボタンを押したら戻れないので注意！</p>
         </div>
       </div>
     </div>
@@ -83,7 +67,7 @@
       </div>
     </div>
     
-    <!-- 回答後の待機画面（改良） -->
+    <!-- 回答後の待機画面 -->
     <div id="answered-screen" class="screen hidden">
       <div class="content">
         <h2>回答完了</h2>
@@ -93,23 +77,22 @@
         </div>
       </div>
     </div>
-    
-    <!-- 回答結果画面（新規追加） -->
-    <div id="result-screen-answer" class="screen hidden">
+
+    <!-- 解答表示画面 -->
+    <div id="answer-result-screen" class="screen hidden">
       <div class="content">
-        <h2 id="result-status" class="result-status">正解！</h2>
-        <p class="result-explanation">正解は以下です：</p>
-        <div id="result-options-container" class="result-options-container">
-          <!-- 解答の選択肢がここに表示されます -->
+        <h2 id="result-status">正解！</h2>
+        <div class="result-container">
+          <div id="result-options" class="result-options">
+            <!-- 結果の選択肢がここに表示されます -->
+          </div>
         </div>
-        <div class="waiting-text">
-          <p>次の問題をお待ちください...</p>
-        </div>
+        <p id="answer-explanation" class="explanation"></p>
       </div>
     </div>
     
-    <!-- 最終結果画面 -->
-    <div id="final-result-screen" class="screen hidden">
+    <!-- 結果画面 -->
+    <div id="result-screen" class="screen hidden">
       <div class="content">
         <h2>結果発表</h2>
         <div class="result-details">

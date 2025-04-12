@@ -2,24 +2,19 @@
 document.addEventListener('DOMContentLoaded', function() {
   // 画面要素
   const registerScreen = document.getElementById('register-screen');
-  const explanationScreen = document.getElementById('explanation-screen');
   const waitingScreen = document.getElementById('waiting-screen');
-  const quizTitleScreen = document.getElementById('quiz-title-screen');
+  const explanationScreen = document.getElementById('explanation-screen');
   const quizScreen = document.getElementById('quiz-screen');
   const answeredScreen = document.getElementById('answered-screen');
-  const resultScreenAnswer = document.getElementById('result-screen-answer');
-  const finalResultScreen = document.getElementById('final-result-screen');
+  const answerResultScreen = document.getElementById('answer-result-screen');
+  const resultScreen = document.getElementById('result-screen');
   
   // フォーム要素
   const playerNameInput = document.getElementById('player-name');
   const registerButton = document.getElementById('register-button');
   const displayName = document.getElementById('display-name');
-  const displayNameExplanation = document.getElementById('display-name-explanation');
-  const displayNameTitle = document.getElementById('display-name-title');
   
   // クイズ要素
-  const quizTitleHeading = document.getElementById('quiz-title-heading');
-  const quizTitleMessage = document.getElementById('quiz-title-message');
   const questionNumber = document.getElementById('question-number');
   const questionText = document.getElementById('question-text');
   const timerValue = document.getElementById('timer-value');
@@ -27,9 +22,10 @@ document.addEventListener('DOMContentLoaded', function() {
   const answerStatusText = document.getElementById('answer-status-text');
   const yourAnswer = document.getElementById('your-answer');
   
-  // 結果画面要素
+  // 結果要素
   const resultStatus = document.getElementById('result-status');
-  const resultOptionsContainer = document.getElementById('result-options-container');
+  const resultOptions = document.getElementById('result-options');
+  const answerExplanation = document.getElementById('answer-explanation');
   const correctCount = document.getElementById('correct-count');
   const totalTime = document.getElementById('total-time');
   const rankingPosition = document.getElementById('ranking-position');
@@ -43,8 +39,7 @@ document.addEventListener('DOMContentLoaded', function() {
   let timeLeft = 30;
   let playerAnswers = {};  // クイズIDと回答を保存
   let quizStartTimes = {}; // 問題の表示開始時間を保存
-  let isAnswering = false; // 回答中かどうかのフラグ
-  let currentDisplayMode = ''; // display画面の現在のモード
+  let currentQuizData = null; // 現在の問題データを保存
   
   // URLからプレイヤーIDを取得（既存ユーザーの場合）
   const urlParams = new URLSearchParams(window.location.search);
@@ -59,13 +54,12 @@ document.addEventListener('DOMContentLoaded', function() {
   function showScreen(screen) {
     // すべての画面を非表示
     registerScreen.classList.add('hidden');
-    explanationScreen.classList.add('hidden');
     waitingScreen.classList.add('hidden');
-    quizTitleScreen.classList.add('hidden');
+    explanationScreen.classList.add('hidden');
     quizScreen.classList.add('hidden');
     answeredScreen.classList.add('hidden');
-    resultScreenAnswer.classList.add('hidden');
-    finalResultScreen.classList.add('hidden');
+    answerResultScreen.classList.add('hidden');
+    resultScreen.classList.add('hidden');
     
     // 指定された画面を表示
     screen.classList.remove('hidden');
@@ -73,11 +67,10 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // タイマーを開始する関数
   function startTimer(seconds = 30) {
-    // タイマーが既に動いていれば停止
+    // 前のタイマーがある場合はクリア
     clearInterval(timerInterval);
     
-    if (!isAnswering) return; // 回答中でなければタイマーを開始しない
-    
+    // 新たにタイマーを設定
     timeLeft = seconds;
     timerValue.textContent = timeLeft;
     
@@ -87,14 +80,12 @@ document.addEventListener('DOMContentLoaded', function() {
       
       if (timeLeft <= 10) {
         timerValue.style.color = '#ff0000';
-      } else {
-        timerValue.style.color = '#ff5555';
       }
       
       if (timeLeft <= 0) {
         clearInterval(timerInterval);
         answerStatusText.textContent = '時間切れです';
-        isAnswering = false; // 回答中フラグをオフに
+        // 時間切れでも選択状態は維持
       }
     }, 1000);
   }
@@ -102,7 +93,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // タイマーを停止する関数
   function stopTimer() {
     clearInterval(timerInterval);
-    isAnswering = false; // 回答中フラグをオフに
+    timerValue.style.color = '#ff5555'; // 色をリセット
   }
   
   // プレイヤー情報を取得
@@ -117,8 +108,6 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // プレイヤー名を表示
         displayName.textContent = playerName;
-        displayNameExplanation.textContent = playerName;
-        displayNameTitle.textContent = playerName;
         
         // Socket.io接続を開始
         initSocketConnection();
@@ -169,40 +158,16 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
   
-  // タイトル待機メッセージを設定する関数
-  function setTitleMessage(quizId) {
-    quizTitleHeading.textContent = `問題 ${quizId}`;
-    
-    // 問題に応じたメッセージを設定
-    switch (parseInt(quizId)) {
-      case 1:
-        quizTitleMessage.textContent = '画面が遷移したら、早押しできるよ！頑張って！';
-        break;
-      case 2:
-        quizTitleMessage.textContent = 'わからない問題は、とにかく早くおそう！合ってれば上位に行けるかも。。。';
-        break;
-      case 3:
-        quizTitleMessage.textContent = '次は新婦についての問題！画像を見て答えてね！';
-        break;
-      case 4:
-        quizTitleMessage.textContent = '次は新郎についての問題！ビビッとくるかな〜';
-        break;
-      case 5:
-        quizTitleMessage.textContent = '次は実践問題！直感で選ぼう！';
-        break;
-      default:
-        quizTitleMessage.textContent = '次の問題に備えよう！';
-    }
-  }
-  
   // クイズの問題を取得して表示
   async function fetchAndShowQuestion(quizId) {
     if (!quizId) return;
-    isAnswering = true; // 回答中フラグをオンに
     
     try {
       const response = await fetch(`/api/quiz/${quizId}`);
       const quizData = await response.json();
+      
+      // 現在の問題データを保存
+      currentQuizData = quizData;
       
       // 問題番号と問題文を設定
       questionNumber.textContent = `問題 ${quizId}`;
@@ -232,18 +197,17 @@ document.addEventListener('DOMContentLoaded', function() {
         quizData.options.forEach((option, index) => {
           const button = document.createElement('button');
           button.className = 'image-option-button';
+          
+          // 問題3の場合はアスペクト比を保持するクラスを追加
+          if (parseInt(quizId) === 3) {
+            button.classList.add('preserve-ratio');
+          }
+          
           button.dataset.answer = (index + 1).toString();
           
           const img = document.createElement('img');
           img.src = option;
           img.alt = `選択肢 ${index + 1}`;
-          
-          // 問題3の場合、アスペクト比を保持
-          if (parseInt(quizId) === 3) {
-            img.style.width = '100%';
-            img.style.height = 'auto';
-            img.style.objectFit = 'contain';
-          }
           
           const numberDiv = document.createElement('div');
           numberDiv.className = 'option-number';
@@ -288,8 +252,8 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // 回答を選択する処理
   async function selectAnswer(answer, quizId) {
-    if (!isAnswering) return; // 回答中でなければ処理しない
     if (playerAnswers[quizId]) return; // 既に回答済み
+    if (timeLeft <= 0) return; // 時間切れの場合は回答を受け付けない
     
     // 選択した答えを保存
     selectedAnswer = answer;
@@ -305,6 +269,7 @@ document.addEventListener('DOMContentLoaded', function() {
       // 画像選択肢の場合
       const optionButtons = optionsContainer.querySelectorAll('.image-option-button');
       optionButtons.forEach(button => {
+        button.classList.remove('selected');
         if (button.dataset.answer === answer) {
           button.classList.add('selected');
         }
@@ -313,11 +278,15 @@ document.addEventListener('DOMContentLoaded', function() {
       // テキスト選択肢の場合
       const optionButtons = optionsContainer.querySelectorAll('.option-button');
       optionButtons.forEach(button => {
+        button.classList.remove('selected');
         if (button.textContent === answer) {
           button.classList.add('selected');
         }
       });
     }
+    
+    // タイマーを停止
+    stopTimer();
     
     // 回答を送信
     try {
@@ -358,90 +327,82 @@ document.addEventListener('DOMContentLoaded', function() {
       yourAnswer.textContent = answer;
       showScreen(answeredScreen);
       
-      // タイマーを停止
-      stopTimer();
-      
     } catch (error) {
       console.error('回答の送信に失敗しました:', error);
       answerStatusText.textContent = '回答の送信に失敗しました';
     }
   }
   
-  // 解答結果画面を表示する関数
-  async function showAnswerResult(quizId) {
-    try {
-      // タイマーを確実に停止
-      stopTimer();
-      
-      // 解答情報を取得
-      const response = await fetch(`/api/admin/quiz/${quizId}/answer`);
-      const answerData = await response.json();
-      
-      // プレイヤーの回答結果
-      const playerAnswer = playerAnswers[quizId] || {};
-      const isCorrect = playerAnswer.isCorrect;
-      
-      // 正解/不正解のステータス表示
-      resultStatus.textContent = isCorrect ? '正解！' : '不正解...';
-      resultStatus.className = 'result-status ' + (isCorrect ? 'correct' : 'incorrect');
-      
-      // 選択肢を表示
-      resultOptionsContainer.innerHTML = '';
-      
-      // 画像選択肢かテキスト選択肢か判定
-      const isImageOptions = answerData.is_image_options === 1;
-      
-      if (isImageOptions) {
-        // 画像選択肢の場合は、テキストで選択肢を表示
-        answerData.options.forEach((option, index) => {
-          const optionDiv = document.createElement('div');
-          optionDiv.className = 'result-option';
-          
-          // 選択肢の番号（1から始まる）
-          const optionNumber = index + 1;
-          
-          // 正解かどうか判定
-          const isCorrectOption = answerData.correct_answer === optionNumber.toString();
-          // プレイヤーが選んだ選択肢か判定
-          const isSelectedOption = playerAnswer.answer === optionNumber.toString();
-          
-          if (isCorrectOption) {
-            optionDiv.classList.add('correct');
-          } else if (isSelectedOption && !isCorrectOption) {
-            optionDiv.classList.add('incorrect');
-          }
-          
-          optionDiv.textContent = `選択肢 ${optionNumber}`;
-          resultOptionsContainer.appendChild(optionDiv);
-        });
-      } else {
-        // テキスト選択肢の場合
-        answerData.options.forEach(option => {
-          const optionDiv = document.createElement('div');
-          optionDiv.className = 'result-option';
-          
-          // 正解かどうか判定
-          const isCorrectOption = option === answerData.correct_answer;
-          // プレイヤーが選んだ選択肢か判定
-          const isSelectedOption = option === playerAnswer.answer;
-          
-          if (isCorrectOption) {
-            optionDiv.classList.add('correct');
-          } else if (isSelectedOption && !isCorrectOption) {
-            optionDiv.classList.add('incorrect');
-          }
-          
-          optionDiv.textContent = option;
-          resultOptionsContainer.appendChild(optionDiv);
-        });
-      }
-      
-      // 回答結果画面を表示
-      showScreen(resultScreenAnswer);
-      
-    } catch (error) {
-      console.error('解答データの取得に失敗しました:', error);
+  // 解答結果を表示
+  function showAnswerResult(quizId) {
+    if (!quizId || !currentQuizData) return;
+    
+    const playerAnswer = playerAnswers[quizId];
+    if (!playerAnswer) return;
+    
+    // 正解/不正解のステータス表示
+    if (playerAnswer.isCorrect) {
+      resultStatus.textContent = '正解！';
+      resultStatus.className = 'correct';
+    } else {
+      resultStatus.textContent = '不正解...';
+      resultStatus.className = 'incorrect';
     }
+    
+    // 選択肢を表示
+    resultOptions.innerHTML = '';
+    
+    // 画像選択肢かどうかを判断
+    const isImageOptions = currentQuizData.is_image_options === 1;
+    
+    if (isImageOptions) {
+      // 画像選択肢の場合はテキスト表示に変換（シンプルに）
+      currentQuizData.options.forEach((_, index) => {
+        const optionNumber = index + 1;
+        const optionDiv = document.createElement('div');
+        optionDiv.className = 'result-option';
+        
+        // 正解または選択された回答を強調表示
+        if (currentQuizData.correct_answer === optionNumber.toString()) {
+          optionDiv.classList.add('correct');
+        } else if (playerAnswer.answer === optionNumber.toString() && !playerAnswer.isCorrect) {
+          optionDiv.classList.add('incorrect');
+        }
+        
+        optionDiv.textContent = `選択肢 ${optionNumber}`;
+        resultOptions.appendChild(optionDiv);
+      });
+    } else {
+      // テキスト選択肢の場合
+      currentQuizData.options.forEach(option => {
+        const optionDiv = document.createElement('div');
+        optionDiv.className = 'result-option';
+        
+        // 正解または選択された回答を強調表示
+        if (option === currentQuizData.correct_answer) {
+          optionDiv.classList.add('correct');
+        } else if (option === playerAnswer.answer && !playerAnswer.isCorrect) {
+          optionDiv.classList.add('incorrect');
+        }
+        
+        optionDiv.textContent = option;
+        resultOptions.appendChild(optionDiv);
+      });
+    }
+    
+    // 解説を取得して表示
+    fetch(`/api/admin/quiz/${quizId}/answer`)
+      .then(response => response.json())
+      .then(data => {
+        answerExplanation.textContent = data.explanation || '';
+      })
+      .catch(error => {
+        console.error('解説の取得に失敗しました:', error);
+        answerExplanation.textContent = '';
+      });
+    
+    // 解答結果画面を表示
+    showScreen(answerResultScreen);
   }
   
   // プレイヤーのランキングを取得して表示
@@ -477,24 +438,26 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (playerPosition <= 5) {
           rankingMessage = `おめでとうございます！あなたは${playerPosition}位です！景品があるので、指示がありましたら前に来てください！`;
-          rankingPosition.classList.add('top-rank');
+          rankingPosition.className = 'ranking-position winner';
         } else {
           rankingMessage = '自分の順位が知りたい方は、新郎まで！一緒に遊んでくれてありがとう！';
-          rankingPosition.classList.remove('top-rank');
+          rankingPosition.className = 'ranking-position normal';
         }
         
         rankingPosition.textContent = rankingMessage;
       } else {
         rankingPosition.textContent = 'ランキングデータが取得できませんでした';
+        rankingPosition.className = 'ranking-position normal';
       }
       
       // 結果画面を表示
-      showScreen(finalResultScreen);
+      showScreen(resultScreen);
       
     } catch (error) {
       console.error('ランキングの取得に失敗しました:', error);
       rankingPosition.textContent = 'ランキングデータの取得に失敗しました';
-      showScreen(finalResultScreen);
+      rankingPosition.className = 'ranking-position normal';
+      showScreen(resultScreen);
     }
   }
   
@@ -519,78 +482,48 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // クイズイベントの処理
     socket.on('quiz_event', (data) => {
-      const { event, quizId, position } = data;
+      const { event, quizId } = data;
       
       switch (event) {
         case 'quiz_started':
-          // クイズ開始時の処理 - 説明画面表示
+          // クイズ開始時の処理 - 説明画面を表示
           showScreen(explanationScreen);
-          currentDisplayMode = 'explanation';
           break;
           
         case 'show_question':
-          // 問題タイトル画面表示 - 必ずタイトル画面に切り替え
+          // 問題表示の準備
           if (quizId) {
             currentQuizId = quizId;
-            setTitleMessage(quizId);
-            showScreen(quizTitleScreen);
-            currentDisplayMode = 'title';
-            stopTimer(); // タイマーを停止
+            // 待機画面を表示
+            showScreen(waitingScreen);
           }
           break;
           
         case 'next_slide':
-          // displayの状態によって処理を変える
-          if (currentDisplayMode === 'title') {
-            // タイトル → 問題
+          // displayが問題画面に移行した場合、問題を表示
+          if (currentQuizId) {
             fetchAndShowQuestion(currentQuizId);
-            currentDisplayMode = 'question';
-          } 
-          else if (currentDisplayMode === 'question') {
-            // 問題 → 回答
-            showAnswerResult(currentQuizId);
-            currentDisplayMode = 'answer';
           }
           break;
           
         case 'show_answer':
-          // 明示的に回答画面を表示
-          showAnswerResult(currentQuizId);
-          currentDisplayMode = 'answer';
-          break;
-          
-        case 'prev_slide':
-          // 前に戻る処理
-          if (currentDisplayMode === 'question') {
-            // 問題 → タイトル
-            setTitleMessage(currentQuizId);
-            showScreen(quizTitleScreen);
-            currentDisplayMode = 'title';
-            stopTimer(); // タイマーを停止
-          } 
-          else if (currentDisplayMode === 'answer') {
-            // 答え → 問題
-            fetchAndShowQuestion(currentQuizId);
-            currentDisplayMode = 'question';
+          // 解答表示時の処理
+          stopTimer(); // タイマーを確実に停止
+          if (currentQuizId) {
+            showAnswerResult(currentQuizId);
           }
           break;
           
         case 'show_ranking':
-          // ランキング表示
+          // ランキング表示の処理
           fetchAndShowRanking();
-          currentDisplayMode = 'ranking';
           break;
           
         case 'reset_all':
           // リセット処理
-          location.reload(); // ページをリロード
+          showScreen(registerScreen);
           break;
       }
-    });
-    
-    // 回答イベントの処理
-    socket.on('answer_submitted', (data) => {
-      console.log('回答イベント:', data);
     });
   }
   
@@ -625,8 +558,6 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // プレイヤー名を表示
         displayName.textContent = playerName;
-        displayNameExplanation.textContent = playerName;
-        displayNameTitle.textContent = playerName;
         
         // Socket.io接続を開始
         initSocketConnection();
@@ -640,6 +571,13 @@ document.addEventListener('DOMContentLoaded', function() {
     } catch (error) {
       console.error('プレイヤーの登録に失敗しました:', error);
       alert('登録処理中にエラーが発生しました');
+    }
+  });
+  
+  // Enterキーでも登録できるようにする
+  playerNameInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      registerButton.click();
     }
   });
   
