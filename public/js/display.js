@@ -188,7 +188,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (parseInt(quizId) === 5) {
           quizData.options.forEach(option => {
             const optionDiv = document.createElement('div');
-            optionDiv.className = 'option';
+            optionDiv.className = 'option large-option';
             
             // 新郎・新婦別のクラスを追加
             if (option === '新郎') {
@@ -201,11 +201,26 @@ document.addEventListener('DOMContentLoaded', function() {
             optionsContainer.appendChild(optionDiv);
           });
         } else {
-          // 通常のテキスト選択肢
-          quizData.options.forEach(option => {
+          // 通常のテキスト選択肢 (問題1と問題2) - 番号を追加
+          quizData.options.forEach((option, index) => {
             const optionDiv = document.createElement('div');
-            optionDiv.className = 'option';
-            optionDiv.textContent = option;
+            optionDiv.className = 'option large-option';
+            
+            // 選択肢番号を作成
+            const numberSpan = document.createElement('span');
+            numberSpan.className = 'option-text-number';
+            
+            // 丸付き数字に変換（①, ②, ③, ④）
+            const circleNumbers = ['①', '②', '③', '④'];
+            numberSpan.textContent = circleNumbers[index] || (index + 1) + '. ';
+            
+            // 選択肢テキスト用のspan
+            const textSpan = document.createElement('span');
+            textSpan.textContent = option;
+            
+            // 番号と選択肢を追加
+            optionDiv.appendChild(numberSpan);
+            optionDiv.appendChild(textSpan);
             optionsContainer.appendChild(optionDiv);
           });
         }
