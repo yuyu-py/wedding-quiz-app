@@ -5,7 +5,7 @@ const path = require('path');
 
 // 開発環境ではlocalhostを使用、本番環境ではデプロイURLを使用
 const isDevelopment = process.env.NODE_ENV !== 'production';
-const host = isDevelopment ? 'localhost:3000' : 'あなたの本番URLをここに入力';
+const host = isDevelopment ? 'localhost:3000' : 'https://wedding-quiz-app.onrender.com/play';
 const url = `http://${host}/play`;
 
 // QRコードの保存先ディレクトリ
