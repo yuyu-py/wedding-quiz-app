@@ -1,5 +1,4 @@
 // メイン画面用のJavaScript
-// メイン画面用のJavaScript
 document.addEventListener('DOMContentLoaded', function() {
   // 画面要素
   const welcomeScreen = document.getElementById('welcome-screen');
@@ -188,7 +187,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (parseInt(quizId) === 5) {
           quizData.options.forEach(option => {
             const optionDiv = document.createElement('div');
-            optionDiv.className = 'option large-option';
+            optionDiv.className = 'option big-option';
             
             // 新郎・新婦別のクラスを追加
             if (option === '新郎') {
@@ -201,24 +200,25 @@ document.addEventListener('DOMContentLoaded', function() {
             optionsContainer.appendChild(optionDiv);
           });
         } else {
-          // 通常のテキスト選択肢 (問題1と問題2) - 番号を追加
+          // 問題1と問題2の選択肢には番号を付ける
+          const numberedOptions = ['①', '②', '③', '④'];
           quizData.options.forEach((option, index) => {
             const optionDiv = document.createElement('div');
-            optionDiv.className = 'option large-option';
+            optionDiv.className = 'option';
             
-            // 選択肢番号を作成
+            // 問題1と問題2にはwider-optionクラスを追加
+            if (parseInt(quizId) === 1 || parseInt(quizId) === 2) {
+              optionDiv.classList.add('wider-option');
+            }
+            
+            // 番号と選択肢テキストを設定
             const numberSpan = document.createElement('span');
-            numberSpan.className = 'option-text-number';
+            numberSpan.className = 'option-number-text';
+            numberSpan.textContent = numberedOptions[index] + ' ';
             
-            // 丸付き数字に変換（①, ②, ③, ④）
-            const circleNumbers = ['①', '②', '③', '④'];
-            numberSpan.textContent = circleNumbers[index] || (index + 1) + '. ';
-            
-            // 選択肢テキスト用のspan
             const textSpan = document.createElement('span');
             textSpan.textContent = option;
             
-            // 番号と選択肢を追加
             optionDiv.appendChild(numberSpan);
             optionDiv.appendChild(textSpan);
             optionsContainer.appendChild(optionDiv);

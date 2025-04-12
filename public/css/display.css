@@ -1,5 +1,4 @@
 /* public/css/display.css */
-/* public/css/display.css */
 /* メイン表示画面のスタイル */
 body {
   background-color: #f0f8ff;
@@ -163,7 +162,7 @@ h3 {
 
 .option {
   background-color: #fff;
-  padding: 25px;
+  padding: 20px;
   border-radius: 15px;
   font-size: min(32px, 4vw);
   font-weight: 500;
@@ -173,23 +172,30 @@ h3 {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 100px;
 }
 
-/* 大きめの選択肢（問題1と問題2用） */
-.large-option {
-  padding: 30px;
-  font-size: min(38px, 4.5vw);
-  min-height: 120px;
+/* 問題1と問題2用の幅広選択肢 */
+.wider-option {
+  width: 100%;
+  padding: 25px;
+  font-size: min(36px, 4.5vw);
+  justify-content: flex-start;
+  gap: 10px;
 }
 
-/* 選択肢の番号 */
-.option-text-number {
-  font-size: min(44px, 5vw);
-  font-weight: bold;
+/* 選択肢の番号用のスタイル */
+.option-number-text {
+  font-weight: 700;
   color: #007bff;
-  margin-right: 15px;
-  flex-shrink: 0;
+  margin-right: 8px;
+}
+
+/* 問題5用の大きなオプション */
+.big-option {
+  font-size: min(52px, 6vw);
+  padding: 30px;
+  min-height: 120px;
+  width: 100%;
 }
 
 /* フローティングタイマー - 右上固定 */
@@ -301,7 +307,7 @@ h3 {
 .image-options-container {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 3vh 3vw;
+  gap: 2vh 2vw;
   margin: 2vh 0;
   width: 100%;
 }
@@ -314,7 +320,7 @@ h3 {
   overflow: hidden;
   aspect-ratio: 4/3;
   border: 2px solid #e0e0e0;
-  height: 38vh;
+  height: 35vh; /* 高さを大きく設定 */
 }
 
 .image-option img {
@@ -404,7 +410,7 @@ h3 {
   border-color: #0066cc;
   color: #0066cc;
   font-weight: 700;
-  font-size: min(56px, 6vw);
+  font-size: min(52px, 6vw);
 }
 
 .option.bride {
@@ -412,7 +418,14 @@ h3 {
   border-color: #cc3366;
   color: #cc3366;
   font-weight: 700;
-  font-size: min(56px, 6vw);
+  font-size: min(52px, 6vw);
+}
+
+/* 画像がある問題の場合、選択肢を横に広げる */
+#quiz-question-screen:has(.question-image img[style*="display: block"]) .options-container {
+  width: 90%;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 /* ホームボタン */
