@@ -102,9 +102,54 @@ document.addEventListener('DOMContentLoaded', function() {
         clearInterval(timerInterval);
         answerStatusText.textContent = '時間切れです';
         
-        // タイマーが0になった場合でも自動的に画面を切り替えない
+        // タイマーが0になった時点で自動的に答え合わせ画面へ遷移する処理を追加
+        handleTimeUp();
       }
     }, 1000);
+  }
+  
+  // 時間切れ時の処理を行う関数（新規追加）
+  async function handleTimeUp() {
+    // まだ回答していない場合
+    if (!playerAnswers[currentQuizId]) {
+      try {
+        // 時間切れとして記録（回答なしとして扱う）
+        const response = await fetch('/api/player/answer', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            playerId,
+            quizId: currentQuizId,
+            answer: 'timeout', // 時間切れとして記録
+            responseTime: 30000 // 最大時間として記録
+          })
+        });
+        
+        const result = await response.json();
+        
+        // 回答結果を保存
+        playerAnswers[currentQuizId] = {
+          answer: 'timeout',
+          isCorrect: false,
+          responseTime: 30000
+        };
+        
+        // Socket.ioで回答イベントを送信
+        socket.emit('submit_answer', {
+          playerId,
+          quizId: currentQuizId,
+          answer: 'timeout',
+          responseTime: 30000
+        });
+      } catch (error) {
+        console.error('時間切れ回答の送信に失敗しました:', error);
+      }
+    }
+    
+    // すべてのプレイヤー（回答済み・未回答問わず）は答え合わせ画面へ遷移
+    showAnswerResult(currentQuizId);
   }
   
   // タイマーを停止する関数
@@ -680,13 +725,13 @@ document.addEventListener('DOMContentLoaded', function() {
             // ディスプレイが問題表示から解答表示へ
             displayCurrentScreen = 'quiz_answer';
             
-            // すでに回答済みなら答え合わせ画面へ、そうでなければタイマーを停止
-            if (playerAnswers[currentQuizId]) {
+            // 管理者が次へを押した場合も答え合わせ画面へ遷移する
+            // タイマーを停止
+            stopTimer();
+            
+            // 既に答え合わせ画面に遷移済みでなければ遷移させる
+            if (currentScreen !== answerResultScreen) {
               showAnswerResult(currentQuizId);
-            } else {
-              // まだ回答していない場合、タイマーを停止して時間切れとする
-              stopTimer();
-              answerStatusText.textContent = '時間切れです';
             }
           }
           break;
