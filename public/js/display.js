@@ -1,3 +1,4 @@
+// public/js/display.js
 // メイン画面用のJavaScript
 document.addEventListener('DOMContentLoaded', function() {
   // 画面要素
@@ -147,17 +148,9 @@ document.addEventListener('DOMContentLoaded', function() {
       
       if (timeLeft <= 0) {
         clearInterval(timerInterval);
-        
-        // 変更部分: 時間切れになったら自動的に解答画面に遷移
+        // 時間切れになったら自動的に解答画面に遷移
         if (currentScreen === quizQuestionScreen && currentQuizId) {
           console.log('時間切れ: 自動的に解答画面に遷移します');
-          
-          // 時間切れイベントをサーバーに通知して全クライアントに同期させる
-          socket.emit('timer_expired', {
-            quizId: currentQuizId
-          });
-          
-          // 解答画面に遷移
           showAnswer(currentQuizId);
         }
       }
@@ -180,7 +173,7 @@ document.addEventListener('DOMContentLoaded', function() {
       // 問題のタイトルを設定
       quizTitle.textContent = `問題 ${quizId}`;
       
-      // 問題文を設定 - 常に表示するよう移動
+      // 問題文を設定
       questionText.textContent = quizData.question;
       
       // 画像選択肢か通常選択肢かで表示方法を変える
@@ -204,8 +197,18 @@ document.addEventListener('DOMContentLoaded', function() {
             // 新郎・新婦別のクラスを追加
             if (option === '新郎') {
               optionDiv.classList.add('groom');
+              // より大きく見やすく表示するための調整
+              optionDiv.style.fontSize = 'min(64px, 7vw)';
+              optionDiv.style.padding = '40px';
+              optionDiv.style.fontWeight = '900';
+              optionDiv.style.letterSpacing = '2px';
             } else if (option === '新婦') {
               optionDiv.classList.add('bride');
+              // より大きく見やすく表示するための調整
+              optionDiv.style.fontSize = 'min(64px, 7vw)';
+              optionDiv.style.padding = '40px';
+              optionDiv.style.fontWeight = '900';
+              optionDiv.style.letterSpacing = '2px';
             }
             
             optionDiv.textContent = option;
@@ -343,8 +346,16 @@ document.addEventListener('DOMContentLoaded', function() {
         // 新郎・新婦別のクラスを追加
         if (answerData.correct_answer === '新郎') {
           bigTextAnswer.classList.add('groom');
+          // より大きく見やすく表示
+          bigTextAnswer.style.fontSize = 'min(100px, 12vw)';
+          bigTextAnswer.style.padding = '50px';
+          bigTextAnswer.style.fontWeight = '900';
         } else if (answerData.correct_answer === '新婦') {
           bigTextAnswer.classList.add('bride');
+          // より大きく見やすく表示
+          bigTextAnswer.style.fontSize = 'min(100px, 12vw)';
+          bigTextAnswer.style.padding = '50px';
+          bigTextAnswer.style.fontWeight = '900';
         }
         
         bigTextAnswer.textContent = answerData.correct_answer;
@@ -365,19 +376,6 @@ document.addEventListener('DOMContentLoaded', function() {
       
       // 画面を解答画面に切り替え
       showScreen(quizAnswerScreen);
-      
-      // 追加: 解答表示状態をサーバーに通知
-      // これはプレーヤー画面が解答が公開されたことを検知するために使用
-      try {
-        await fetch(`/api/admin/quiz/${quizId}/mark-answer-displayed`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        });
-      } catch (error) {
-        console.error('解答表示状態の更新に失敗しました:', error);
-      }
       
     } catch (error) {
       console.error('解答データの取得に失敗しました:', error);
@@ -523,15 +521,6 @@ document.addEventListener('DOMContentLoaded', function() {
         
       case 'show_answer':
         if (currentQuizId) {
-          showAnswer(currentQuizId);
-        }
-        break;
-        
-      // 新規追加: タイマー切れイベントの処理
-      case 'timer_expired':
-        if (currentScreen === quizQuestionScreen && currentQuizId && 
-            data.quizId === currentQuizId) {
-          stopTimer();
           showAnswer(currentQuizId);
         }
         break;
