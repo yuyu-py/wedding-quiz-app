@@ -1,12 +1,10 @@
-/* public/css/display.css */
-/* public/css/display.css */
-/* メイン表示画面のスタイル */
+/* 2560x1440解像度向けに最適化したメイン表示画面のスタイル */
 body {
   background-color: #f0f8ff;
-  color: #333;
+  color: #000; /* 暗めのグレーではなく黒を使用して視認性向上 */
   font-family: 'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif;
   overflow: hidden;
-  font-weight: 500;
+  font-weight: 700; /* 全体的にフォントを太く */
   margin: 0;
   padding: 0;
 }
@@ -23,17 +21,14 @@ body {
 }
 
 .main-display {
-  width: 95%;
-  height: 95%;
-  max-width: 1800px;
-  background-color: rgba(255, 255, 255, 0.92);
-  border-radius: 20px;
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+  width: 98%; /* 画面をより広く使用 */
+  height: 96%;
+  max-width: 2500px; /* 2560x1440解像度に合わせて拡大 */
+  background-color: rgba(255, 255, 255, 0.95); /* 背景をより不透明に */
+  border-radius: 16px;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
   overflow: hidden;
   position: relative;
-  display: flex;
-  justify-content: center;
-  align-items: center;
 }
 
 .screen {
@@ -43,7 +38,7 @@ body {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  padding: 2vh 2vw;
+  padding: 1vh 1vw; /* 余白を最小限に */
   box-sizing: border-box;
   transition: opacity 0.3s ease;
   overflow: hidden;
@@ -54,8 +49,8 @@ body {
 }
 
 .content {
-  width: 100%;
-  max-width: 95%;
+  width: 98%; /* コンテンツ幅を拡大 */
+  max-width: 2400px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -63,26 +58,26 @@ body {
 }
 
 h1 {
-  font-size: min(64px, 7vw);
-  font-weight: 700;
-  margin-bottom: 3vh;
-  color: #222;
-  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.1);
+  font-size: 72px; /* 固定サイズで大きく */
+  font-weight: 800; /* 太字 */
+  margin-bottom: 40px;
+  color: #000; /* 黒色でコントラスト向上 */
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 h2 {
-  font-size: min(48px, 6vw);
-  font-weight: 700;
-  margin-bottom: 3vh;
-  color: #222;
+  font-size: 56px; /* 固定サイズで大きく */
+  font-weight: 800;
+  margin-bottom: 30px;
+  color: #000;
   line-height: 1.4;
 }
 
 h3 {
-  font-size: min(36px, 4.5vw);
-  font-weight: 700;
-  margin-bottom: 2vh;
-  color: #222;
+  font-size: 48px;
+  font-weight: 800;
+  margin-bottom: 25px;
+  color: #000;
 }
 
 /* QRコードセクション */
@@ -90,13 +85,13 @@ h3 {
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-bottom: 5vh;
+  margin-bottom: 50px;
 }
 
 .qr-code {
-  width: 350px;
-  height: 350px;
-  margin-bottom: 3vh;
+  width: 400px; /* より大きく */
+  height: 400px;
+  margin-bottom: 30px;
   padding: 15px;
   background-color: white;
   border-radius: 15px;
@@ -110,141 +105,103 @@ h3 {
 }
 
 .qr-instruction {
-  font-size: min(32px, 4vw);
-  font-weight: 500;
-  color: #222;
+  font-size: 42px;
+  font-weight: 700;
+  color: #000;
 }
 
 .participants {
-  font-size: min(36px, 4.5vw);
-  font-weight: 500;
-  color: #222;
-  margin-top: 4vh;
-  background-color: rgba(0, 123, 255, 0.1);
-  padding: 15px 30px;
+  font-size: 48px;
+  font-weight: 700;
+  color: #000;
+  margin-top: 40px;
+  background-color: rgba(0, 123, 255, 0.2); /* 背景色を濃くして視認性向上 */
+  padding: 15px 40px;
   border-radius: 50px;
   display: inline-block;
 }
 
-/* 手作りアプリの説明 */
-.handmade-app-notice {
-  margin-top: 30px;
-  padding: 20px 25px;
-  background-color: rgba(255, 255, 255, 0.8);
-  border-radius: 15px;
-  border-left: 5px solid #007bff;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-  animation: gentle-fade-in 1.5s ease-in-out;
-  max-width: 90%;
-  margin-left: auto;
-  margin-right: auto;
-}
-
-.handmade-app-notice p {
-  font-size: min(24px, 3vw);
-  line-height: 1.6;
-  color: #333;
-  font-weight: 500;
-  text-align: center;
-  margin: 0;
-}
-
-@keyframes gentle-fade-in {
-  0% { opacity: 0; transform: translateY(10px); }
-  100% { opacity: 1; transform: translateY(0); }
-}
-
 /* クイズ説明 */
 .explanation {
-  font-size: min(40px, 5vw);
+  font-size: 48px;
   line-height: 1.6;
-  font-weight: 500;
+  font-weight: 700;
   text-align: center;
-  margin: 3vh 0;
+  margin: 30px 0;
+  color: #000;
 }
 
-/* 画像関連 */
+/* 画像関連 - 最大サイズに拡大 */
 .question-image {
-  margin: 2vh 0;
-  max-width: 100%;
-  max-height: 40vh;
+  margin: 30px 0;
+  max-width: 90%;
+  max-height: 45vh; /* より高く */
   display: flex;
   justify-content: center;
 }
 
 .question-image img, .answer-image img {
-  max-width: 100%;
+  max-width: 90%;
   max-height: 45vh;
   object-fit: contain;
   border-radius: 10px;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
-  border: 4px solid #e0e0e0;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  border: 6px solid #000; /* 黒い枠線でコントラスト向上 */
 }
 
-/* 選択肢エリアの最大化 */
+/* 選択肢 - 横幅最大化 */
 .options {
-  width: 100%;
+  width: 96%;
   display: flex;
   justify-content: center;
-  margin: 2vh 0;
+  margin: 30px 0;
 }
 
-/* 選択肢 - 問題1と2用の修正 */
+/* テキスト選択肢を大きく */
 .options-container {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 3vh 4vw;
-  width: 100%;
-  max-width: 1600px;
-  padding: 0 2vw;
-}
-
-/* 左側の選択肢（1, 3）右側の選択肢（2, 4）の位置調整 */
-.options-container .option:nth-child(odd) {
-  margin-right: 2vw;
-}
-
-.options-container .option:nth-child(even) {
-  margin-left: 2vw;
+  gap: 30px 40px;
+  width: 96%;
+  max-width: 2200px;
 }
 
 .option {
   background-color: #fff;
-  padding: min(30px, 3vh) min(25px, 2.5vw);
+  padding: 30px;
   border-radius: 15px;
-  font-size: min(36px, 4vw);
-  font-weight: 700;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-  border: 4px solid #e0e0e0;
+  font-size: 48px; /* 大きなフォントサイズ */
+  font-weight: 800; /* 最も太いウェイト */
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  border: 6px solid #000; /* 黒い枠線 */
   text-align: center;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 100px;
-  transition: transform 0.2s ease;
+  min-height: 120px;
 }
 
-/* フローティングタイマー - 右上固定 */
+/* フローティングタイマー - 大きく目立つように */
 .floating-timer {
   position: absolute;
-  top: 20px;
-  right: 20px;
-  background-color: rgba(255, 51, 51, 0.9);
+  top: 25px;
+  right: 25px;
+  background-color: rgba(255, 0, 0, 0.95);
   color: white;
-  font-size: 52px;
-  font-weight: 700;
-  padding: 10px 20px;
-  border-radius: 15px;
+  font-size: 80px;
+  font-weight: 800;
+  padding: 15px 30px;
+  border-radius: 20px;
   z-index: 100;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .timer-unit {
-  font-size: 32px;
-  margin-left: 5px;
+  font-size: 48px;
+  margin-left: 10px;
 }
 
 /* 回答状況 - 非表示に設定 */
@@ -254,9 +211,8 @@ h3 {
 
 /* ランキング */
 .ranking-container {
-  width: 90%;
-  max-height: 75vh;
-  overflow: hidden;
+  width: 85%;
+  margin-top: 40px;
 }
 
 .ranking-item {
@@ -264,51 +220,51 @@ h3 {
   justify-content: space-between;
   align-items: center;
   background-color: #fff;
-  padding: 15px 25px;
+  padding: 25px 40px;
   border-radius: 20px;
-  margin-bottom: 2vh;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+  margin-bottom: 25px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
   transform-origin: center;
   animation: fadeInUp 0.6s ease forwards;
   opacity: 0;
-  border: 3px solid #e0e0e0;
+  border: 6px solid #000;
 }
 
 .ranking-item.highlight {
   background-color: #fffbe6;
-  border: 3px solid #ffd700;
+  border: 6px solid #ffc107;
 }
 
 .ranking-position {
-  font-size: min(44px, 5vw);
-  font-weight: 700;
-  min-width: 70px;
-  color: #222;
+  font-size: 60px;
+  font-weight: 800;
+  min-width: 120px;
+  color: #000;
 }
 
 .ranking-name {
-  font-size: min(36px, 4vw);
-  font-weight: 500;
+  font-size: 48px;
+  font-weight: 700;
   text-align: left;
   flex-grow: 1;
-  margin: 0 20px;
-  color: #222;
+  margin: 0 40px;
+  color: #000;
 }
 
 .ranking-score {
-  font-size: min(30px, 3.5vw);
-  font-weight: 500;
+  font-size: 42px;
+  font-weight: 700;
 }
 
 .correct-count {
-  color: #007bff;
-  font-weight: 700;
-  margin-right: 15px;
+  color: #0055cc; /* 濃い青 */
+  font-weight: 800;
+  margin-right: 20px;
 }
 
 .response-time {
-  color: #ff5555;
-  font-weight: 500;
+  color: #cc0000; /* 濃い赤 */
+  font-weight: 700;
 }
 
 @keyframes fadeInUp {
@@ -333,20 +289,20 @@ h3 {
 .image-options-container {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 3vh 3vw;
-  width: 100%;
-  max-width: 1600px;
+  gap: 30px 40px;
+  width: 96%;
+  max-width: 2200px;
 }
 
 .image-option {
   position: relative;
   background-color: #fff;
   border-radius: 15px;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
   overflow: hidden;
-  aspect-ratio: 4/3;
-  border: 4px solid #e0e0e0;
-  height: 40vh;
+  aspect-ratio: 4/3; /* アスペクト比を維持 */
+  border: 6px solid #000;
+  height: 50vh; /* 大きなサイズ */
 }
 
 .image-option img {
@@ -357,27 +313,28 @@ h3 {
 
 .option-number {
   position: absolute;
-  top: 15px;
-  left: 15px;
-  background-color: rgba(0, 0, 0, 0.8);
+  top: 20px;
+  left: 20px;
+  background-color: rgba(0, 0, 0, 0.9);
   color: white;
-  width: 50px;
-  height: 50px;
+  width: 70px;
+  height: 70px;
   border-radius: 50%;
   display: flex;
   justify-content: center;
   align-items: center;
-  font-weight: 700;
-  font-size: 28px;
+  font-weight: 800;
+  font-size: 42px;
+  border: 3px solid white; /* 白い枠線で視認性向上 */
 }
 
 /* クイズ3の合成写真比較用 */
 .before-after-container {
   display: flex;
   justify-content: center;
-  gap: 3vw;
-  margin: 2vh 0;
-  width: 100%;
+  gap: 60px;
+  margin: 30px 0;
+  width: 90%;
 }
 
 .before-after-item {
@@ -388,121 +345,121 @@ h3 {
 
 .before-after-item img {
   width: 100%;
-  max-height: 45vh;
+  max-height: 50vh;
   object-fit: contain;
   border-radius: 15px;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
-  border: 4px solid #e0e0e0;
-  margin-bottom: 15px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  border: 6px solid #000;
+  margin-bottom: 20px;
 }
 
 .before-after-item .label {
-  font-size: 28px;
-  font-weight: 700;
-  margin-top: 10px;
-  color: #222;
-  background-color: #f8f9fa;
-  padding: 8px 15px;
+  font-size: 36px;
+  font-weight: 800;
+  margin-top: 15px;
+  color: #000;
+  background-color: #f0f0f0;
+  padding: 10px 25px;
   border-radius: 30px;
   display: inline-block;
+  border: 2px solid #000;
 }
 
 /* クイズ5の大きなテキスト答え */
 .big-text-answer {
-  font-size: min(120px, 13vw);
-  font-weight: 700;
+  font-size: 150px;
+  font-weight: 800;
   text-align: center;
-  margin: 4vh 0;
-  padding: 30px;
+  margin: 50px 0;
+  padding: 40px 60px;
   border-radius: 20px;
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  letter-spacing: 5px;
 }
 
-/* 新郎・新婦のカラー設定 */
+/* 新郎・新婦のカラー設定 - コントラスト向上 */
 .big-text-answer.groom {
-  color: #0066cc;
+  color: #0044aa;
   background-color: #e6f0ff;
-  border: 4px solid #99c2ff;
+  border: 8px solid #0044aa;
 }
 
 .big-text-answer.bride {
-  color: #cc3366;
+  color: #b30047;
   background-color: #ffebf2;
-  border: 4px solid #ffb3cc;
+  border: 8px solid #b30047;
 }
 
-/* 問題5用の選択肢カラー - 特に見やすく */
+/* 問題5用の選択肢 - 特別に大きく */
 .option.groom, .option.bride {
-  padding: 40px;
-  font-size: min(64px, 7vw);
-  min-height: 150px;
-  letter-spacing: 1px;
+  padding: 50px;
+  font-size: 84px;
+  min-height: 200px;
+  letter-spacing: 5px; /* 文字間隔を広く */
 }
 
 .option.groom {
   background-color: #e6f0ff;
-  border-color: #0066cc;
-  border-width: 6px;
-  color: #0066cc;
+  border-color: #0044aa; /* より濃い青 */
+  border-width: 8px;
+  color: #0044aa;
 }
 
 .option.bride {
   background-color: #ffebf2;
-  border-color: #cc3366;
-  border-width: 6px;
-  color: #cc3366;
+  border-color: #b30047; /* より濃いピンク */
+  border-width: 8px;
+  color: #b30047;
+}
+
+/* 手作りアプリの説明 */
+.handmade-app-notice {
+  margin-top: 40px;
+  padding: 25px 40px;
+  background-color: rgba(255, 255, 255, 0.95);
+  border-radius: 15px;
+  border-left: 8px solid #0066cc;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  animation: gentle-fade-in 1.5s ease-in-out;
+  max-width: 90%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.handmade-app-notice p {
+  font-size: 36px;
+  line-height: 1.6;
+  color: #000;
+  font-weight: 700;
+  text-align: center;
+  margin: 0;
+}
+
+@keyframes gentle-fade-in {
+  0% { opacity: 0; transform: translateY(10px); }
+  100% { opacity: 1; transform: translateY(0); }
 }
 
 /* ホームボタン - 右下に配置 */
 .home-button {
   position: fixed;
-  bottom: 20px;
-  right: 20px;
-  background-color: rgba(0, 123, 255, 0.8);
+  bottom: 30px;
+  right: 30px;
+  background-color: rgba(0, 86, 179, 0.95);
   color: white;
   border: none;
-  border-radius: 8px;
-  padding: 12px 20px;
-  font-size: 18px;
-  font-weight: 500;
+  border-radius: 12px;
+  padding: 18px 30px;
+  font-size: 24px;
+  font-weight: 700;
   cursor: pointer;
   z-index: 1000;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
   transition: all 0.2s;
 }
 
 .home-button:hover {
-  background-color: rgba(0, 86, 179, 0.9);
+  background-color: rgba(0, 66, 138, 0.95);
   transform: translateY(-2px);
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.25);
-}
-
-/* 各画面サイズに対応 */
-@media (max-width: 1200px) {
-  .options-container {
-    gap: 20px;
-  }
-  
-  .ranking-item {
-    padding: 20px;
-  }
-}
-
-@media (max-width: 768px) {
-  .options-container {
-    grid-template-columns: 1fr;
-  }
-  
-  .image-options-container {
-    grid-template-columns: 1fr;
-  }
-  
-  .before-after-container {
-    flex-direction: column;
-    align-items: center;
-  }
-  
-  .before-after-item {
-    max-width: 100%;
-  }
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
 }
