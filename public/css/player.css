@@ -684,3 +684,42 @@ h2 {
   50% { transform: scale(1.05); }
   100% { transform: scale(1); }
 }
+
+/* 手作りアプリの説明（プレイヤー画面用） */
+.player-handmade-notice {
+  margin-top: 25px;
+  padding: 15px;
+  background-color: rgba(0, 123, 255, 0.06);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  animation: soft-glow 3s infinite alternate;
+}
+
+.player-handmade-notice .heart-icon {
+  color: #ff6b6b;
+  font-size: 24px;
+  animation: heart-beat 1.5s infinite ease-in-out;
+}
+
+.player-handmade-notice p {
+  font-size: 14px;
+  line-height: 1.5;
+  color: #555;
+  margin: 0;
+}
+
+@keyframes heart-beat {
+  0% { transform: scale(1); }
+  15% { transform: scale(1.2); }
+  30% { transform: scale(1); }
+  45% { transform: scale(1.1); }
+  60% { transform: scale(1); }
+  100% { transform: scale(1); }
+}
+
+@keyframes soft-glow {
+  0% { box-shadow: 0 0 5px rgba(0, 123, 255, 0.1); }
+  100% { box-shadow: 0 0 10px rgba(0, 123, 255, 0.2); }
+}
