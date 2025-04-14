@@ -43,18 +43,24 @@
       <div id="welcome-screen" class="screen">
         <div class="content">
           <h1>クイズ大会</h1>
-          <div class="qr-section">
-            <div class="qr-code">
-              <img src="/images/qr-code.png" alt="参加用QRコード">
+          <div class="qr-layout-container">
+            <!-- 左側：QRコード -->
+            <div class="qr-code-left">
+              <div class="qr-code">
+                <img src="/images/qr-code.png" alt="参加用QRコード">
+              </div>
             </div>
-            <p class="qr-instruction">こちらのQRコードをスキャンして参加してください</p>
-          </div>
-          <div class="participants">
-            <p>参加者数: <span id="participant-count">0</span>/39</p>
-          </div>
-          <!-- 新規追加：手作りアプリの説明 -->
-          <div class="handmade-app-notice">
-            <p>このクイズは、新郎が皆さんに楽しんでいただけるよう<br>こだわってプログラミングで自作した世界に一つだけのアプリです</p>
+            
+            <!-- 右側：説明と参加者数 -->
+            <div class="qr-info-right">
+              <p class="qr-instruction">←こちらのQRコードをスキャンして参加してください</p>
+              <div class="participants">
+                <p>参加者数: <span id="participant-count">0</span>/39</p>
+              </div>
+              <div class="handmade-app-notice">
+                <p>このクイズは、新郎が皆さんに楽しんでいただけるよう<br>こだわってプログラミングで自作した世界に一つだけのアプリです</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
