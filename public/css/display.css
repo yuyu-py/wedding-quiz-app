@@ -35,6 +35,7 @@ body {
   align-items: center;
 }
 
+/* スクリーン共通のスタイル改良 */
 .screen {
   width: 100%;
   height: 100%;
@@ -48,10 +49,6 @@ body {
   overflow: hidden;
 }
 
-.hidden {
-  display: none !important;
-}
-
 .content {
   width: 100%;
   max-width: 95%;
@@ -59,28 +56,36 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  /* 高さの上限を設定して、コンテンツが見切れないようにする */
+  max-height: 92vh;
+  overflow: visible; /* スクロールは避ける */
 }
 
+.hidden {
+  display: none !important;
+}
+
+/* 見出しサイズの動的調整 */
 h1 {
-  font-size: min(64px, 7vw);
+  font-size: min(60px, 5vw);
   font-weight: 700;
-  margin-bottom: 3vh;
+  margin-bottom: min(40px, 3vh);
   color: #222;
   text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 h2 {
-  font-size: min(48px, 6vw);
+  font-size: min(44px, 4.5vw);
   font-weight: 700;
-  margin-bottom: 3vh;
+  margin-bottom: min(30px, 2.5vh);
   color: #222;
-  line-height: 1.4;
+  line-height: 1.3;
 }
 
 h3 {
-  font-size: min(36px, 4.5vw);
+  font-size: min(36px, 4vw);
   font-weight: 700;
-  margin-bottom: 2vh;
+  margin-bottom: min(20px, 2vh);
   color: #222;
 }
 
@@ -89,13 +94,13 @@ h3 {
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-bottom: 5vh;
+  margin-bottom: min(50px, 5vh);
 }
 
 .qr-code {
-  width: 350px;
-  height: 350px;
-  margin-bottom: 3vh;
+  width: min(350px, 30vw);
+  height: min(350px, 30vw);
+  margin-bottom: min(30px, 3vh);
   padding: 15px;
   background-color: white;
   border-radius: 15px;
@@ -109,65 +114,86 @@ h3 {
 }
 
 .qr-instruction {
-  font-size: min(32px, 4vw);
+  font-size: min(32px, 3.5vw);
   font-weight: 500;
   color: #222;
 }
 
 .participants {
-  font-size: min(36px, 4.5vw);
+  font-size: min(36px, 4vw);
   font-weight: 500;
   color: #222;
-  margin-top: 4vh;
+  margin-top: min(40px, 4vh);
   background-color: rgba(0, 123, 255, 0.1);
   padding: 15px 30px;
   border-radius: 50px;
   display: inline-block;
 }
 
+/* 手作りアプリの説明 */
+.handmade-app-notice {
+  margin-top: min(25px, 2.5vh);
+  padding: min(15px, 1.5vh) min(20px, 2vw);
+  background-color: rgba(255, 255, 255, 0.8);
+  border-radius: 15px;
+  border-left: 5px solid #007bff;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  animation: gentle-fade-in 1.5s ease-in-out;
+  max-width: 85%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.handmade-app-notice p {
+  font-size: min(22px, 2.5vw);
+  line-height: 1.5;
+  color: #333;
+  font-weight: 500;
+  text-align: center;
+  margin: 0;
+}
+
 /* クイズ説明 */
 .explanation {
-  font-size: min(40px, 5vw);
+  font-size: min(40px, 4.5vw);
   line-height: 1.6;
   font-weight: 500;
   text-align: center;
-  margin: 3vh 0;
+  margin: min(30px, 3vh) 0;
 }
 
 /* 画像関連 */
 .question-image {
-  margin: 2vh 0;
-  max-width: 100%;
-  max-height: 40vh;
+  margin: min(20px, 2vh) 0;
+  width: 100%;
   display: flex;
   justify-content: center;
 }
 
 .question-image img, .answer-image img {
   max-width: 100%;
-  max-height: 45vh;
+  max-height: 35vh; /* 大きすぎないように */
   object-fit: contain;
   border-radius: 10px;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
-  border: 4px solid #e0e0e0; /* 画像の枠線を太く */
+  border: 4px solid #e0e0e0;
 }
 
-/* 選択肢エリアの最大化 */
+/* 選択肢コンテナの調整 */
 .options {
   width: 100%;
   display: flex;
   justify-content: center;
-  margin: 2vh 0;
 }
 
-/* 選択肢 - 問題1と2用の修正 */
 .options-container {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 3vh 4vw;
-  width: 100%; /* フル幅に変更 */
-  max-width: 1600px; /* 最大幅を設定 */
-  padding: 0 2vw; /* 左右の余白を少し減らす */
+  gap: min(3vh, 20px) min(4vw, 30px);
+  width: 100%;
+  max-width: 1500px;
+  padding: 0 2vw;
+  margin: min(20px, 2vh) 0;
 }
 
 /* 左側の選択肢（1, 3）右側の選択肢（2, 4）の位置調整 */
@@ -179,42 +205,20 @@ h3 {
   margin-left: 2vw; /* 右側選択肢を左に少し寄せる */
 }
 
+/* 選択肢のサイズ自動調整 */
 .option {
   background-color: #fff;
-  padding: min(30px, 3vh) min(25px, 2.5vw);
+  padding: min(25px, 2.5vh) min(20px, 2vw);
   border-radius: 15px;
-  font-size: min(36px, 4vw); /* フォントサイズを大きく */
-  font-weight: 700; /* 太字に変更 */
+  font-size: min(32px, 3.5vw);
+  font-weight: 700;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
   border: 4px solid #e0e0e0;
   text-align: center;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 100px; /* 最小高さを設定 */
-  transition: transform 0.2s; /* ホバーエフェクト用 */
-}
-
-/* 問題5用の選択肢スタイル修正 */
-.option.groom, .option.bride {
-  padding: 40px;
-  font-size: min(64px, 7vw); /* かなり大きなフォント */
-  min-height: 150px; /* より高く */
-  letter-spacing: 1px; /* 文字間隔を少し広く */
-}
-
-.option.groom {
-  background-color: #e6f0ff;
-  border-color: #0066cc;
-  border-width: 6px; /* さらに太い枠線 */
-  color: #0066cc;
-}
-
-.option.bride {
-  background-color: #ffebf2;
-  border-color: #cc3366;
-  border-width: 6px; /* さらに太い枠線 */
-  color: #cc3366;
+  min-height: min(90px, 10vh);
 }
 
 /* フローティングタイマー - 右上固定 */
@@ -224,7 +228,7 @@ h3 {
   right: 20px;
   background-color: rgba(255, 51, 51, 0.9);
   color: white;
-  font-size: 52px;
+  font-size: min(52px, 5vw);
   font-weight: 700;
   padding: 10px 20px;
   border-radius: 15px;
@@ -236,19 +240,107 @@ h3 {
 }
 
 .timer-unit {
-  font-size: 32px;
+  font-size: min(32px, 3vw);
   margin-left: 5px;
 }
 
-/* 回答状況 - 非表示に設定 */
+/* 回答状況 */
 .answer-stats {
-  display: none;
+  margin-top: min(30px, 3vh);
+  width: 100%;
+  max-height: 25vh; /* 高さ制限を追加 */
+  overflow: hidden;
+}
+
+.stats-container {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: min(15px, 1.5vh) min(20px, 2vw);
+  margin-top: min(15px, 1.5vh);
+}
+
+.stat-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #fff;
+  padding: min(15px, 1.5vh) min(20px, 2vw);
+  border-radius: 15px;
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+  border: 2px solid #e0e0e0;
+}
+
+.stat-item.correct {
+  border-color: #4CAF50;
+  background-color: rgba(76, 175, 80, 0.1);
+}
+
+.stat-option {
+  font-size: min(24px, 2.6vw);
+  font-weight: 500;
+}
+
+.stat-count {
+  font-size: min(24px, 2.6vw);
+  font-weight: 700;
+}
+
+/* 画像選択肢表示用 */
+.image-stats-container {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: min(15px, 1.5vh) min(20px, 2vw);
+  margin-top: min(15px, 1.5vh);
+}
+
+.image-stat-item {
+  position: relative;
+  background-color: #fff;
+  border-radius: 15px;
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  border: 2px solid #e0e0e0;
+  height: min(180px, 20vh); /* 高さを制限 */
+}
+
+.image-stat-item.correct {
+  border-color: #4CAF50;
+  border-width: 3px;
+}
+
+.image-stat-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.image-stat-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.image-stat-number {
+  font-size: min(20px, 2vw);
+  font-weight: 500;
+}
+
+.image-stat-count {
+  font-size: min(20px, 2vw);
+  font-weight: 700;
 }
 
 /* ランキング */
 .ranking-container {
   width: 90%;
-  max-height: 75vh;
+  max-height: 65vh; /* 高さ制限を追加 */
   overflow: hidden;
 }
 
@@ -257,9 +349,9 @@ h3 {
   justify-content: space-between;
   align-items: center;
   background-color: #fff;
-  padding: 15px 25px;
+  padding: min(15px, 1.5vh) min(25px, 2.5vw);
   border-radius: 20px;
-  margin-bottom: 2vh;
+  margin-bottom: min(15px, 1.5vh);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
   transform-origin: center;
   animation: fadeInUp 0.6s ease forwards;
@@ -273,14 +365,14 @@ h3 {
 }
 
 .ranking-position {
-  font-size: min(44px, 5vw);
+  font-size: min(44px, 4.5vw);
   font-weight: 700;
   min-width: 70px;
   color: #222;
 }
 
 .ranking-name {
-  font-size: min(36px, 4vw);
+  font-size: min(36px, 3.8vw);
   font-weight: 500;
   text-align: left;
   flex-grow: 1;
@@ -289,7 +381,7 @@ h3 {
 }
 
 .ranking-score {
-  font-size: min(30px, 3.5vw);
+  font-size: min(28px, 3vw);
   font-weight: 500;
 }
 
@@ -326,9 +418,10 @@ h3 {
 .image-options-container {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 3vh 3vw;
-  width: 100%; /* フル幅に変更 */
-  max-width: 1600px;
+  gap: min(3vh, 20px) min(3vw, 25px);
+  width: 100%;
+  max-width: 1500px;
+  margin: min(20px, 2vh) 0;
 }
 
 .image-option {
@@ -337,9 +430,9 @@ h3 {
   border-radius: 15px;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
   overflow: hidden;
-  aspect-ratio: 4/3;
   border: 4px solid #e0e0e0;
-  height: 40vh; /* 高さを大きく設定 */
+  /* アスペクト比は保持しつつ、高さを制限 */
+  height: min(35vh, 300px);
 }
 
 .image-option img {
@@ -354,23 +447,24 @@ h3 {
   left: 15px;
   background-color: rgba(0, 0, 0, 0.8);
   color: white;
-  width: 50px; /* サイズを大きく */
-  height: 50px;
+  width: min(50px, 4vw);
+  height: min(50px, 4vw);
   border-radius: 50%;
   display: flex;
   justify-content: center;
   align-items: center;
   font-weight: 700;
-  font-size: 28px; /* フォントサイズを大きく */
+  font-size: min(28px, 2.8vw);
 }
 
 /* クイズ3の合成写真比較用 */
 .before-after-container {
   display: flex;
   justify-content: center;
-  gap: 3vw;
-  margin: 2vh 0;
+  gap: min(3vw, 30px);
+  margin: min(15px, 1.5vh) 0;
   width: 100%;
+  max-height: 40vh; /* 高さ制限を追加 */
 }
 
 .before-after-item {
@@ -381,16 +475,16 @@ h3 {
 
 .before-after-item img {
   width: 100%;
-  max-height: 45vh;
+  max-height: 30vh; /* 高さ制限を緩和 */
   object-fit: contain;
   border-radius: 15px;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
-  border: 4px solid #e0e0e0; /* 比較画像の枠線を太く */
+  border: 4px solid #e0e0e0;
   margin-bottom: 15px;
 }
 
 .before-after-item .label {
-  font-size: 28px;
+  font-size: min(28px, 2.8vw);
   font-weight: 700;
   margin-top: 10px;
   color: #222;
@@ -402,11 +496,11 @@ h3 {
 
 /* クイズ5の大きなテキスト答え */
 .big-text-answer {
-  font-size: min(120px, 13vw);
+  font-size: min(92px, 10vw);
   font-weight: 700;
   text-align: center;
-  margin: 4vh 0;
-  padding: 30px;
+  margin: min(30px, 3vh) 0;
+  padding: min(30px, 3vh);
   border-radius: 20px;
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
 }
@@ -415,19 +509,41 @@ h3 {
 .big-text-answer.groom {
   color: #0066cc;
   background-color: #e6f0ff;
-  border: 4px solid #99c2ff; /* 枠線を太く */
+  border: 4px solid #99c2ff;
 }
 
 .big-text-answer.bride {
   color: #cc3366;
   background-color: #ffebf2;
-  border: 4px solid #ffb3cc; /* 枠線を太く */
+  border: 4px solid #ffb3cc;
 }
 
-/* ホームボタン - 右下に配置変更 */
+/* 問題5用の選択肢 - 特に見やすく */
+.option.groom, .option.bride {
+  padding: min(35px, 3vh);
+  font-size: min(58px, 6vw);
+  min-height: min(120px, 13vh);
+  letter-spacing: 1px;
+}
+
+.option.groom {
+  background-color: #e6f0ff;
+  border-color: #0066cc;
+  border-width: 6px; /* さらに太い枠線 */
+  color: #0066cc;
+}
+
+.option.bride {
+  background-color: #ffebf2;
+  border-color: #cc3366;
+  border-width: 6px; /* さらに太い枠線 */
+  color: #cc3366;
+}
+
+/* ホームボタン - 右下配置 */
 .home-button {
   position: fixed;
-  bottom: 20px; /* 上から下へ位置変更 */
+  bottom: 20px;
   right: 20px;
   background-color: rgba(0, 123, 255, 0.8);
   color: white;
@@ -448,30 +564,79 @@ h3 {
   box-shadow: 0 6px 12px rgba(0, 0, 0, 0.25);
 }
 
-/* 手作りアプリの説明 */
-.handmade-app-notice {
-  margin-top: 30px;
-  padding: 20px 25px;
-  background-color: rgba(255, 255, 255, 0.8);
-  border-radius: 15px;
-  border-left: 5px solid #007bff;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-  animation: gentle-fade-in 1.5s ease-in-out;
-  max-width: 90%;
-  margin-left: auto;
-  margin-right: auto;
-}
-
-.handmade-app-notice p {
-  font-size: min(24px, 3vw);
-  line-height: 1.6;
-  color: #333;
-  font-weight: 500;
-  text-align: center;
-  margin: 0;
-}
-
+/* アニメーション定義 */
 @keyframes gentle-fade-in {
   0% { opacity: 0; transform: translateY(10px); }
   100% { opacity: 1; transform: translateY(0); }
+}
+
+/* 視認性向上のための追加アダプティブスタイル */
+@media (max-aspect-ratio: 4/3) {
+  /* より縦長の画面向け調整 */
+  .image-options-container {
+    gap: 2vh 2vw;
+  }
+  
+  .image-option {
+    height: min(30vh, 250px);
+  }
+  
+  .before-after-container {
+    flex-direction: column;
+    align-items: center;
+    gap: 2vh;
+  }
+  
+  .before-after-item {
+    max-width: 80%;
+  }
+  
+  .ranking-item {
+    flex-direction: column;
+    text-align: center;
+    padding: 15px;
+  }
+  
+  .ranking-name {
+    margin: 10px 0;
+    text-align: center;
+  }
+}
+
+@media (min-aspect-ratio: 16/9) {
+  /* より横長の画面向け調整 */
+  h1 {
+    margin-bottom: 2vh;
+  }
+  
+  h2 {
+    margin-bottom: 1.5vh;
+  }
+  
+  .question-image {
+    margin: 1.5vh 0;
+  }
+  
+  .options-container, .image-options-container {
+    gap: 2vh 3vw;
+    margin: 1.5vh 0;
+  }
+  
+  .option {
+    min-height: 8vh;
+  }
+  
+  .big-text-answer {
+    margin: 2vh 0;
+    padding: 2vh;
+  }
+  
+  .ranking-container {
+    max-height: 70vh;
+  }
+  
+  .ranking-item {
+    padding: 10px 20px;
+    margin-bottom: 10px;
+  }
 }
