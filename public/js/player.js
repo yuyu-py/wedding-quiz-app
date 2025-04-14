@@ -836,3 +836,29 @@ document.addEventListener('DOMContentLoaded', function() {
         displayName.textContent = playerName;
         
         // Socket.io接続を開始
+        initSocketConnection();
+        
+        // 説明画面に切り替え
+        showScreen(explanationScreen);
+        
+      } else {
+        alert('登録に失敗しました: ' + result.error);
+      }
+    } catch (error) {
+      console.error('プレイヤーの登録に失敗しました:', error);
+      alert('登録処理中にエラーが発生しました');
+    }
+  });
+  
+  // エンターキーでの登録
+  playerNameInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      registerButton.click();
+    }
+  });
+  
+  // 初期画面を表示
+  if (!urlPlayerId) {
+    showScreen(registerScreen);
+  }
+});
