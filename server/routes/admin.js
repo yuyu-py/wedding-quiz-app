@@ -64,6 +64,24 @@ router.post('/quiz/5/set-answer', async (req, res) => {
   }
 });
 
+// 新規追加: 解答表示状態を記録するAPI
+router.post('/quiz/:id/mark-answer-displayed', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // 解答表示状態を記録
+    const result = await db.markAnswerAsDisplayed(id);
+    
+    res.json({ 
+      success: result, 
+      message: `クイズ ${id} の解答表示状態を更新しました` 
+    });
+  } catch (error) {
+    console.error('解答表示状態の更新中にエラーが発生しました:', error);
+    res.status(500).json({ error: 'サーバーエラーが発生しました' });
+  }
+});
+
 // すべてのデータをリセット
 router.post('/reset-all', async (req, res) => {
   try {

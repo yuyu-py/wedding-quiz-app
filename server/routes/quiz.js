@@ -101,4 +101,30 @@ router.get('/ranking/all', async (req, res) => {
   }
 });
 
+// 参加者数統計を取得（QRコード画面のリロード用）
+router.get('/stats/participants', async (req, res) => {
+  try {
+    const count = await db.getParticipantsCount();
+    res.json({ count });
+  } catch (error) {
+    console.error('参加者数の取得中にエラーが発生しました:', error);
+    res.status(500).json({ error: 'サーバーエラーが発生しました', count: 0 });
+  }
+});
+
+// 新規追加: クイズの解答が公開されているか確認するAPI
+router.get('/:id/answer-available', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // クイズの解答が公開されているか確認
+    const isAvailable = await db.isQuizAnswerAvailable(id);
+    
+    res.json({ available: isAvailable });
+  } catch (error) {
+    console.error('解答公開状態の確認中にエラーが発生しました:', error);
+    res.status(500).json({ error: 'サーバーエラーが発生しました', available: false });
+  }
+});
+
 module.exports = router;

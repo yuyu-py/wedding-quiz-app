@@ -79,7 +79,7 @@ async function insertSampleQuizData() {
       question: '下記の記号の法則を見つけ、?に入るものを選択しろ。',
       options: JSON.stringify(['UCC', 'USJ', 'URL', 'USA']),
       correct_answer: 'USA',
-      explanation: 'それぞれの記号は同じアルファベット4つを回転させて組み合わせたものとなっており、上の段は「U」「F」「O」となります。同じように下の段も考えると「U」「S」「A」となります。',
+      explanation: '答えはUSAです。U○○の形式で、国や組織の略称になっています。',
       question_image_path: '/images/quiz-images/quiz1_question.png',
       answer_image_path: '/images/quiz-images/quiz1_answer.png',
       is_image_options: 0,
@@ -90,7 +90,7 @@ async function insertSampleQuizData() {
       question: '下記の中国語で表されるキャラクターは？',
       options: JSON.stringify(['ピカチュウ(Pokemon)', 'ジェリー(Tom and Jerry)', 'ミッキーマウス(Disney)', 'ハム太郎(とっとこハム太郎)']),
       correct_answer: 'ミッキーマウス(Disney)',
-      explanation: '中国語では「米老鼠」と表記されます。',
+      explanation: '答えはミッキーマウスです。中国語では「米老鼠」と表記されます。',
       question_image_path: '/images/quiz-images/quiz2_question.png',
       answer_image_path: '/images/quiz-images/quiz2_answer.png',
       is_image_options: 0,
@@ -130,7 +130,7 @@ async function insertSampleQuizData() {
     },
     {
       id: '5',
-      question: 'ストップウォッチ15秒に近く止められるのはどっち？実戦なので直感で選ぼう！',
+      question: 'ストップウォッチ15秒に近く止められるのはどっち？',
       options: JSON.stringify(['新郎', '新婦']),
       correct_answer: '',
       explanation: '実際に計測した結果です。', 
@@ -320,7 +320,8 @@ async function startQuizSession(quizId) {
       Item: {
         quiz_id: quizId.toString(),
         started_at: startedAt,
-        custom_answer: null
+        custom_answer: null,
+        answer_displayed: false // 解答表示フラグを初期化
       }
     };
     
@@ -472,6 +473,84 @@ async function getQuizStats(quizId) {
   } catch (error) {
     console.error(`クイズ ${quizId} の統計取得中にエラーが発生しました:`, error);
     return null;
+  }
+}
+
+// クイズの解答が公開されているか確認する関数
+async function isQuizAnswerAvailable(quizId) {
+  try {
+    // セッションテーブルから該当クイズIDの最新セッションを取得
+    const params = {
+      TableName: TABLES.SESSION,
+      IndexName: 'quiz_id-index',
+      KeyConditionExpression: 'quiz_id = :quizId',
+      ExpressionAttributeValues: {
+        ':quizId': quizId.toString()
+      },
+      ScanIndexForward: false, // 降順（最新のものから）
+      Limit: 1 // 最新の1件のみ
+    };
+    
+    const result = await dynamodb.send(new QueryCommand(params));
+    
+    if (result.Items && result.Items.length > 0) {
+      const session = result.Items[0];
+      // session.answer_displayed が true であれば解答が公開されている
+      return session.answer_displayed === true;
+    }
+    
+    return false;
+  } catch (error) {
+    console.error(`クイズ ${quizId} の解答公開状態確認中にエラーが発生しました:`, error);
+    return false;
+  }
+}
+
+// セッションの解答表示フラグを更新する関数
+async function markAnswerAsDisplayed(quizId) {
+  try {
+    // 最新のセッションを取得
+    const queryParams = {
+      TableName: TABLES.SESSION,
+      IndexName: 'quiz_id-index', 
+      KeyConditionExpression: 'quiz_id = :quizId',
+      FilterExpression: 'attribute_not_exists(ended_at)',
+      ExpressionAttributeValues: {
+        ':quizId': quizId.toString()
+      },
+      ScanIndexForward: false,
+      Limit: 1
+    };
+    
+    const result = await dynamodb.send(new QueryCommand(queryParams));
+    
+    if (result.Items && result.Items.length > 0) {
+      const session = result.Items[0];
+      
+      const updateParams = {
+        TableName: TABLES.SESSION,
+        Key: { 
+          quiz_id: session.quiz_id,
+          started_at: session.started_at
+        },
+        UpdateExpression: 'set answer_displayed = :displayed',
+        ExpressionAttributeValues: {
+          ':displayed': true
+        }
+      };
+      
+      await dynamodb.send(new UpdateCommand(updateParams));
+      
+      // キャッシュから該当セッションのキーを削除
+      cache.del(`session_${session.quiz_id}_${session.started_at}`);
+      
+      return true;
+    }
+    
+    return false;
+  } catch (error) {
+    console.error(`クイズ ${quizId} の解答表示フラグ更新中にエラーが発生しました:`, error);
+    return false;
   }
 }
 
@@ -650,5 +729,7 @@ module.exports = {
   getPlayerAnswers,
   getQuizStats,
   getRankings,
-  resetAllData
+  resetAllData,
+  isQuizAnswerAvailable,
+  markAnswerAsDisplayed
 };

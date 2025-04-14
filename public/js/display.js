@@ -147,7 +147,19 @@ document.addEventListener('DOMContentLoaded', function() {
       
       if (timeLeft <= 0) {
         clearInterval(timerInterval);
-        // 時間切れ時の処理があればここに追加
+        
+        // 変更部分: 時間切れになったら自動的に解答画面に遷移
+        if (currentScreen === quizQuestionScreen && currentQuizId) {
+          console.log('時間切れ: 自動的に解答画面に遷移します');
+          
+          // 時間切れイベントをサーバーに通知して全クライアントに同期させる
+          socket.emit('timer_expired', {
+            quizId: currentQuizId
+          });
+          
+          // 解答画面に遷移
+          showAnswer(currentQuizId);
+        }
       }
     }, 1000);
   }
@@ -354,6 +366,19 @@ document.addEventListener('DOMContentLoaded', function() {
       // 画面を解答画面に切り替え
       showScreen(quizAnswerScreen);
       
+      // 追加: 解答表示状態をサーバーに通知
+      // これはプレーヤー画面が解答が公開されたことを検知するために使用
+      try {
+        await fetch(`/api/admin/quiz/${quizId}/mark-answer-displayed`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+      } catch (error) {
+        console.error('解答表示状態の更新に失敗しました:', error);
+      }
+      
     } catch (error) {
       console.error('解答データの取得に失敗しました:', error);
     }
@@ -498,6 +523,15 @@ document.addEventListener('DOMContentLoaded', function() {
         
       case 'show_answer':
         if (currentQuizId) {
+          showAnswer(currentQuizId);
+        }
+        break;
+        
+      // 新規追加: タイマー切れイベントの処理
+      case 'timer_expired':
+        if (currentScreen === quizQuestionScreen && currentQuizId && 
+            data.quizId === currentQuizId) {
+          stopTimer();
           showAnswer(currentQuizId);
         }
         break;

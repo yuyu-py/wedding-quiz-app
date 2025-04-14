@@ -14,6 +14,13 @@ let connectionCounter = {
   players: 0
 };
 
+// 現在のクイズ状態を追跡
+let currentQuizState = {
+  quizId: null,
+  phase: null, // 'question', 'answer'など
+  timerExpired: false
+};
+
 function setupSocketHandlers(io) {
   // グローバル変数にioを保存（ブロードキャスト用）
   global.io = io;
@@ -71,10 +78,31 @@ function setupSocketHandlers(io) {
         default:
           socket.emit('registration_error', { message: '不明な接続タイプです' });
       }
+      
+      // 現在のクイズ状態に応じて必要な情報を送信
+      if (currentQuizState.quizId && currentQuizState.phase) {
+        // 既に進行中のクイズがある場合は現在の状態を通知
+        if (currentQuizState.phase === 'answer') {
+          socket.emit('quiz_event', { 
+            event: 'show_answer',
+            quizId: currentQuizState.quizId
+          });
+        } else if (currentQuizState.phase === 'question') {
+          socket.emit('quiz_event', { 
+            event: 'show_question',
+            quizId: currentQuizState.quizId
+          });
+          
+          // タイマーが既に切れていれば通知
+          if (currentQuizState.timerExpired) {
+            socket.emit('timer_expired', { quizId: currentQuizState.quizId });
+          }
+        }
+      }
     });
     
     // クイズ制御コマンド（管理者用）
-    socket.on('quiz_command', (data) => {
+    socket.on('quiz_command', async (data) => {
       const { command, quizId, params = {} } = data;
       
       // 管理者かどうか確認
@@ -83,13 +111,22 @@ function setupSocketHandlers(io) {
         return;
       }
       
+      const db = require('../database/db');
+      
       switch (command) {
         case 'start_quiz':
           // クイズの開始をブロードキャスト
           io.emit('quiz_event', { 
-            event: 'quiz_started', 
-            quizId 
+            event: 'quiz_started' 
           });
+          
+          // クイズ状態をリセット
+          currentQuizState = {
+            quizId: null,
+            phase: null,
+            timerExpired: false
+          };
+          
           console.log(`クイズが開始されました`);
           break;
           
@@ -99,6 +136,14 @@ function setupSocketHandlers(io) {
             event: 'show_question', 
             quizId 
           });
+          
+          // クイズ状態を更新
+          currentQuizState = {
+            quizId,
+            phase: 'question',
+            timerExpired: false
+          };
+          
           console.log(`クイズ ${quizId} の問題が表示されました`);
           break;
           
@@ -108,6 +153,14 @@ function setupSocketHandlers(io) {
             event: 'show_answer', 
             quizId 
           });
+          
+          // クイズ状態を更新
+          currentQuizState.phase = 'answer';
+          currentQuizState.timerExpired = true;
+          
+          // セッションの answer_displayed フラグを更新
+          await db.markAnswerAsDisplayed(quizId);
+          
           console.log(`クイズ ${quizId} の解答が表示されました`);
           break;
           
@@ -117,6 +170,7 @@ function setupSocketHandlers(io) {
             event: 'show_ranking',
             position: params.position || 'all'
           });
+          
           console.log(`ランキングが表示されました: ${params.position || 'all'}`);
           break;
           
@@ -141,11 +195,52 @@ function setupSocketHandlers(io) {
           io.emit('quiz_event', {
             event: 'reset_all'
           });
+          
+          // クイズ状態をリセット
+          currentQuizState = {
+            quizId: null,
+            phase: null,
+            timerExpired: false
+          };
+          
           console.log('すべてのデータがリセットされました');
           break;
           
         default:
           socket.emit('command_error', { message: '不明なコマンドです' });
+      }
+    });
+    
+    // タイマー終了時のイベント
+    socket.on('timer_expired', async (data) => {
+      const { quizId } = data;
+      
+      // タイマー終了状態を更新
+      if (currentQuizState.quizId === quizId && currentQuizState.phase === 'question') {
+        currentQuizState.timerExpired = true;
+        
+        // ディスプレイから発信された場合のみ、全員に通知
+        if (socket === activeConnections.display) {
+          console.log(`クイズ ${quizId} のタイマーが終了しました - 自動的に解答表示に移行します`);
+          
+          // 少し遅延を入れてから解答表示に移行（ディスプレイが先に処理する時間を確保）
+          setTimeout(async () => {
+            // 解答表示をブロードキャスト
+            io.emit('quiz_event', { 
+              event: 'show_answer', 
+              quizId 
+            });
+            
+            // クイズ状態を更新
+            currentQuizState.phase = 'answer';
+            
+            // セッションの answer_displayed フラグを更新
+            const db = require('../database/db');
+            await db.markAnswerAsDisplayed(quizId);
+            
+            console.log(`タイマー終了により、クイズ ${quizId} の解答が自動表示されました`);
+          }, 500);
+        }
       }
     });
     
