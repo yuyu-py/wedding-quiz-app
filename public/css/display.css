@@ -321,7 +321,7 @@ h3 {
   overflow: hidden;
   aspect-ratio: 4/3; /* アスペクト比を維持 */
   border: 6px solid #000;
-  height: 40vh; /* 大きなサイズ */
+  height: 50vh; /* 大きなサイズ */
 }
 
 .image-option img {
