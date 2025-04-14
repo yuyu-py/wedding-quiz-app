@@ -225,6 +225,24 @@ h2 {
   border-radius: 10px;
 }
 
+/* 問題画像コンテナ */
+.player-question-image {
+  width: 100%;
+  margin: 15px 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.player-question-image img {
+  max-width: 100%;
+  max-height: 200px;
+  object-fit: contain;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e0e0e0;
+}
+
 .options-container {
   display: flex;
   flex-direction: column;
@@ -340,13 +358,13 @@ h2 {
   content: '';
   display: block;
   position: absolute;
-  left: 50%; /* 中央に配置 */
-  top: 50%; /* 中央に配置 */
+  left: 50%; /* 水平方向の中央に */
+  top: 50%; /* 垂直方向の中央に */
   width: 15px;
   height: 30px;
   border: solid white;
   border-width: 0 5px 5px 0;
-  transform: translate(-78%, -45%) rotate(45deg); /* 調整して中央に配置 */
+  transform: translate(-78%, -45%) rotate(45deg); /* 位置調整で中央に */
   animation: checkmark 0.3s ease-in-out 0.15s both;
 }
 
@@ -415,6 +433,24 @@ h2 {
   margin: 15px 0;
 }
 
+/* 答え画像コンテナ */
+.player-answer-image {
+  width: 100%;
+  margin: 15px 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.player-answer-image img {
+  max-width: 100%;
+  max-height: 200px;
+  object-fit: contain;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e0e0e0;
+}
+
 .answer-option {
   background-color: #f8f9fa;
   border: 2px solid #ddd;
@@ -426,13 +462,13 @@ h2 {
 
 .answer-option.correct {
   border-color: #4caf50;
-  border-width: 4px; /* 太くする */
+  border-width: 4px; /* 枠線を太く */
   background-color: rgba(76, 175, 80, 0.05);
 }
 
 .answer-option.incorrect {
   border-color: #f44336;
-  border-width: 4px; /* 太くする */
+  border-width: 4px; /* 枠線を太く */
   background-color: rgba(244, 67, 54, 0.05);
 }
 
@@ -476,12 +512,12 @@ h2 {
 
 .answer-image-option.correct {
   border-color: #4caf50;
-  border-width: 4px; /* 太くする */
+  border-width: 4px; /* 枠線を太く */
 }
 
 .answer-image-option.incorrect {
   border-color: #f44336;
-  border-width: 4px; /* 太くする */
+  border-width: 4px; /* 枠線を太く */
 }
 
 .answer-image-option .option-label {
@@ -630,12 +666,12 @@ h2 {
   text-shadow: 2px 2px 10px rgba(0, 0, 0, 0.2);
 }
 
-/* 上位5位用のアニメーション (ゴールド色) */
+/* 上位5位のアニメーション */
 .top-rank-display[style*="color: #ffc107"] {
   animation: rank-pulse 2s infinite;
 }
 
-/* 6位以下用 (黒色、アニメーションなし) */
+/* 6位以下のアニメーションなし */
 .top-rank-display[style*="color: #333333"] {
   animation: none;
   margin-bottom: 20px;

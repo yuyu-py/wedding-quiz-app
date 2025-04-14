@@ -1,5 +1,4 @@
-//public/js/player.js
-// 参加者画面用のJavaScript
+// public/js/player.js
 document.addEventListener('DOMContentLoaded', function() {
   // 画面要素
   const registerScreen = document.getElementById('register-screen');
@@ -20,6 +19,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const titleQuestionNumber = document.getElementById('title-question-number');
   const questionNumber = document.getElementById('question-number');
   const questionText = document.getElementById('question-text');
+  const playerQuestionImage = document.getElementById('player-question-image');
   const timerValue = document.getElementById('timer-value');
   const optionsContainer = document.getElementById('options-container');
   const answerStatusText = document.getElementById('answer-status-text');
@@ -29,6 +29,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const answerResultHeader = document.getElementById('answer-result-header');
   const correctAnswer = document.getElementById('correct-answer');
   const answerOptionsContainer = document.getElementById('answer-options-container');
+  const playerAnswerImage = document.getElementById('player-answer-image');
   const answerNoteText = document.getElementById('answer-note-text');
   
   // 結果要素
@@ -92,7 +93,7 @@ document.addEventListener('DOMContentLoaded', function() {
       timerValue.textContent = timeLeft;
       
       if (timeLeft <= 10) {
-        // 10秒以下で表示を目立たせる（白色＋テキストシャドウで視認性向上）
+        // 10秒以下で白色のテキストシャドウと太字で視認性向上
         timerValue.style.color = '#ffffff';
         timerValue.style.textShadow = '0 0 5px rgba(0, 0, 0, 0.5)';
         timerValue.style.fontWeight = '900';
@@ -106,13 +107,13 @@ document.addEventListener('DOMContentLoaded', function() {
         clearInterval(timerInterval);
         answerStatusText.textContent = '時間切れです';
         
-        // 時間切れになったら自動的に答え合わせ画面への遷移を試みる
+        // 時間切れになったら自動的に答え合わせ画面へ遷移を試みる
         tryShowAnswerResult();
       }
     }, 1000);
   }
   
-  // 答え合わせ画面への遷移を試みる関数
+  // 答え合わせ画面への遷移を試みる
   async function tryShowAnswerResult() {
     if (!currentQuizId) return;
     
@@ -236,6 +237,19 @@ document.addEventListener('DOMContentLoaded', function() {
       // 問題番号と問題文を設定
       questionNumber.textContent = `問題 ${quizId}`;
       questionText.textContent = newQuizData.question;
+      
+      // 問題1と2の場合は問題画像を表示
+      if (parseInt(quizId) === 1 || parseInt(quizId) === 2) {
+        if (newQuizData.question_image_path) {
+          const questionImageElement = playerQuestionImage.querySelector('img');
+          questionImageElement.src = newQuizData.question_image_path;
+          playerQuestionImage.classList.remove('hidden');
+        } else {
+          playerQuestionImage.classList.add('hidden');
+        }
+      } else {
+        playerQuestionImage.classList.add('hidden');
+      }
       
       // 既に回答済みかチェック
       if (playerAnswers[quizId]) {
@@ -450,6 +464,19 @@ document.addEventListener('DOMContentLoaded', function() {
       // 正解テキストを設定
       correctAnswer.textContent = correctAnswerText;
       
+      // 問題1と2の場合は答え画像を表示
+      if (parseInt(quizId) === 1 || parseInt(quizId) === 2) {
+        if (answerData.answer_image_path) {
+          const answerImageElement = playerAnswerImage.querySelector('img');
+          answerImageElement.src = answerData.answer_image_path;
+          playerAnswerImage.classList.remove('hidden');
+        } else {
+          playerAnswerImage.classList.add('hidden');
+        }
+      } else {
+        playerAnswerImage.classList.add('hidden');
+      }
+      
       // 画像選択肢かどうかを判断
       const isImageOptions = answerData.is_image_options === 1;
       
@@ -618,19 +645,21 @@ document.addEventListener('DOMContentLoaded', function() {
         let rankingMessage = '';
         
         if (playerPosition <= 5) {
-          // 上位5位以内の表示設定
+          // 上位表示を有効化
           if (topRankDisplayElement) {
             topRankDisplayElement.classList.remove('hidden');
-            topRankDisplayElement.style.color = '#ffc107'; // ゴールド色
+            // 上位5位は金色
+            topRankDisplayElement.style.color = '#ffc107';
             console.log('上位表示を有効化');
           }
           rankingMessage = `おめでとうございます！あなたは${playerPosition}位です！景品があるので、指示がありましたら前に来てください！`;
         } else {
-          // 6位以下の表示設定
+          // 上位表示を有効化しつつ、黒色に
           if (topRankDisplayElement) {
             topRankDisplayElement.classList.remove('hidden');
-            topRankDisplayElement.style.color = '#333333'; // 黒色
-            console.log('6位以下の順位表示を有効化');
+            // 6位以下は黒色
+            topRankDisplayElement.style.color = '#333333';
+            console.log('通常順位表示を有効化');
           }
           rankingMessage = `あなたは${playerPosition}位でした。ご参加ありがとうございました！`;
         }
@@ -748,23 +777,23 @@ document.addEventListener('DOMContentLoaded', function() {
           }
           break;
           
-        case 'show_ranking':
-          // ランキング表示の処理
-          displayCurrentScreen = 'ranking';
-          console.log('ランキング表示イベント受信:', position);
-          
-          // ランキングデータを更新して表示
-          fetchAndShowRanking().then(() => {
-            if (position === 'all') {
-              // 全表示になったら結果画面へ
-              showScreen(resultScreen);
-              console.log('ランキング全表示画面に遷移');
-            } else if (currentScreen !== rankingWaitingScreen && currentScreen !== resultScreen) {
-              // 最初のランキング表示で待機画面へ
-              console.log('ランキング待機画面に遷移');
-            }
-          });
-          break;
+          case 'show_ranking':
+            // ランキング表示の処理
+            displayCurrentScreen = 'ranking';
+            console.log('ランキング表示イベント受信:', position);
+            
+            // ランキングデータを更新して表示
+            fetchAndShowRanking().then(() => {
+              if (position === 'all') {
+                // 全表示になったら結果画面へ
+                showScreen(resultScreen);
+                console.log('ランキング全表示画面に遷移');
+              } else if (currentScreen !== rankingWaitingScreen && currentScreen !== resultScreen) {
+                // 最初のランキング表示で待機画面へ
+                console.log('ランキング待機画面に遷移');
+              }
+            });
+            break;
           
         case 'reset_all':
           // リセット処理
@@ -807,29 +836,3 @@ document.addEventListener('DOMContentLoaded', function() {
         displayName.textContent = playerName;
         
         // Socket.io接続を開始
-        initSocketConnection();
-        
-        // 説明画面に切り替え
-        showScreen(explanationScreen);
-        
-      } else {
-        alert('登録に失敗しました: ' + result.error);
-      }
-    } catch (error) {
-      console.error('プレイヤーの登録に失敗しました:', error);
-      alert('登録処理中にエラーが発生しました');
-    }
-  });
-  
-  // エンターキーでの登録
-  playerNameInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-      registerButton.click();
-    }
-  });
-  
-  // 初期画面を表示
-  if (!urlPlayerId) {
-    showScreen(registerScreen);
-  }
-});
