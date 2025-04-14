@@ -340,13 +340,13 @@ h2 {
   content: '';
   display: block;
   position: absolute;
-  left: 30px;
-  top: 45px;
+  left: 50%; /* 中央に配置 */
+  top: 50%; /* 中央に配置 */
   width: 15px;
   height: 30px;
   border: solid white;
   border-width: 0 5px 5px 0;
-  transform: rotate(45deg);
+  transform: translate(-78%, -45%) rotate(45deg); /* 調整して中央に配置 */
   animation: checkmark 0.3s ease-in-out 0.15s both;
 }
 
@@ -426,11 +426,13 @@ h2 {
 
 .answer-option.correct {
   border-color: #4caf50;
+  border-width: 4px; /* 太くする */
   background-color: rgba(76, 175, 80, 0.05);
 }
 
 .answer-option.incorrect {
   border-color: #f44336;
+  border-width: 4px; /* 太くする */
   background-color: rgba(244, 67, 54, 0.05);
 }
 
@@ -474,10 +476,12 @@ h2 {
 
 .answer-image-option.correct {
   border-color: #4caf50;
+  border-width: 4px; /* 太くする */
 }
 
 .answer-image-option.incorrect {
   border-color: #f44336;
+  border-width: 4px; /* 太くする */
 }
 
 .answer-image-option .option-label {
@@ -621,11 +625,20 @@ h2 {
 .top-rank-display {
   font-size: 120px;
   font-weight: 700;
-  color: #ffc107;
   text-align: center;
   margin-bottom: 30px;
   text-shadow: 2px 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+/* 上位5位用のアニメーション (ゴールド色) */
+.top-rank-display[style*="color: #ffc107"] {
   animation: rank-pulse 2s infinite;
+}
+
+/* 6位以下用 (黒色、アニメーションなし) */
+.top-rank-display[style*="color: #333333"] {
+  animation: none;
+  margin-bottom: 20px;
 }
 
 @keyframes rank-pulse {

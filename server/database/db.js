@@ -321,7 +321,7 @@ async function startQuizSession(quizId) {
         quiz_id: quizId.toString(),
         started_at: startedAt,
         custom_answer: null,
-        answer_displayed: false // 解答表示フラグを初期化
+        answer_displayed: false
       }
     };
     
@@ -337,6 +337,80 @@ async function startQuizSession(quizId) {
       success: false,
       error: 'セッション開始中にエラーが発生しました'
     };
+  }
+}
+
+// 答えの表示状態を更新する関数
+async function markAnswerAsDisplayed(quizId) {
+  try {
+    // 最新のセッションを取得
+    const queryParams = {
+      TableName: TABLES.SESSION,
+      IndexName: 'quiz_id-index', 
+      KeyConditionExpression: 'quiz_id = :quizId',
+      FilterExpression: 'attribute_not_exists(ended_at)',
+      ExpressionAttributeValues: {
+        ':quizId': quizId.toString()
+      },
+      ScanIndexForward: false,
+      Limit: 1
+    };
+    
+    const result = await dynamodb.send(new QueryCommand(queryParams));
+    
+    if (result.Items && result.Items.length > 0) {
+      const session = result.Items[0];
+      
+      const updateParams = {
+        TableName: TABLES.SESSION,
+        Key: { 
+          quiz_id: session.quiz_id,
+          started_at: session.started_at
+        },
+        UpdateExpression: 'set answer_displayed = :displayed',
+        ExpressionAttributeValues: {
+          ':displayed': true
+        }
+      };
+      
+      await dynamodb.send(new UpdateCommand(updateParams));
+      return true;
+    }
+    
+    return false;
+  } catch (error) {
+    console.error(`クイズ ${quizId} の解答表示フラグ更新中にエラーが発生しました:`, error);
+    return false;
+  }
+}
+
+// クイズの解答が公開されているか確認する関数
+async function isQuizAnswerAvailable(quizId) {
+  try {
+    // セッションテーブルから該当クイズIDの最新セッションを取得
+    const params = {
+      TableName: TABLES.SESSION,
+      IndexName: 'quiz_id-index',
+      KeyConditionExpression: 'quiz_id = :quizId',
+      ExpressionAttributeValues: {
+        ':quizId': quizId.toString()
+      },
+      ScanIndexForward: false, // 降順（最新のものから）
+      Limit: 1 // 最新の1件のみ
+    };
+    
+    const result = await dynamodb.send(new QueryCommand(params));
+    
+    if (result.Items && result.Items.length > 0) {
+      const session = result.Items[0];
+      // session.answer_displayed が true であれば解答が公開されている
+      return session.answer_displayed === true;
+    }
+    
+    return false;
+  } catch (error) {
+    console.error(`クイズ ${quizId} の解答公開状態確認中にエラーが発生しました:`, error);
+    return false;
   }
 }
 
@@ -373,6 +447,32 @@ async function getPlayer(id) {
   } catch (error) {
     console.error(`プレイヤー ${id} の取得中にエラーが発生しました:`, error);
     return null;
+  }
+}
+
+// 参加者数を取得
+async function getParticipantCount() {
+  const cacheKey = 'participant_count';
+  
+  // キャッシュをチェック
+  if (cache.has(cacheKey)) {
+    return cache.get(cacheKey);
+  }
+  
+  try {
+    const params = {
+      TableName: TABLES.PLAYER,
+      Select: 'COUNT'
+    };
+    
+    const result = await dynamodb.send(new ScanCommand(params));
+    
+    // 結果をキャッシュに保存
+    cache.set(cacheKey, result.Count, 10); // 10秒間キャッシュ
+    return result.Count;
+  } catch (error) {
+    console.error('参加者数の取得中にエラーが発生しました:', error);
+    return 0;
   }
 }
 
@@ -473,84 +573,6 @@ async function getQuizStats(quizId) {
   } catch (error) {
     console.error(`クイズ ${quizId} の統計取得中にエラーが発生しました:`, error);
     return null;
-  }
-}
-
-// クイズの解答が公開されているか確認する関数
-async function isQuizAnswerAvailable(quizId) {
-  try {
-    // セッションテーブルから該当クイズIDの最新セッションを取得
-    const params = {
-      TableName: TABLES.SESSION,
-      IndexName: 'quiz_id-index',
-      KeyConditionExpression: 'quiz_id = :quizId',
-      ExpressionAttributeValues: {
-        ':quizId': quizId.toString()
-      },
-      ScanIndexForward: false, // 降順（最新のものから）
-      Limit: 1 // 最新の1件のみ
-    };
-    
-    const result = await dynamodb.send(new QueryCommand(params));
-    
-    if (result.Items && result.Items.length > 0) {
-      const session = result.Items[0];
-      // session.answer_displayed が true であれば解答が公開されている
-      return session.answer_displayed === true;
-    }
-    
-    return false;
-  } catch (error) {
-    console.error(`クイズ ${quizId} の解答公開状態確認中にエラーが発生しました:`, error);
-    return false;
-  }
-}
-
-// セッションの解答表示フラグを更新する関数
-async function markAnswerAsDisplayed(quizId) {
-  try {
-    // 最新のセッションを取得
-    const queryParams = {
-      TableName: TABLES.SESSION,
-      IndexName: 'quiz_id-index', 
-      KeyConditionExpression: 'quiz_id = :quizId',
-      FilterExpression: 'attribute_not_exists(ended_at)',
-      ExpressionAttributeValues: {
-        ':quizId': quizId.toString()
-      },
-      ScanIndexForward: false,
-      Limit: 1
-    };
-    
-    const result = await dynamodb.send(new QueryCommand(queryParams));
-    
-    if (result.Items && result.Items.length > 0) {
-      const session = result.Items[0];
-      
-      const updateParams = {
-        TableName: TABLES.SESSION,
-        Key: { 
-          quiz_id: session.quiz_id,
-          started_at: session.started_at
-        },
-        UpdateExpression: 'set answer_displayed = :displayed',
-        ExpressionAttributeValues: {
-          ':displayed': true
-        }
-      };
-      
-      await dynamodb.send(new UpdateCommand(updateParams));
-      
-      // キャッシュから該当セッションのキーを削除
-      cache.del(`session_${session.quiz_id}_${session.started_at}`);
-      
-      return true;
-    }
-    
-    return false;
-  } catch (error) {
-    console.error(`クイズ ${quizId} の解答表示フラグ更新中にエラーが発生しました:`, error);
-    return false;
   }
 }
 
@@ -725,11 +747,12 @@ module.exports = {
   startQuizSession,
   registerPlayer,
   getPlayer,
+  getParticipantCount,
   recordAnswer,
   getPlayerAnswers,
   getQuizStats,
   getRankings,
   resetAllData,
-  isQuizAnswerAvailable,
-  markAnswerAsDisplayed
+  markAnswerAsDisplayed,
+  isQuizAnswerAvailable
 };
