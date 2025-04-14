@@ -12,6 +12,7 @@
   <!-- アイコン -->
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0">
 </head>
+
 <body>
   <div id="app">
     <!-- 参加者登録画面 -->
@@ -83,9 +84,8 @@
           </div>
         </div>
         <div class="question-text" id="question-text">問題文がここに表示されます</div>
-        <div id="player-question-image" class="player-question-image hidden">
-          <img src="" alt="問題画像">
-        </div>
+        <!-- 追加: 問題画像コンテナ -->
+        <div id="player-question-image" class="player-question-image hidden"></div>
         <div class="options">
           <div id="options-container" class="options-container">
             <!-- 選択肢がここに表示されます -->
@@ -113,7 +113,7 @@
       </div>
     </div>
     
-    <!-- クイズ答え合わせ画面（新規追加） -->
+    <!-- クイズ答え合わせ画面 -->
     <div id="answer-result-screen" class="screen hidden">
       <div class="content">
         <div id="answer-result-header" class="answer-result-header">
@@ -125,9 +125,8 @@
         <div id="answer-options-container" class="answer-options-container">
           <!-- 答え合わせ選択肢がここに表示されます -->
         </div>
-        <div id="player-answer-image" class="player-answer-image hidden">
-          <img src="" alt="解答画像">
-        </div>
+        <!-- 追加: 答え画像コンテナ -->
+        <div id="player-answer-image" class="player-answer-image hidden"></div>
         <div class="answer-note">
           <p id="answer-note-text"></p>
         </div>

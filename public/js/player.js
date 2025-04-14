@@ -25,15 +25,15 @@ document.addEventListener('DOMContentLoaded', function() {
   const answerStatusText = document.getElementById('answer-status-text');
   const yourAnswer = document.getElementById('your-answer');
   
-  // 新しく追加した画像要素
-  const playerQuestionImage = document.getElementById('player-question-image');
-  const playerAnswerImage = document.getElementById('player-answer-image');
-  
   // 答え合わせ要素
   const answerResultHeader = document.getElementById('answer-result-header');
   const correctAnswer = document.getElementById('correct-answer');
   const answerOptionsContainer = document.getElementById('answer-options-container');
   const answerNoteText = document.getElementById('answer-note-text');
+  
+  // 追加: 問題画像と解答画像コンテナ
+  const playerQuestionImage = document.getElementById('player-question-image');
+  const playerAnswerImage = document.getElementById('player-answer-image');
   
   // 結果要素
   const waitingCorrectCount = document.getElementById('waiting-correct-count');
@@ -96,7 +96,7 @@ document.addEventListener('DOMContentLoaded', function() {
       timerValue.textContent = timeLeft;
       
       if (timeLeft <= 10) {
-        // 10秒以下で白色のテキストに、シャドウ追加で視認性向上
+        // 10秒以下で太字の白色テキストとシャドウで視認性向上
         timerValue.style.color = '#ffffff';
         timerValue.style.textShadow = '0 0 5px rgba(0, 0, 0, 0.5)';
         timerValue.style.fontWeight = '900';
@@ -110,19 +110,19 @@ document.addEventListener('DOMContentLoaded', function() {
         clearInterval(timerInterval);
         answerStatusText.textContent = '時間切れです';
         
-        // 時間切れになったら自動的に答え合わせ画面へ遷移を試みる
+        // 時間切れの場合、自動的に答え合わせを試みる
         tryShowAnswerResult();
       }
     }, 1000);
   }
   
-  // 答え合わせ画面への遷移を試みる
+  // 時間切れ時に答え合わせ画面への遷移を試みる
   async function tryShowAnswerResult() {
     if (!currentQuizId) return;
     
     try {
-      // 答えが公開されているか確認
-      const response = await fetch(`/api/quiz/${currentQuizId}/answer-available`);
+      // 答えが公開されているか確認 (実際のAPIに合わせて調整が必要)
+      const response = await fetch(`/api/quiz/${currentQuizId}/answer-status`);
       const result = await response.json();
       
       if (result.available) {
@@ -241,16 +241,23 @@ document.addEventListener('DOMContentLoaded', function() {
       questionNumber.textContent = `問題 ${quizId}`;
       questionText.textContent = newQuizData.question;
       
-      // 常に最初に問題画像をリセット・非表示にする
-      playerQuestionImage.classList.add('hidden');
-      playerQuestionImage.querySelector('img').src = '';
-      
-      // 問題1と2の場合のみ問題画像を表示
+      // 問題画像コンテナを初期化（問題1と2以外は常に非表示）
       const questionId = parseInt(quizId);
+      
+      // 問題画像を完全に初期化
+      playerQuestionImage.innerHTML = '';
+      playerQuestionImage.classList.add('hidden');
+      
+      // 問題1と2のみ画像を表示
       if (questionId === 1 || questionId === 2) {
         if (newQuizData.question_image_path) {
-          const questionImageElement = playerQuestionImage.querySelector('img');
-          questionImageElement.src = newQuizData.question_image_path;
+          // 画像要素を動的に作成
+          const imgElement = document.createElement('img');
+          imgElement.src = newQuizData.question_image_path;
+          imgElement.alt = '問題画像';
+          
+          // コンテナに追加して表示
+          playerQuestionImage.appendChild(imgElement);
           playerQuestionImage.classList.remove('hidden');
         }
       }
@@ -552,16 +559,23 @@ document.addEventListener('DOMContentLoaded', function() {
         });
       }
       
-      // 常に最初に答え画像をリセット・非表示にする
-      playerAnswerImage.classList.add('hidden');
-      playerAnswerImage.querySelector('img').src = '';
-      
-      // 問題1と2の場合のみ答え画像を表示
+      // 答え画像コンテナを初期化（問題1と2以外は常に非表示）
       const questionId = parseInt(quizId);
+      
+      // 答え画像を完全に初期化
+      playerAnswerImage.innerHTML = '';
+      playerAnswerImage.classList.add('hidden');
+      
+      // 問題1と2のみ答え画像を表示
       if (questionId === 1 || questionId === 2) {
         if (answerData.answer_image_path) {
-          const answerImageElement = playerAnswerImage.querySelector('img');
-          answerImageElement.src = answerData.answer_image_path;
+          // 画像要素を動的に作成
+          const imgElement = document.createElement('img');
+          imgElement.src = answerData.answer_image_path;
+          imgElement.alt = '解答画像';
+          
+          // コンテナに追加して表示
+          playerAnswerImage.appendChild(imgElement);
           playerAnswerImage.classList.remove('hidden');
         }
       }
@@ -585,16 +599,16 @@ document.addEventListener('DOMContentLoaded', function() {
       // 回答履歴を最新に更新
       await fetchPlayerAnswers();
       
-      console.log("fetchAndShowRanking executing - fetching ranking data");
+      console.log("fetchAndShowRanking実行中 - ランキングデータ取得前");
       
-      // Get all rankings
+      // ランキング全体を取得
       const response = await fetch('/api/quiz/ranking/all');
       const rankings = await response.json();
       
-      console.log('Retrieved ranking data:', rankings);
-      console.log('Current player ID:', playerId);
+      console.log('取得したランキングデータ:', rankings);
+      console.log('現在のプレイヤーID:', playerId);
       
-      // Find the player's rank
+      // 自分の順位を探す
       let playerRanking = null;
       let playerPosition = 0;
       
@@ -602,43 +616,43 @@ document.addEventListener('DOMContentLoaded', function() {
         if (rankings[i].player_id === playerId) {
           playerRanking = rankings[i];
           playerPosition = i + 1;
-          console.log('Found player ranking info:', playerRanking, 'Position:', playerPosition);
+          console.log('プレイヤーランキング情報を発見:', playerRanking, '順位:', playerPosition);
           break;
         }
       }
   
-      // Display ranking information
+      // ランキング情報を表示
       if (playerRanking) {
-        console.log('Displaying player ranking information');
+        console.log('プレイヤーランキング情報を表示します');
         
-        // Set correct count
+        // 正答数 - 直接DOM要素に設定
         if (correctCount) {
           correctCount.textContent = playerRanking.correct_count.toString();
-          console.log('Set correct count:', playerRanking.correct_count);
+          console.log('正答数セット:', playerRanking.correct_count);
         }
         
         if (waitingCorrectCount) {
           waitingCorrectCount.textContent = playerRanking.correct_count.toString();
-          console.log('Set waiting screen correct count:', playerRanking.correct_count);
+          console.log('待機画面正答数セット:', playerRanking.correct_count);
         }
         
-        // Convert milliseconds to seconds and display (2 decimal places)
+        // ミリ秒から秒に変換して表示（小数点2桁）
         const seconds = (playerRanking.total_time / 1000).toFixed(2);
         
         if (totalTime) {
           totalTime.textContent = seconds;
-          console.log('Set total time:', seconds);
+          console.log('合計時間セット:', seconds);
         }
         
         if (waitingTotalTime) {
           waitingTotalTime.textContent = seconds;
-          console.log('Set waiting screen total time:', seconds);
+          console.log('待機画面合計時間セット:', seconds);
         }
         
-        // Set position
-        console.log('Setting position:', playerPosition);
+        // 順位を設定
+        console.log('順位設定:', playerPosition);
         
-        // Get rank number element and top rank display
+        // 大きな順位表示
         const rankNumberElement = document.getElementById('rank-number');
         const topRankDisplayElement = document.getElementById('top-rank-display');
         
@@ -646,39 +660,39 @@ document.addEventListener('DOMContentLoaded', function() {
           rankNumberElement.textContent = playerPosition.toString();
         }
         
-        // Ranking message
+        // ランキングメッセージ
         let rankingMessage = '';
         
         if (playerPosition <= 5) {
-          // Enable top rank display with gold color
+          // 上位5位以内のスタイルを適用
           if (topRankDisplayElement) {
             topRankDisplayElement.classList.remove('hidden');
-            topRankDisplayElement.style.color = '#ffc107';
-            console.log('Enabling top rank display');
+            topRankDisplayElement.style.color = '#ffc107'; // 金色
+            console.log('上位表示を有効化');
           }
           rankingMessage = `おめでとうございます！あなたは${playerPosition}位です！景品があるので、指示がありましたら前に来てください！`;
         } else {
-          // Show rank with black color for positions beyond 5
+          // 5位以下の表示スタイルを適用
           if (topRankDisplayElement) {
             topRankDisplayElement.classList.remove('hidden');
-            topRankDisplayElement.style.color = '#333333';
-            console.log('Showing rank beyond top 5');
+            topRankDisplayElement.style.color = '#333333'; // 黒色
+            console.log('5位以下の順位表示');
           }
           rankingMessage = `あなたは${playerPosition}位でした。ご参加ありがとうございました！`;
         }
         
         if (rankingPosition) {
           rankingPosition.textContent = rankingMessage;
-          console.log('Set ranking message:', rankingMessage);
+          console.log('ランキングメッセージセット:', rankingMessage);
         }
       } else {
-        console.warn('Player not found in rankings. Player ID:', playerId);
+        console.warn('ランキング内にプレイヤーが見つかりません。playerId:', playerId);
         if (rankingPosition) {
           rankingPosition.textContent = 'ランキングデータが取得できませんでした';
         }
       }
       
-      // Show waiting screen
+      // 待機画面を表示
       showScreen(rankingWaitingScreen);
       
     } catch (error) {
