@@ -6,7 +6,7 @@ const fs = require('fs');
 const path = require('path');
 
 // QRコードに埋め込むURL（ホスト名やポート番号は環境に合わせて変更してください）
-const host = '192.168.0.255:3000';  // ここを実際のIPアドレスに変更
+const host = 'wedding-quiz-app.onrender.com';  // ここを実際のIPアドレスに変更
 const url = `http://${host}/play`;
 
 
