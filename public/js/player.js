@@ -56,8 +56,7 @@ document.addEventListener('DOMContentLoaded', function() {
   let quizData = {}; // 現在の問題データを保存
   let playerRanking = 0; // プレイヤーの順位
   let displayCurrentScreen = ''; // メイン画面の現在の状態
-  let isTimerExpired = false; // タイマー終了状態の管理
-  let answerCheckingInterval = null; // 解答確認の定期実行
+  let answerCheckInterval = null; // 答え確認用の間隔タイマー
   
   // URLからプレイヤーIDを取得（既存ユーザーの場合）
   const urlParams = new URLSearchParams(window.location.search);
@@ -92,7 +91,6 @@ document.addEventListener('DOMContentLoaded', function() {
     clearInterval(timerInterval);
     timeLeft = seconds;
     timerValue.textContent = timeLeft;
-    isTimerExpired = false;
     
     timerInterval = setInterval(() => {
       timeLeft--;
@@ -111,43 +109,68 @@ document.addEventListener('DOMContentLoaded', function() {
       
       if (timeLeft <= 0) {
         clearInterval(timerInterval);
-        isTimerExpired = true;
+        
+        // 時間切れの処理
         answerStatusText.textContent = '時間切れです';
         
-        // 時間切れになったら解答画面への自動遷移を開始
-        startAutoTransitionToAnswerScreen();
+        // 自動的に答え合わせ画面への遷移を試みる
+        tryShowAnswerResult();
       }
     }, 1000);
   }
   
-  // 時間切れ時に解答画面への自動遷移を開始
-  function startAutoTransitionToAnswerScreen() {
-    // 既に回答済みかつ待機画面にいる場合も、時間切れになったら解答画面へ
-    if (currentScreen === answeredScreen || currentScreen === quizScreen) {
-      // 既に実行中の確認インターバルをクリア
-      if (answerCheckingInterval) {
-        clearInterval(answerCheckingInterval);
-      }
+  // 時間切れ時に答え合わせ画面への遷移を試みる
+  async function tryShowAnswerResult() {
+    if (!currentQuizId) return;
+    
+    // 既存の定期確認を停止
+    clearInterval(answerCheckInterval);
+    
+    try {
+      // サーバーに答えが公開されているか確認
+      const response = await fetch(`/api/quiz/${currentQuizId}/answer-status`);
+      const result = await response.json();
       
-      // サーバーに問い合わせて解答が公開されているか定期的に確認
-      answerCheckingInterval = setInterval(async () => {
-        try {
-          // 解答が公開されているか確認
-          const response = await fetch(`/api/quiz/${currentQuizId}/answer-status`);
-          const data = await response.json();
-          
-          if (data.isAnswerAvailable || isTimerExpired) {
-            // 解答が公開されているか、タイマーが切れた場合は解答画面へ
-            clearInterval(answerCheckingInterval);
-            showAnswerResult(currentQuizId);
+      if (result.available) {
+        // 答えが公開されている場合は即座に答え合わせ画面に遷移
+        console.log("答えが公開されています。答え合わせ画面に遷移します。");
+        showAnswerResult(currentQuizId);
+      } else {
+        // 答えがまだ公開されていない場合は5秒ごとに再確認
+        console.log("答えはまだ公開されていません。定期的に確認を開始します。");
+        
+        answerCheckInterval = setInterval(async () => {
+          try {
+            const checkResponse = await fetch(`/api/quiz/${currentQuizId}/answer-status`);
+            const checkResult = await checkResponse.json();
             
-            // Socket.ioで回答表示イベントを発信（必要に応じて）
-            socket.emit('request_show_answer', { quizId: currentQuizId });
+            if (checkResult.available) {
+              clearInterval(answerCheckInterval);
+              console.log("答えが公開されました。答え合わせ画面に遷移します。");
+              showAnswerResult(currentQuizId);
+            }
+          } catch (error) {
+            console.error('答え確認中にエラーが発生しました:', error);
+          }
+        }, 5000); // 5秒ごとに確認
+      }
+    } catch (error) {
+      console.error('答え合わせ画面への遷移確認中にエラーが発生しました:', error);
+      
+      // エラーが発生した場合も定期確認を開始
+      answerCheckInterval = setInterval(async () => {
+        try {
+          const checkResponse = await fetch(`/api/quiz/${currentQuizId}/answer-status`);
+          const checkResult = await checkResponse.json();
+          
+          if (checkResult.available) {
+            clearInterval(answerCheckInterval);
+            showAnswerResult(currentQuizId);
           }
         } catch (error) {
-          console.error('解答状態の確認中にエラーが発生しました:', error);
+          console.error('答え確認中にエラーが発生しました:', error);
         }
-      }, 2000); // 2秒ごとに確認
+      }, 5000);
     }
   }
   
@@ -229,6 +252,8 @@ document.addEventListener('DOMContentLoaded', function() {
         if (waitingTotalTime) {
           waitingTotalTime.textContent = seconds;
         }
+        
+        console.log('DOM更新完了 - 正答数:', data.stats.correctCount, '合計時間:', seconds);
       }
       
       return data;
@@ -292,7 +317,6 @@ document.addEventListener('DOMContentLoaded', function() {
       if (isImageOptions) {
         // 画像選択肢の場合
         optionsContainer.className = 'image-options-container';
-        optionsContainer.setAttribute('data-quiz-id', quizId);
         
         newQuizData.options.forEach((option, index) => {
           const button = document.createElement('button');
@@ -300,7 +324,7 @@ document.addEventListener('DOMContentLoaded', function() {
           button.dataset.answer = (index + 1).toString();
           
           // 問題3のみ、画像のアスペクト比を保持するクラスを追加
-          if (questionId === 3) {
+          if (parseInt(quizId) === 3) {
             button.classList.add('preserve-aspect-ratio');
           }
           
@@ -328,7 +352,7 @@ document.addEventListener('DOMContentLoaded', function() {
           button.textContent = option;
           
           // 問題5（新郎/新婦）の場合は色付け
-          if (questionId === 5) {
+          if (parseInt(quizId) === 5) {
             if (option === '新郎') {
               button.style.backgroundColor = '#e6f0ff';
               button.style.borderColor = '#0066cc';
@@ -417,7 +441,7 @@ document.addEventListener('DOMContentLoaded', function() {
       playerAnswers[quizId] = {
         answer,
         isCorrect: result.isCorrect,
-        responseTime: responseTime
+        responseTime: responseTime // APIから返される時間ではなく、クライアントで計算した時間を使用
       };
       
       // 回答結果を表示
@@ -438,14 +462,15 @@ document.addEventListener('DOMContentLoaded', function() {
       yourAnswer.textContent = answer;
       showScreen(answeredScreen);
       
-      // 現在のdisplayの状態によっては答え合わせ画面に進む
+      // 現在の表示が既に答え画面なら直接答え合わせ画面に移動
       if (displayCurrentScreen === 'quiz_answer') {
         showAnswerResult(currentQuizId);
-      }
-      
-      // タイマーが既に切れている場合は答え合わせ画面に自動で移動
-      if (isTimerExpired) {
-        startAutoTransitionToAnswerScreen();
+      } else {
+        // そうでなければ、時間切れになった時に自動で答え合わせ画面に移動するよう設定
+        setTimeout(() => {
+          // 時間切れになったら答え合わせ画面への遷移を試みる
+          tryShowAnswerResult();
+        }, (timeLeft + 1) * 1000); // タイマーが0になった直後
       }
       
     } catch (error) {
@@ -457,6 +482,9 @@ document.addEventListener('DOMContentLoaded', function() {
   // 答え合わせ画面を表示
   async function showAnswerResult(quizId) {
     if (!quizId) return;
+    
+    // 既存の定期確認を停止
+    clearInterval(answerCheckInterval);
     
     try {
       // クイズの正解情報を取得（管理者API）
@@ -604,6 +632,11 @@ document.addEventListener('DOMContentLoaded', function() {
       
     } catch (error) {
       console.error('答え合わせの表示に失敗しました:', error);
+      
+      // エラー発生時も一定間隔後に再試行
+      setTimeout(() => {
+        tryShowAnswerResult();
+      }, 5000);
     }
   }
   
@@ -778,11 +811,9 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
               // まだ回答していない場合、タイマーを停止して時間切れとする
               stopTimer();
-              isTimerExpired = true;
               answerStatusText.textContent = '時間切れです';
-              
-              // 時間切れの場合は自動的に解答画面へ
-              startAutoTransitionToAnswerScreen();
+              // 答え合わせ画面に遷移
+              tryShowAnswerResult();
             }
           }
           break;
@@ -811,20 +842,6 @@ document.addEventListener('DOMContentLoaded', function() {
           if (currentQuizId) {
             displayCurrentScreen = 'quiz_answer';
             showAnswerResult(currentQuizId);
-          }
-          break;
-          
-        case 'time_expired':
-          // タイマー終了イベントを受信した場合
-          if (currentQuizId) {
-            isTimerExpired = true;
-            if (currentScreen === quizScreen) {
-              stopTimer();
-              answerStatusText.textContent = '時間切れです';
-            }
-            
-            // 自動的に解答画面への移行を開始
-            startAutoTransitionToAnswerScreen();
           }
           break;
           

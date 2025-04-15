@@ -33,7 +33,6 @@ document.addEventListener('DOMContentLoaded', function() {
   let timeLeft = 30;
   let displayedRankings = [];
   let refreshInterval = null;
-  let isTimerExpired = false;
   
   // 画像のプリロード処理
   function preloadImages() {
@@ -132,7 +131,6 @@ document.addEventListener('DOMContentLoaded', function() {
     clearInterval(timerInterval);
     timeLeft = seconds;
     floatingTimerValue.textContent = timeLeft;
-    isTimerExpired = false;
     
     // フローティングタイマーを表示
     floatingTimer.classList.remove('hidden');
@@ -150,20 +148,32 @@ document.addEventListener('DOMContentLoaded', function() {
       
       if (timeLeft <= 0) {
         clearInterval(timerInterval);
-        isTimerExpired = true;
         
-        // タイマー終了をSocket.ioで通知
-        socket.emit('quiz_command', {
-          command: 'time_expired',
-          quizId: currentQuizId
-        });
-        
-        // 時間切れになったら自動的に解答画面へ遷移
+        // 新機能: 時間切れになったら自動的に解答画面に遷移
         if (currentScreen === quizQuestionScreen && currentQuizId) {
+          console.log('時間切れ: 自動的に解答画面に遷移します');
           showAnswer(currentQuizId);
+          
+          // 解答が表示されたことをサーバーに通知（他のクライアントのための遷移に利用）
+          markAnswerAsDisplayed(currentQuizId);
         }
       }
     }, 1000);
+  }
+  
+  // 解答が表示されたことをサーバーに通知
+  async function markAnswerAsDisplayed(quizId) {
+    try {
+      await fetch(`/api/admin/quiz/${quizId}/mark-answer-displayed`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      console.log(`クイズ ${quizId} の解答表示をサーバーに通知しました`);
+    } catch (error) {
+      console.error('解答表示の通知に失敗しました:', error);
+    }
   }
   
   // タイマーを停止する関数
@@ -229,6 +239,8 @@ document.addEventListener('DOMContentLoaded', function() {
         // 選択肢を設定（画像選択肢）
         optionsContainer.innerHTML = '';
         optionsContainer.className = 'image-options-container';
+        
+        // 問題IDを設定（問題3と4用にサイズ調整するため）
         optionsContainer.setAttribute('data-quiz-id', quizId);
         
         quizData.options.forEach((imagePath, index) => {
@@ -365,17 +377,6 @@ document.addEventListener('DOMContentLoaded', function() {
       if (answerStats) {
         answerStats.style.display = 'none';
       }
-      
-      // 解答画面表示時に、解答が表示されたことをデータベースに記録
-      await fetch(`/api/quiz/${quizId}/mark-answer-displayed`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          displayed: true
-        })
-      });
       
       // 画面を解答画面に切り替え
       showScreen(quizAnswerScreen);
@@ -524,15 +525,6 @@ document.addEventListener('DOMContentLoaded', function() {
         
       case 'show_answer':
         if (currentQuizId) {
-          showAnswer(currentQuizId);
-        }
-        break;
-        
-      case 'time_expired':
-        // タイマー終了イベントの処理
-        isTimerExpired = true;
-        if (currentScreen === quizQuestionScreen && currentQuizId) {
-          // 時間切れの場合、自動的に答えを表示
           showAnswer(currentQuizId);
         }
         break;

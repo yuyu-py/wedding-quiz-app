@@ -1,4 +1,4 @@
-// server/database/db.js
+// server/database/db.js - AWS SDK v3 バージョン
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const { 
   DynamoDBDocumentClient, 
@@ -12,22 +12,22 @@ const {
 const NodeCache = require('node-cache');
 require('dotenv').config();
 
-// Cache setup (60 seconds)
+// キャッシュの設定（60秒）
 const cache = new NodeCache({ stdTTL: 60 });
 
-// DynamoDB client setup
+// DynamoDB クライアントの設定
 const client = new DynamoDBClient({
   region: process.env.AWS_REGION || 'ap-northeast-1'
-  // AWS credentials will be automatically loaded from ~/.aws/credentials
+  // AWS 認証情報は ~/.aws/credentials から自動的に読み込まれます
 });
 
-// DynamoDB document client
+// DynamoDB ドキュメントクライアント
 const dynamodb = DynamoDBDocumentClient.from(client);
 
-// Table name prefix
+// テーブル名のプレフィックス
 const tablePrefix = process.env.DYNAMODB_TABLE_PREFIX || 'wedding_quiz_';
 
-// Table names definition
+// テーブル名の定義
 const TABLES = {
   QUIZ: `${tablePrefix}quiz`,
   PLAYER: `${tablePrefix}player`,
@@ -35,27 +35,27 @@ const TABLES = {
   SESSION: `${tablePrefix}session`
 };
 
-// Initialize DynamoDB
+// DynamoDBの初期化
 async function initDb() {
-  console.log('Initializing DynamoDB connection...');
+  console.log('DynamoDB接続の初期化を開始します...');
   
   try {
-    // Check and add sample quiz data
+    // サンプルクイズデータを確認・追加
     const quizCount = await countQuizItems();
-    console.log(`Existing quiz data: ${quizCount} items`);
+    console.log(`既存のクイズデータ: ${quizCount}件`);
     
     if (quizCount === 0) {
       await insertSampleQuizData();
-      console.log('Sample quiz data added');
+      console.log('サンプルクイズデータを追加しました');
     }
     
-    console.log('DynamoDB connection initialization completed');
+    console.log('DynamoDB接続の初期化が完了しました');
   } catch (error) {
-    console.error('Error during DynamoDB initialization:', error);
+    console.error('DynamoDB初期化中にエラーが発生しました:', error);
   }
 }
 
-// Get quiz item count
+// クイズアイテム数を取得
 async function countQuizItems() {
   try {
     const params = {
@@ -66,12 +66,12 @@ async function countQuizItems() {
     const result = await dynamodb.send(new ScanCommand(params));
     return result.Count;
   } catch (error) {
-    console.error('Error retrieving quiz count:', error);
+    console.error('クイズ数の取得中にエラーが発生しました:', error);
     return 0;
   }
 }
 
-// Insert sample quiz data
+// サンプルクイズデータの挿入
 async function insertSampleQuizData() {
   const quizItems = [
     {
@@ -141,9 +141,9 @@ async function insertSampleQuizData() {
     }
   ];
   
-  console.log('Starting sample quiz data insertion...');
+  console.log('サンプルクイズデータの挿入を開始します...');
   
-  // Insert one by one
+  // 1つずつ挿入
   for (const item of quizItems) {
     const params = {
       TableName: TABLES.QUIZ,
@@ -152,18 +152,18 @@ async function insertSampleQuizData() {
     
     try {
       await dynamodb.send(new PutCommand(params));
-      console.log(`Quiz ${item.id} inserted`);
+      console.log(`クイズ ${item.id} を挿入しました`);
     } catch (error) {
-      console.error(`Error inserting quiz ${item.id}:`, error);
+      console.error(`クイズ ${item.id} の挿入中にエラーが発生しました:`, error);
       throw error;
     }
   }
 }
 
-// Set Quiz 5 answer
+// クイズ5の答えを設定
 async function setQuiz5Answer(answer) {
   try {
-    // Clear cache
+    // キャッシュをクリア
     cache.del(`quiz_5`);
     
     const params = {
@@ -178,8 +178,8 @@ async function setQuiz5Answer(answer) {
     
     await dynamodb.send(new UpdateCommand(params));
     
-    // Record custom answer in current session
-    // Get the latest unfinished session
+    // 現在のセッションにカスタム答えを記録
+    // 最新の未終了セッションを取得
     const queryParams = {
       TableName: TABLES.SESSION,
       IndexName: 'quiz_id-index', 
@@ -213,22 +213,22 @@ async function setQuiz5Answer(answer) {
         await dynamodb.send(new UpdateCommand(updateParams));
       }
     } catch (error) {
-      console.error('Error updating session information:', error);
-      // Answer was still updated in the quiz, so return true
+      console.error('セッション情報の更新中にエラーが発生しました:', error);
+      // クイズの答えだけは更新できているので、true を返す
     }
     
     return true;
   } catch (error) {
-    console.error('Error setting Quiz 5 answer:', error);
+    console.error('クイズ5の答え設定中にエラーが発生しました:', error);
     return false;
   }
 }
 
-// Get a specific quiz
+// 特定のクイズを取得
 async function getQuiz(id) {
   const cacheKey = `quiz_${id}`;
   
-  // Check cache
+  // キャッシュをチェック
   if (cache.has(cacheKey)) {
     return cache.get(cacheKey);
   }
@@ -245,20 +245,20 @@ async function getQuiz(id) {
       return null;
     }
     
-    // Save result to cache
+    // 結果をキャッシュに保存
     cache.set(cacheKey, result.Item);
     return result.Item;
   } catch (error) {
-    console.error(`Error retrieving quiz ${id}:`, error);
+    console.error(`クイズ ${id} の取得中にエラーが発生しました:`, error);
     return null;
   }
 }
 
-// Get all quizzes
+// すべてのクイズを取得
 async function getAllQuizzes() {
   const cacheKey = 'all_quizzes';
   
-  // Check cache
+  // キャッシュをチェック
   if (cache.has(cacheKey)) {
     return cache.get(cacheKey);
   }
@@ -270,19 +270,19 @@ async function getAllQuizzes() {
     
     const result = await dynamodb.send(new ScanCommand(params));
     
-    // Save result to cache
+    // 結果をキャッシュに保存
     cache.set(cacheKey, result.Items);
     return result.Items;
   } catch (error) {
-    console.error('Error retrieving all quizzes:', error);
+    console.error('全クイズの取得中にエラーが発生しました:', error);
     return [];
   }
 }
 
-// Start a quiz session
+// クイズセッションの開始
 async function startQuizSession(quizId) {
   try {
-    // End existing active sessions
+    // 既存の進行中セッションを終了
     const queryParams = {
       TableName: TABLES.SESSION,
       IndexName: 'quiz_id-index',
@@ -313,7 +313,7 @@ async function startQuizSession(quizId) {
       }
     }
     
-    // Create new session
+    // 新しいセッションを作成
     const startedAt = new Date().toISOString();
     const createParams = {
       TableName: TABLES.SESSION,
@@ -321,8 +321,7 @@ async function startQuizSession(quizId) {
         quiz_id: quizId.toString(),
         started_at: startedAt,
         custom_answer: null,
-        answer_displayed: false,
-        is_timer_expired: false
+        answer_displayed: false // 初期状態では答えは表示されていない
       }
     };
     
@@ -333,15 +332,15 @@ async function startQuizSession(quizId) {
       sessionId: `${quizId}_${startedAt}`
     };
   } catch (error) {
-    console.error(`Error starting quiz ${quizId} session:`, error);
+    console.error(`クイズ ${quizId} のセッション開始中にエラーが発生しました:`, error);
     return {
       success: false,
-      error: 'Error occurred while starting session'
+      error: 'セッション開始中にエラーが発生しました'
     };
   }
 }
 
-// Register player
+// プレイヤー登録
 async function registerPlayer(id, name) {
   try {
     const params = {
@@ -356,12 +355,12 @@ async function registerPlayer(id, name) {
     await dynamodb.send(new PutCommand(params));
     return true;
   } catch (error) {
-    console.error(`Error registering player ${id}:`, error);
+    console.error(`プレイヤー ${id} の登録中にエラーが発生しました:`, error);
     return false;
   }
 }
 
-// Get player information
+// プレイヤー情報の取得
 async function getPlayer(id) {
   try {
     const params = {
@@ -372,28 +371,12 @@ async function getPlayer(id) {
     const result = await dynamodb.send(new GetCommand(params));
     return result.Item;
   } catch (error) {
-    console.error(`Error retrieving player ${id}:`, error);
+    console.error(`プレイヤー ${id} の取得中にエラーが発生しました:`, error);
     return null;
   }
 }
 
-// Get participant count
-async function getParticipantCount() {
-  try {
-    const params = {
-      TableName: TABLES.PLAYER,
-      Select: 'COUNT'
-    };
-    
-    const result = await dynamodb.send(new ScanCommand(params));
-    return result.Count;
-  } catch (error) {
-    console.error('Error retrieving participant count:', error);
-    return 0;
-  }
-}
-
-// Record answer
+// プレイヤーの回答を記録
 async function recordAnswer(playerId, quizId, answer, isCorrect, responseTime) {
   try {
     const params = {
@@ -410,17 +393,17 @@ async function recordAnswer(playerId, quizId, answer, isCorrect, responseTime) {
     
     await dynamodb.send(new PutCommand(params));
     
-    // Clear rankings cache
+    // ランキングキャッシュをクリア
     cache.del('rankings');
     
     return true;
   } catch (error) {
-    console.error(`Error recording answer for player ${playerId} quiz ${quizId}:`, error);
+    console.error(`プレイヤー ${playerId} のクイズ ${quizId} への回答記録中にエラーが発生しました:`, error);
     return false;
   }
 }
 
-// Get player answers
+// プレイヤーの回答履歴を取得
 async function getPlayerAnswers(playerId) {
   try {
     const params = {
@@ -434,15 +417,15 @@ async function getPlayerAnswers(playerId) {
     const result = await dynamodb.send(new QueryCommand(params));
     return result.Items;
   } catch (error) {
-    console.error(`Error retrieving answer history for player ${playerId}:`, error);
+    console.error(`プレイヤー ${playerId} の回答履歴取得中にエラーが発生しました:`, error);
     return [];
   }
 }
 
-// Get quiz statistics
+// クイズの回答統計を取得
 async function getQuizStats(quizId) {
   try {
-    // Get quiz information
+    // クイズ情報を取得
     const quiz = await getQuiz(quizId);
     if (!quiz) {
       return null;
@@ -450,7 +433,7 @@ async function getQuizStats(quizId) {
     
     const options = JSON.parse(quiz.options);
     
-    // Get answers for this quiz
+    // クイズに対する回答を取得
     const params = {
       TableName: TABLES.ANSWER,
       IndexName: 'quiz_id-index',
@@ -462,7 +445,7 @@ async function getQuizStats(quizId) {
     
     const answers = await dynamodb.send(new QueryCommand(params));
     
-    // Count answers for each option
+    // 各選択肢の回答数を集計
     const stats = options.map(option => {
       const count = answers.Items ? 
         answers.Items.filter(a => a.answer === option).length : 0;
@@ -474,7 +457,7 @@ async function getQuizStats(quizId) {
       };
     });
     
-    // Total participants and correct answers
+    // 総回答数と正解数
     const totalParticipants = answers.Items ? 
       new Set(answers.Items.map(a => a.player_id)).size : 0;
     
@@ -488,22 +471,38 @@ async function getQuizStats(quizId) {
       stats
     };
   } catch (error) {
-    console.error(`Error retrieving statistics for quiz ${quizId}:`, error);
+    console.error(`クイズ ${quizId} の統計取得中にエラーが発生しました:`, error);
     return null;
   }
 }
 
-// Get rankings
+// 参加者数を取得
+async function getParticipantCount() {
+  try {
+    const params = {
+      TableName: TABLES.PLAYER,
+      Select: 'COUNT'
+    };
+    
+    const result = await dynamodb.send(new ScanCommand(params));
+    return result.Count;
+  } catch (error) {
+    console.error('参加者数の取得中にエラーが発生しました:', error);
+    return 0;
+  }
+}
+
+// ランキングの取得
 async function getRankings() {
   const cacheKey = 'rankings';
   
-  // Check cache
+  // キャッシュをチェック
   if (cache.has(cacheKey)) {
     return cache.get(cacheKey);
   }
   
   try {
-    // Get all players
+    // すべてのプレイヤーを取得
     const playersParams = {
       TableName: TABLES.PLAYER
     };
@@ -511,11 +510,11 @@ async function getRankings() {
     const playersResult = await dynamodb.send(new ScanCommand(playersParams));
     const players = playersResult.Items || [];
     
-    // Collect data for ranking calculation
+    // ランキング計算のためのデータを収集
     const rankingData = [];
     
     for (const player of players) {
-      // Get player's answers
+      // プレイヤーの回答を取得
       const answersParams = {
         TableName: TABLES.ANSWER,
         KeyConditionExpression: 'player_id = :playerId',
@@ -527,7 +526,7 @@ async function getRankings() {
       const answersResult = await dynamodb.send(new QueryCommand(answersParams));
       const answers = answersResult.Items || [];
       
-      // Calculate correct answers and total response time
+      // 正答数と合計回答時間を計算
       const correctCount = answers.filter(a => a.is_correct === 1).length;
       const totalTime = answers.reduce((sum, a) => sum + a.response_time, 0);
       
@@ -540,63 +539,63 @@ async function getRankings() {
       });
     }
     
-    // Sort by correct count (descending), then by response time (ascending)
+    // 正答数で降順、同点なら回答時間で昇順にソート
     rankingData.sort((a, b) => {
       if (a.correct_count !== b.correct_count) {
-        return b.correct_count - a.correct_count; // correct count descending
+        return b.correct_count - a.correct_count; // 正答数で降順
       }
-      return a.total_time - b.total_time; // response time ascending
+      return a.total_time - b.total_time; // 回答時間で昇順
     });
     
-    // Limit to top 30
+    // 上位30件に制限
     const limitedRankings = rankingData.slice(0, 30);
     
-    // Save result to cache
+    // 結果をキャッシュに保存
     cache.set(cacheKey, limitedRankings);
     return limitedRankings;
   } catch (error) {
-    console.error('Error retrieving rankings:', error);
+    console.error('ランキングの取得中にエラーが発生しました:', error);
     return [];
   }
 }
 
-// Check if quiz answer is available
+// クイズの解答が公開されているか確認する関数（自動遷移用）
 async function isQuizAnswerAvailable(quizId) {
   try {
-    // Get the latest session for this quiz ID
-    const queryParams = {
+    // セッションテーブルから該当クイズIDの最新セッションを取得
+    const params = {
       TableName: TABLES.SESSION,
       IndexName: 'quiz_id-index',
       KeyConditionExpression: 'quiz_id = :quizId',
       ExpressionAttributeValues: {
         ':quizId': quizId.toString()
       },
-      ScanIndexForward: false, // descending (latest first)
-      Limit: 1 // only the latest
+      ScanIndexForward: false, // 降順（最新のものから）
+      Limit: 1 // 最新の1件のみ
     };
     
-    const result = await dynamodb.send(new QueryCommand(queryParams));
+    const result = await dynamodb.send(new QueryCommand(params));
     
-    // If result exists and answer_displayed is true or is_timer_expired is true
     if (result.Items && result.Items.length > 0) {
       const session = result.Items[0];
-      return session.answer_displayed === true || session.is_timer_expired === true;
+      // session.answer_displayed が true であれば解答が公開されている
+      return session.answer_displayed === true;
     }
     
     return false;
   } catch (error) {
-    console.error(`Error checking answer availability for quiz ${quizId}:`, error);
+    console.error(`クイズ ${quizId} の解答公開状態確認中にエラーが発生しました:`, error);
     return false;
   }
 }
 
-// Mark quiz answer as displayed
-async function markQuizAnswerDisplayed(quizId, displayed) {
+// 解答表示フラグを設定する関数（自動遷移用）
+async function markAnswerAsDisplayed(quizId) {
   try {
-    // Get the latest session
+    // 最新のセッションを取得
     const queryParams = {
       TableName: TABLES.SESSION,
-      IndexName: 'quiz_id-index',
+      IndexName: 'quiz_id-index', 
       KeyConditionExpression: 'quiz_id = :quizId',
       FilterExpression: 'attribute_not_exists(ended_at)',
       ExpressionAttributeValues: {
@@ -613,13 +612,13 @@ async function markQuizAnswerDisplayed(quizId, displayed) {
       
       const updateParams = {
         TableName: TABLES.SESSION,
-        Key: {
+        Key: { 
           quiz_id: session.quiz_id,
           started_at: session.started_at
         },
         UpdateExpression: 'set answer_displayed = :displayed',
         ExpressionAttributeValues: {
-          ':displayed': displayed
+          ':displayed': true
         }
       };
       
@@ -629,64 +628,20 @@ async function markQuizAnswerDisplayed(quizId, displayed) {
     
     return false;
   } catch (error) {
-    console.error(`Error updating answer display status for quiz ${quizId}:`, error);
+    console.error(`クイズ ${quizId} の解答表示フラグ更新中にエラーが発生しました:`, error);
     return false;
   }
 }
 
-// Mark quiz timer as expired
-async function markQuizTimerExpired(quizId, expired) {
-  try {
-    // Get the latest session
-    const queryParams = {
-      TableName: TABLES.SESSION,
-      IndexName: 'quiz_id-index',
-      KeyConditionExpression: 'quiz_id = :quizId',
-      FilterExpression: 'attribute_not_exists(ended_at)',
-      ExpressionAttributeValues: {
-        ':quizId': quizId.toString()
-      },
-      ScanIndexForward: false,
-      Limit: 1
-    };
-    
-    const result = await dynamodb.send(new QueryCommand(queryParams));
-    
-    if (result.Items && result.Items.length > 0) {
-      const session = result.Items[0];
-      
-      const updateParams = {
-        TableName: TABLES.SESSION,
-        Key: {
-          quiz_id: session.quiz_id,
-          started_at: session.started_at
-        },
-        UpdateExpression: 'set is_timer_expired = :expired',
-        ExpressionAttributeValues: {
-          ':expired': expired
-        }
-      };
-      
-      await dynamodb.send(new UpdateCommand(updateParams));
-      return true;
-    }
-    
-    return false;
-  } catch (error) {
-    console.error(`Error updating timer expiration status for quiz ${quizId}:`, error);
-    return false;
-  }
-}
-
-// Reset all data
+// すべてのデータをリセット
 async function resetAllData() {
   try {
-    console.log('Starting data reset...');
+    console.log('データのリセットを開始します...');
     
-    // Clear cache
+    // キャッシュをクリア
     cache.flushAll();
     
-    // Delete session data
+    // セッションデータを削除
     const sessionParams = {
       TableName: TABLES.SESSION
     };
@@ -706,7 +661,7 @@ async function resetAllData() {
       await dynamodb.send(new DeleteCommand(params));
     }
     
-    // Delete answer data
+    // 回答データを削除
     const answerParams = {
       TableName: TABLES.ANSWER
     };
@@ -726,7 +681,7 @@ async function resetAllData() {
       await dynamodb.send(new DeleteCommand(params));
     }
     
-    // Delete player data
+    // プレイヤーデータを削除
     const playerParams = {
       TableName: TABLES.PLAYER
     };
@@ -745,7 +700,7 @@ async function resetAllData() {
       await dynamodb.send(new DeleteCommand(params));
     }
     
-    // Reset Quiz 5 answer
+    // クイズ5の回答をリセット
     const updateParams = {
       TableName: TABLES.QUIZ,
       Key: { id: '5' },
@@ -757,18 +712,18 @@ async function resetAllData() {
     
     await dynamodb.send(new UpdateCommand(updateParams));
     
-    console.log('All data has been reset');
+    console.log('すべてのデータがリセットされました');
     return true;
   } catch (error) {
-    console.error('Error during data reset:', error);
+    console.error('データリセット中にエラーが発生しました:', error);
     return false;
   }
 }
 
-// Close database connection (with AWS SDK v3, resources are released automatically)
+// データベース接続を閉じる（AWS SDK v3ではリソース解放は自動的に行われる）
 function closeDb() {
-  console.log('Cleaning up DynamoDB connection');
-  // Nothing to do
+  console.log('DynamoDB接続をクリーンアップします');
+  // 何もする必要はありません
 }
 
 module.exports = {
@@ -782,13 +737,12 @@ module.exports = {
   startQuizSession,
   registerPlayer,
   getPlayer,
-  getParticipantCount,
   recordAnswer,
   getPlayerAnswers,
   getQuizStats,
+  getParticipantCount,
   getRankings,
   resetAllData,
   isQuizAnswerAvailable,
-  markQuizAnswerDisplayed,
-  markQuizTimerExpired
+  markAnswerAsDisplayed
 };
