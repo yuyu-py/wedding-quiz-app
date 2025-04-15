@@ -559,7 +559,7 @@ async function getRankings() {
   }
 }
 
-// isQuizAnswerAvailable関数のパフォーマンス改善
+// クイズの解答が公開されているか確認する関数（自動遷移用）
 async function isQuizAnswerAvailable(quizId) {
   // キャッシュをチェック
   const cacheKey = `answer_displayed_${quizId}`;
@@ -600,14 +600,30 @@ async function isQuizAnswerAvailable(quizId) {
   }
 }
 
-// markAnswerAsDisplayed関数のパフォーマンス改善
+// 解答表示フラグを設定する関数（自動遷移用）
 async function markAnswerAsDisplayed(quizId) {
-  // キャッシュにフラグを設定
-  const cacheKey = `answer_displayed_${quizId}`;
-  cache.set(cacheKey, true);
-  
   try {
-    // 最新のセッションを取得
+    // 共通の処理だけ抽出
+    // キャッシュに値を設定（キャッシュファーストに）
+    const cacheKey = `answer_displayed_${quizId}`;
+    cache.set(cacheKey, true);
+    
+    // 以下はバックグラウンドで実行（Promiseを返さない）
+    processAnswerDisplayed(quizId).catch(err => {
+      console.error(`バックグラウンド処理中のエラー: ${err.message}`);
+    });
+    
+    // すぐに成功を返す（DB操作の完了を待たない）
+    return true;
+  } catch (error) {
+    console.error(`クイズ ${quizId} の解答表示フラグ更新中にエラーが発生しました:`, error);
+    return false;
+  }
+}
+
+// バックグラウンドでDB処理を行う関数
+async function processAnswerDisplayed(quizId) {
+  try {
     const queryParams = {
       TableName: TABLES.SESSION,
       IndexName: 'quiz_id-index', 
@@ -638,13 +654,13 @@ async function markAnswerAsDisplayed(quizId) {
       };
       
       await dynamodb.send(new UpdateCommand(updateParams));
-      return true;
+      console.log(`クイズ ${quizId} の解答表示フラグを設定しました`);
+    } else {
+      console.warn(`クイズ ${quizId} の進行中セッションが見つかりませんでした`);
     }
-    
-    return false;
   } catch (error) {
-    console.error(`クイズ ${quizId} の解答表示フラグ更新中にエラーが発生しました:`, error);
-    return false;
+    console.error(`DB更新エラー: ${error.message}`);
+    throw error; // 呼び出し元でキャッチされる
   }
 }
 
@@ -759,5 +775,6 @@ module.exports = {
   getRankings,
   resetAllData,
   isQuizAnswerAvailable,
-  markAnswerAsDisplayed
+  markAnswerAsDisplayed,
+  processAnswerDisplayed
 };
