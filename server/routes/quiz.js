@@ -90,6 +90,17 @@ router.get('/:id/stats', async (req, res) => {
   }
 });
 
+// ランキングの取得
+router.get('/ranking/all', async (req, res) => {
+  try {
+    const rankings = await db.getRankings();
+    res.json(rankings);
+  } catch (error) {
+    console.error('ランキングの取得中にエラーが発生しました:', error);
+    res.status(500).json({ error: 'サーバーエラーが発生しました' });
+  }
+});
+
 // 参加者数の取得
 router.get('/stats/participants', async (req, res) => {
   try {
@@ -106,7 +117,7 @@ router.get('/:id/answer-available', async (req, res) => {
   try {
     const { id } = req.params;
     
-    // 最新のクイズセッションを取得して解答が公開されているか確認
+    // クイズの解答が公開されているか確認
     const isAnswerAvailable = await db.isQuizAnswerAvailable(id);
     
     res.json({ available: isAnswerAvailable });
@@ -116,13 +127,17 @@ router.get('/:id/answer-available', async (req, res) => {
   }
 });
 
-// ランキングの取得
-router.get('/ranking/all', async (req, res) => {
+// タイマー終了を通知するAPI
+router.post('/:id/end-timer', async (req, res) => {
   try {
-    const rankings = await db.getRankings();
-    res.json(rankings);
+    const { id } = req.params;
+    
+    // タイマー終了を記録
+    await db.markQuizTimerEnded(id);
+    
+    res.json({ success: true });
   } catch (error) {
-    console.error('ランキングの取得中にエラーが発生しました:', error);
+    console.error('タイマー終了の記録中にエラーが発生しました:', error);
     res.status(500).json({ error: 'サーバーエラーが発生しました' });
   }
 });

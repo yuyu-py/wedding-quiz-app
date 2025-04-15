@@ -33,6 +33,7 @@ document.addEventListener('DOMContentLoaded', function() {
   let timeLeft = 30;
   let displayedRankings = [];
   let refreshInterval = null;
+  let autoAnswerDisplayed = false; // タイマー終了後に自動遷移したかのフラグ
   
   // 画像のプリロード処理
   function preloadImages() {
@@ -118,6 +119,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // 状態をリセット
     currentQuizId = null;
     displayedRankings = [];
+    autoAnswerDisplayed = false;
     
     // ホーム画面を表示
     showScreen(welcomeScreen);
@@ -128,6 +130,7 @@ document.addEventListener('DOMContentLoaded', function() {
     clearInterval(timerInterval);
     timeLeft = seconds;
     floatingTimerValue.textContent = timeLeft;
+    autoAnswerDisplayed = false; // 自動遷移フラグをリセット
     
     // フローティングタイマーを表示
     floatingTimer.classList.remove('hidden');
@@ -145,7 +148,24 @@ document.addEventListener('DOMContentLoaded', function() {
       
       if (timeLeft <= 0) {
         clearInterval(timerInterval);
-        // 時間切れ時の処理があればここに追加
+        
+        // 時間切れ時の処理: 自動的に解答画面に遷移
+        if (currentScreen === quizQuestionScreen && currentQuizId && !autoAnswerDisplayed) {
+          console.log('時間切れ: 自動的に解答画面に遷移します');
+          autoAnswerDisplayed = true; // 二重実行防止のためフラグを設定
+          
+          // サーバーにクイズが終了したことを通知
+          fetch(`/api/quiz/${currentQuizId}/end-timer`, {
+            method: 'POST'
+          }).then(() => {
+            console.log('タイマー終了をサーバーに通知しました');
+          }).catch(error => {
+            console.error('タイマー終了通知中にエラーが発生しました:', error);
+          });
+          
+          // 解答画面に遷移
+          showAnswer(currentQuizId);
+        }
       }
     }, 1000);
   }
@@ -213,9 +233,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // 選択肢を設定（画像選択肢）
         optionsContainer.innerHTML = '';
         optionsContainer.className = 'image-options-container';
-        
-        // 問題IDを設定 - これを追加して問題3, 4を特定できるようにする
-        optionsContainer.setAttribute('data-quiz-id', quizId);
+        optionsContainer.setAttribute('data-quiz-id', quizId); // 問題IDを設定（CSS用）
         
         quizData.options.forEach((imagePath, index) => {
           const optionDiv = document.createElement('div');
@@ -346,125 +364,23 @@ document.addEventListener('DOMContentLoaded', function() {
         answerImageContainer.style.display = answerData.answer_image_path ? 'block' : 'none';
       }
       
-      // 回答状況を取得
-      const statsResponse = await fetch(`/api/quiz/${quizId}/stats`);
-      const statsData = await statsResponse.json();
-      
-      // 問題4と5の場合は画像選択肢の回答状況表示を変更
-      if (parseInt(quizId) === 4 || parseInt(quizId) === 5) {
-        if (parseInt(quizId) === 5) {
-          // 問題5の場合は特別なテキスト表示
-          answerStatsContainer.className = 'stats-container';
-          answerStatsContainer.innerHTML = '';
-          
-          statsData.stats.forEach((stat, index) => {
-            const statDiv = document.createElement('div');
-            statDiv.className = 'stat-item';
-            
-            // 新郎・新婦別のクラスを追加
-            if (stat.option === '新郎') {
-              statDiv.classList.add('groom');
-            } else if (stat.option === '新婦') {
-              statDiv.classList.add('bride');
-            }
-            
-            if (stat.isCorrect) {
-              statDiv.classList.add('correct');
-            }
-            
-            const optionSpan = document.createElement('span');
-            optionSpan.className = 'stat-option';
-            optionSpan.textContent = stat.option;
-            
-            const countSpan = document.createElement('span');
-            countSpan.className = 'stat-count';
-            countSpan.textContent = `${stat.count}人`;
-            
-            statDiv.appendChild(optionSpan);
-            statDiv.appendChild(countSpan);
-            answerStatsContainer.appendChild(statDiv);
-          });
-        } else {
-          // 問題4の場合は画像表示
-          answerStatsContainer.className = 'image-stats-container';
-          answerStatsContainer.innerHTML = '';
-          
-          // 画像パスの設定
-          const optionImages = [
-            '/images/quiz-images/quiz4_option1.png',
-            '/images/quiz-images/quiz4_option2.png',
-            '/images/quiz-images/quiz4_option3.png',
-            '/images/quiz-images/quiz4_option4.png'
-          ];
-          
-          statsData.stats.forEach((stat, index) => {
-            const statDiv = document.createElement('div');
-            statDiv.className = 'image-stat-item';
-            if (stat.isCorrect) {
-              statDiv.classList.add('correct');
-            }
-            
-            const img = document.createElement('img');
-            img.src = optionImages[index] || '';
-            img.alt = `選択肢 ${index + 1}`;
-            
-            const overlay = document.createElement('div');
-            overlay.className = 'image-stat-overlay';
-            
-            const optionNumber = document.createElement('span');
-            optionNumber.className = 'image-stat-number';
-            optionNumber.textContent = `選択肢 ${index + 1}`;
-            
-            const countSpan = document.createElement('span');
-            countSpan.className = 'image-stat-count';
-            countSpan.textContent = `${stat.count}人`;
-            
-            overlay.appendChild(optionNumber);
-            overlay.appendChild(countSpan);
-            
-            statDiv.appendChild(img);
-            statDiv.appendChild(overlay);
-            answerStatsContainer.appendChild(statDiv);
-          });
-        }
-      } else {
-        // 通常の選択肢の場合
-        answerStatsContainer.className = 'stats-container';
-        answerStatsContainer.innerHTML = '';
-        
-        // 画像選択肢かどうかを判定
-        const isImageOptions = answerData.is_image_options === 1;
-        
-        statsData.stats.forEach((stat, index) => {
-          const statDiv = document.createElement('div');
-          statDiv.className = 'stat-item';
-          if (stat.isCorrect) {
-            statDiv.classList.add('correct');
-          }
-          
-          const optionSpan = document.createElement('span');
-          optionSpan.className = 'stat-option';
-          
-          if (isImageOptions) {
-            // 画像選択肢の場合は番号を表示
-            optionSpan.textContent = `選択肢 ${index + 1}`;
-          } else {
-            // 通常選択肢の場合はテキストを表示
-            optionSpan.textContent = stat.option;
-          }
-          
-          const countSpan = document.createElement('span');
-          countSpan.className = 'stat-count';
-          countSpan.textContent = `${stat.count}人`;
-          
-          statDiv.appendChild(optionSpan);
-          statDiv.appendChild(countSpan);
-          answerStatsContainer.appendChild(statDiv);
-        });
+      // 回答状況セクションを非表示に設定
+      const answerStats = document.querySelector('.answer-stats');
+      if (answerStats) {
+        answerStats.style.display = 'none';
       }
       
       // 画面を解答画面に切り替え
       showScreen(quizAnswerScreen);
+      
+      // タイマー終了をサーバーに通知
+      if (autoAnswerDisplayed) {
+        // Socket.ioで解答表示イベントを送信
+        socket.emit('quiz_command', {
+          command: 'show_answer',
+          quizId: currentQuizId
+        });
+      }
       
     } catch (error) {
       console.error('解答データの取得に失敗しました:', error);
@@ -603,6 +519,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (currentScreen === quizQuestionScreen) {
           stopTimer();
           showScreen(quizTitleScreen);
+          autoAnswerDisplayed = false; // 戻る操作の場合、自動遷移フラグをリセット
         } else if (currentScreen === quizAnswerScreen) {
           showQuestion(currentQuizId);
         }
@@ -626,4 +543,9 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // ホームボタンのクリックイベント
   homeButton.addEventListener('click', goToHome);
+  
+  // 初期表示時に参加者数の更新を開始
+  if (currentScreen === welcomeScreen) {
+    startParticipantCountRefresh();
+  }
 });
