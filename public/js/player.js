@@ -84,6 +84,8 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 画面遷移時に一番上にスクロール
     window.scrollTo(0, 0);
+
+    console.log(`画面遷移: ${screen.id}に移動しました`);
   }
   
   // タイマーを開始する関数
@@ -113,69 +115,19 @@ document.addEventListener('DOMContentLoaded', function() {
         // 時間切れの処理
         answerStatusText.textContent = '時間切れです';
         
-        // 自動的に答え合わせ画面への遷移を試みる
-        tryShowAnswerResult();
+        // 時間切れになったことをサーバーに通知
+        socket.emit('player_timer_expired', { 
+          playerId,
+          quizId: currentQuizId
+        });
+        
+        // 回答していない場合は時間切れとして処理
+        if (!playerAnswers[currentQuizId]) {
+          console.log(`時間切れ: クイズ ${currentQuizId} - 回答なし`);
+          // 答え合わせ画面に自動遷移するのは show_answer イベントを受け取った時
+        }
       }
     }, 1000);
-  }
-  
-  // 時間切れ時に答え合わせ画面への遷移を試みる
-  async function tryShowAnswerResult() {
-    if (!currentQuizId) return;
-    
-    // 既に回答済みなら答え合わせ画面には遷移せず、待機画面のまま
-    if (playerAnswers[currentQuizId]) {
-      console.log("回答済み: 待機画面を維持します");
-      return;
-    }
-    
-    // 未回答の場合のみ答え合わせ画面に遷移を試みる
-    clearInterval(answerCheckInterval);
-    
-    try {
-      // サーバーに答えが公開されているか確認
-      const response = await fetch(`/api/quiz/${currentQuizId}/answer-status`);
-      const result = await response.json();
-      
-      if (result.available) {
-        console.log("時間切れかつ答えが公開: 答え合わせ画面に遷移");
-        showAnswerResult(currentQuizId);
-      } else {
-        console.log("時間切れだが答えはまだ非公開: 定期確認を開始");
-        
-        answerCheckInterval = setInterval(async () => {
-          try {
-            const checkResponse = await fetch(`/api/quiz/${currentQuizId}/answer-status`);
-            const checkResult = await checkResponse.json();
-            
-            if (checkResult.available) {
-              clearInterval(answerCheckInterval);
-              console.log("答えが公開されました。答え合わせ画面に遷移します。");
-              showAnswerResult(currentQuizId);
-            }
-          } catch (error) {
-            console.error('答え確認中にエラーが発生しました:', error);
-          }
-        }, 2000); // 2秒ごとに確認
-      }
-    } catch (error) {
-      console.error('答え合わせ画面への遷移確認中にエラーが発生しました:', error);
-      
-      // エラー発生時も定期確認を開始
-      answerCheckInterval = setInterval(async () => {
-        try {
-          const checkResponse = await fetch(`/api/quiz/${currentQuizId}/answer-status`);
-          const checkResult = await checkResponse.json();
-          
-          if (checkResult.available) {
-            clearInterval(answerCheckInterval);
-            showAnswerResult(currentQuizId);
-          }
-        } catch (error) {
-          console.error('答え確認中にエラーが発生しました:', error);
-        }
-      }, 2000);
-    }
   }
   
   // タイマーを停止する関数
@@ -459,14 +411,15 @@ document.addEventListener('DOMContentLoaded', function() {
         responseTime
       });
       
-      // タイマーは停止しない（画面は切り替わるが、内部タイマーは継続）
-      // stopTimer(); - このコードは実行しない
+      // タイマーは表示上だけ停止（内部では継続）
+      // NOTE: 実際のタイマー停止は行わない。これは意図的な仕様
       
       // 回答待機画面に切り替え
       yourAnswer.textContent = answer;
       showScreen(answeredScreen);
       
-      // 自動遷移は行わない - Display画面が解答画面に移ったときに移行する
+      // 重要: ここで自動遷移のセットアップを行わない
+      // Displayが解答画面に遷移したときのみ、Socket.ioイベントで遷移する
       
     } catch (error) {
       console.error('回答の送信に失敗しました:', error);
@@ -479,12 +432,23 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!quizId) return;
     
     // 既存の定期確認を停止
-    clearInterval(answerCheckInterval);
+    if (answerCheckInterval) {
+      clearInterval(answerCheckInterval);
+      answerCheckInterval = null;
+    }
+    
+    console.log('答え合わせ画面表示関数が呼ばれました - クイズID:', quizId);
     
     try {
       // クイズの正解情報を取得（管理者API）
       const response = await fetch(`/api/admin/quiz/${quizId}/answer`);
+      
+      if (!response.ok) {
+        throw new Error(`APIエラー: ${response.status}`);
+      }
+      
       const answerData = await response.json();
+      console.log('答え情報取得成功:', answerData.correct_answer);
       
       // 選択肢をJSON文字列から配列に変換
       const options = answerData.options;
@@ -636,11 +600,12 @@ document.addEventListener('DOMContentLoaded', function() {
       
       // エラー発生時も一定間隔後に再試行
       setTimeout(() => {
-        tryShowAnswerResult();
-      }, 2000);
+        console.log('答え合わせエラー発生のため5秒後に再試行します');
+        showAnswerResult(quizId);
+      }, 5000);
     }
   }
-    
+  
   // プレイヤーのランキングを取得して表示
   async function fetchAndShowRanking() {
     if (!playerId) return;
@@ -773,36 +738,10 @@ document.addEventListener('DOMContentLoaded', function() {
       console.log('登録が完了しました:', data);
     });
     
-    // タイマー同期イベント
-    socket.on('timer_sync', (data) => {
-      const { quizId, remainingTime } = data;
-      
-      // 現在のクイズIDが一致する場合のみタイマーを同期
-      if (currentQuizId === quizId) {
-        // タイマーをリセットして残り時間から開始
-        clearInterval(timerInterval);
-        timeLeft = remainingTime;
-        timerValue.textContent = timeLeft;
-        
-        if (timeLeft > 0) {
-          startTimer(timeLeft);
-        } else if (timeLeft <= 0) {
-          // タイマーが0の場合は時間切れ処理
-          clearInterval(timerInterval);
-          answerStatusText.textContent = '時間切れです';
-          
-          // 回答済みでなければ、答え合わせを待機
-          if (!playerAnswers[currentQuizId]) {
-            tryShowAnswerResult();
-          }
-        }
-      }
-    });
-    
     // クイズイベントの処理
     socket.on('quiz_event', (data) => {
-      const { event, quizId, position } = data;
-      console.log('イベント受信:', event, quizId, position);
+      const { event, quizId, position, isRetry } = data;
+      console.log('イベント受信:', event, quizId, position, isRetry ? '(再送)' : '');
       
       switch (event) {
         case 'quiz_started':
@@ -840,7 +779,7 @@ document.addEventListener('DOMContentLoaded', function() {
               stopTimer();
               answerStatusText.textContent = '時間切れです';
               // 答え合わせ画面に遷移
-              tryShowAnswerResult();
+              showAnswerResult(currentQuizId);
             }
           }
           break;
@@ -865,20 +804,22 @@ document.addEventListener('DOMContentLoaded', function() {
           break;
           
         case 'show_answer':
-          // 解答表示時の処理
+          // 解答表示時の処理 - このケースが最も重要
+          console.log('show_answer イベント受信 - 現在の画面:', 
+                    currentScreen === answeredScreen ? '回答待機画面' : 
+                    currentScreen === quizScreen ? 'クイズ回答画面' : '他の画面');
+          
           if (currentQuizId) {
             displayCurrentScreen = 'quiz_answer';
             
-            // 重要: 現在の画面状態に応じた分岐処理
-            if (currentScreen === answeredScreen) {
-              // 回答済みで待機画面にいる場合は答え合わせ画面に遷移
-              console.log('回答待機画面から答え合わせ画面に遷移します');
-              showAnswerResult(currentQuizId);
-            } else if (currentScreen === quizScreen) {
-              // まだ回答画面にいる場合は時間切れとして処理
-              stopTimer();
-              answerStatusText.textContent = '時間切れです';
-              showAnswerResult(currentQuizId);
+            // 重要: どの画面状態でも答え合わせ画面に遷移
+            console.log('答え合わせ画面に遷移します - クイズID:', currentQuizId);
+            showAnswerResult(currentQuizId);
+            
+            // 念のため既存の確認インターバルがあれば停止
+            if (answerCheckInterval) {
+              clearInterval(answerCheckInterval);
+              answerCheckInterval = null;
             }
           }
           break;
@@ -905,6 +846,32 @@ document.addEventListener('DOMContentLoaded', function() {
           // リセット処理
           location.reload(); // 画面をリロード
           break;
+      }
+    });
+    
+    // タイマー同期イベント
+    socket.on('timer_sync', (data) => {
+      const { quizId, remainingTime } = data;
+      
+      // 現在のクイズIDが一致する場合のみタイマーを同期
+      if (currentQuizId === quizId) {
+        // タイマーをリセットして残り時間から開始
+        clearInterval(timerInterval);
+        timeLeft = remainingTime;
+        timerValue.textContent = timeLeft;
+        
+        if (timeLeft > 0) {
+          // 回答画面にいる場合のみタイマーを表示更新
+          if (currentScreen === quizScreen) {
+            startTimer(timeLeft);
+          }
+        } else if (timeLeft <= 0) {
+          // タイマーが0の場合は時間切れ処理
+          clearInterval(timerInterval);
+          if (currentScreen === quizScreen) {
+            answerStatusText.textContent = '時間切れです';
+          }
+        }
       }
     });
   }
