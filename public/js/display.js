@@ -156,7 +156,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (currentScreen === quizQuestionScreen && currentQuizId) {
           console.log('時間切れ: 自動的に解答画面に遷移します');
           
-          // タイマー終了イベントをサーバーに送信（重要な追加）
+          // タイマー終了イベントをサーバーに送信
           socket.emit('timer_expired', { quizId: currentQuizId });
           
           // 解答画面に遷移
@@ -497,7 +497,7 @@ document.addEventListener('DOMContentLoaded', function() {
     participantCount.textContent = stats.players;
   });
   
-  // タイマー同期処理
+  // タイマー同期イベント
   socket.on('timer_sync', (data) => {
     const { quizId, remainingTime } = data;
     
@@ -509,61 +509,12 @@ document.addEventListener('DOMContentLoaded', function() {
       floatingTimerValue.textContent = timeLeft;
       
       if (timeLeft > 0) {
-        // フローティングタイマーを表示
-        floatingTimer.classList.remove('hidden');
-        
-        // 残り時間に応じた色を設定
-        if (timeLeft <= 10) {
-          floatingTimer.style.backgroundColor = 'rgba(255, 0, 0, 0.9)';
-        } else {
-          floatingTimer.style.backgroundColor = 'rgba(255, 51, 51, 0.9)';
-        }
-        
-        // タイマーを再開
-        timerInterval = setInterval(() => {
-          timeLeft--;
-          floatingTimerValue.textContent = timeLeft;
-          
-          if (timeLeft <= 10) {
-            floatingTimer.style.backgroundColor = 'rgba(255, 0, 0, 0.9)';
-          } else {
-            floatingTimer.style.backgroundColor = 'rgba(255, 51, 51, 0.9)';
-          }
-          
-          if (timeLeft <= 0) {
-            clearInterval(timerInterval);
-            
-            // 時間切れになったら自動的に解答画面に遷移
-            if (currentScreen === quizQuestionScreen && currentQuizId) {
-              console.log('時間切れ: 自動的に解答画面に遷移します');
-              
-              // タイマー終了イベントをサーバーに送信
-              socket.emit('timer_expired', { quizId: currentQuizId });
-              
-              // 解答画面に遷移
-              showAnswer(currentQuizId);
-              
-              // 解答が表示されたことをサーバーに通知
-              markAnswerAsDisplayed(currentQuizId);
-            }
-          }
-        }, 1000);
-      } else if (timeLeft <= 0) {
-        // タイマーが0の場合は時間切れ処理
-        clearInterval(timerInterval);
-        // フローティングタイマーを非表示
-        floatingTimer.classList.add('hidden');
-        
-        // 時間切れになったら自動的に解答画面に遷移
-        if (currentScreen === quizQuestionScreen && currentQuizId) {
-          console.log('時間切れ (同期): 自動的に解答画面に遷移します');
-          
-          // 解答画面に遷移
-          showAnswer(currentQuizId);
-          
-          // 解答が表示されたことをサーバーに通知
-          markAnswerAsDisplayed(currentQuizId);
-        }
+        startTimer(timeLeft);
+      } else if (timeLeft <= 0 && currentScreen === quizQuestionScreen) {
+        // 時間切れで自動的に解答画面に遷移
+        stopTimer();
+        showAnswer(currentQuizId);
+        markAnswerAsDisplayed(currentQuizId);
       }
     }
   });
