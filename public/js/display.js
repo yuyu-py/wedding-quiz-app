@@ -135,6 +135,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // フローティングタイマーを表示
     floatingTimer.classList.remove('hidden');
     
+    // タイマー開始時刻を記録（同期用）
+    const timerStartTime = Date.now();
+    
     timerInterval = setInterval(() => {
       timeLeft--;
       floatingTimerValue.textContent = timeLeft;
@@ -149,12 +152,17 @@ document.addEventListener('DOMContentLoaded', function() {
       if (timeLeft <= 0) {
         clearInterval(timerInterval);
         
-        // 新機能: 時間切れになったら自動的に解答画面に遷移
+        // 時間切れになったら自動的に解答画面に遷移
         if (currentScreen === quizQuestionScreen && currentQuizId) {
           console.log('時間切れ: 自動的に解答画面に遷移します');
+          
+          // タイマー終了イベントをサーバーに送信（重要な追加）
+          socket.emit('timer_expired', { quizId: currentQuizId });
+          
+          // 解答画面に遷移
           showAnswer(currentQuizId);
           
-          // 解答が表示されたことをサーバーに通知（他のクライアントのための遷移に利用）
+          // 解答が表示されたことをサーバーに通知
           markAnswerAsDisplayed(currentQuizId);
         }
       }
@@ -487,6 +495,77 @@ document.addEventListener('DOMContentLoaded', function() {
   // 接続数の更新
   socket.on('connection_stats', (stats) => {
     participantCount.textContent = stats.players;
+  });
+  
+  // タイマー同期処理
+  socket.on('timer_sync', (data) => {
+    const { quizId, remainingTime } = data;
+    
+    // 現在のクイズIDが一致する場合のみタイマーを同期
+    if (currentQuizId === quizId && currentScreen === quizQuestionScreen) {
+      // タイマーをリセットして残り時間から開始
+      clearInterval(timerInterval);
+      timeLeft = remainingTime;
+      floatingTimerValue.textContent = timeLeft;
+      
+      if (timeLeft > 0) {
+        // フローティングタイマーを表示
+        floatingTimer.classList.remove('hidden');
+        
+        // 残り時間に応じた色を設定
+        if (timeLeft <= 10) {
+          floatingTimer.style.backgroundColor = 'rgba(255, 0, 0, 0.9)';
+        } else {
+          floatingTimer.style.backgroundColor = 'rgba(255, 51, 51, 0.9)';
+        }
+        
+        // タイマーを再開
+        timerInterval = setInterval(() => {
+          timeLeft--;
+          floatingTimerValue.textContent = timeLeft;
+          
+          if (timeLeft <= 10) {
+            floatingTimer.style.backgroundColor = 'rgba(255, 0, 0, 0.9)';
+          } else {
+            floatingTimer.style.backgroundColor = 'rgba(255, 51, 51, 0.9)';
+          }
+          
+          if (timeLeft <= 0) {
+            clearInterval(timerInterval);
+            
+            // 時間切れになったら自動的に解答画面に遷移
+            if (currentScreen === quizQuestionScreen && currentQuizId) {
+              console.log('時間切れ: 自動的に解答画面に遷移します');
+              
+              // タイマー終了イベントをサーバーに送信
+              socket.emit('timer_expired', { quizId: currentQuizId });
+              
+              // 解答画面に遷移
+              showAnswer(currentQuizId);
+              
+              // 解答が表示されたことをサーバーに通知
+              markAnswerAsDisplayed(currentQuizId);
+            }
+          }
+        }, 1000);
+      } else if (timeLeft <= 0) {
+        // タイマーが0の場合は時間切れ処理
+        clearInterval(timerInterval);
+        // フローティングタイマーを非表示
+        floatingTimer.classList.add('hidden');
+        
+        // 時間切れになったら自動的に解答画面に遷移
+        if (currentScreen === quizQuestionScreen && currentQuizId) {
+          console.log('時間切れ (同期): 自動的に解答画面に遷移します');
+          
+          // 解答画面に遷移
+          showAnswer(currentQuizId);
+          
+          // 解答が表示されたことをサーバーに通知
+          markAnswerAsDisplayed(currentQuizId);
+        }
+      }
+    }
   });
   
   // クイズイベントの処理

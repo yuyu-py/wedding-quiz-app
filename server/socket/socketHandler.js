@@ -18,8 +18,13 @@ let connectionCounter = {
 let currentQuizState = {
   quizId: null,
   phase: null, // 'question', 'answer'など
-  timerExpired: false
+  timerExpired: false,
+  timerStartTime: null,
+  timerDuration: 30 // 30秒
 };
+
+// タイマー同期用の変数
+let timerSyncInterval = null;
 
 function setupSocketHandlers(io) {
   // グローバル変数にioを保存（ブロードキャスト用）
@@ -45,6 +50,20 @@ function setupSocketHandlers(io) {
           activeConnections.display = socket;
           socket.emit('registered', { type });
           console.log('ディスプレイ接続が登録されました');
+          
+          // 現在のクイズ状態に応じてタイマー同期を送信
+          if (currentQuizState.quizId && currentQuizState.phase === 'question' && 
+              currentQuizState.timerStartTime && !currentQuizState.timerExpired) {
+            // 経過時間の計算
+            const elapsed = Date.now() - currentQuizState.timerStartTime;
+            const remainingTime = Math.max(0, Math.floor((currentQuizState.timerDuration * 1000 - elapsed) / 1000));
+            
+            // タイマー同期イベントを送信
+            socket.emit('timer_sync', {
+              quizId: currentQuizState.quizId,
+              remainingTime
+            });
+          }
           break;
           
         case 'admin':
@@ -73,6 +92,20 @@ function setupSocketHandlers(io) {
           broadcastConnectionStats();
           
           console.log(`プレイヤー接続が登録されました: ${playerId}`);
+          
+          // 現在のクイズ状態に応じてタイマー同期を送信
+          if (currentQuizState.quizId && currentQuizState.phase === 'question' && 
+              currentQuizState.timerStartTime && !currentQuizState.timerExpired) {
+            // 経過時間の計算
+            const elapsed = Date.now() - currentQuizState.timerStartTime;
+            const remainingTime = Math.max(0, Math.floor((currentQuizState.timerDuration * 1000 - elapsed) / 1000));
+            
+            // タイマー同期イベントを送信
+            socket.emit('timer_sync', {
+              quizId: currentQuizState.quizId,
+              remainingTime
+            });
+          }
           break;
           
         default:
@@ -124,8 +157,13 @@ function setupSocketHandlers(io) {
           currentQuizState = {
             quizId: null,
             phase: null,
-            timerExpired: false
+            timerExpired: false,
+            timerStartTime: null,
+            timerDuration: 30
           };
+          
+          // タイマー同期を停止
+          stopTimerSync();
           
           console.log(`クイズが開始されました`);
           break;
@@ -141,8 +179,13 @@ function setupSocketHandlers(io) {
           currentQuizState = {
             quizId,
             phase: 'question',
-            timerExpired: false
+            timerExpired: false,
+            timerStartTime: Date.now(),
+            timerDuration: 30
           };
+          
+          // 定期的なタイマー同期を開始
+          startTimerSync(quizId);
           
           console.log(`クイズ ${quizId} の問題が表示されました`);
           break;
@@ -160,6 +203,9 @@ function setupSocketHandlers(io) {
           
           // セッションの answer_displayed フラグを更新
           await db.markAnswerAsDisplayed(quizId);
+          
+          // タイマー同期を停止
+          stopTimerSync();
           
           console.log(`クイズ ${quizId} の解答が表示されました`);
           break;
@@ -179,6 +225,21 @@ function setupSocketHandlers(io) {
           io.emit('quiz_event', { 
             event: 'next_slide' 
           });
+          
+          // 問題画面から解答画面に遷移する場合
+          if (currentQuizState.phase === 'question') {
+            currentQuizState.phase = 'answer';
+            currentQuizState.timerExpired = true;
+            
+            // セッションの answer_displayed フラグを更新
+            if (currentQuizState.quizId) {
+              await db.markAnswerAsDisplayed(currentQuizState.quizId);
+            }
+            
+            // タイマー同期を停止
+            stopTimerSync();
+          }
+          
           console.log('次のスライドに進みました');
           break;
           
@@ -187,6 +248,17 @@ function setupSocketHandlers(io) {
           io.emit('quiz_event', { 
             event: 'prev_slide' 
           });
+          
+          // 解答画面から問題画面に戻る場合
+          if (currentQuizState.phase === 'answer') {
+            currentQuizState.phase = 'question';
+            currentQuizState.timerExpired = false;
+            currentQuizState.timerStartTime = Date.now();
+            
+            // タイマー同期を再開
+            startTimerSync(currentQuizState.quizId);
+          }
+          
           console.log('前のスライドに戻りました');
           break;
           
@@ -200,8 +272,13 @@ function setupSocketHandlers(io) {
           currentQuizState = {
             quizId: null,
             phase: null,
-            timerExpired: false
+            timerExpired: false,
+            timerStartTime: null,
+            timerDuration: 30
           };
+          
+          // タイマー同期を停止
+          stopTimerSync();
           
           console.log('すべてのデータがリセットされました');
           break;
@@ -219,28 +296,26 @@ function setupSocketHandlers(io) {
       if (currentQuizState.quizId === quizId && currentQuizState.phase === 'question') {
         currentQuizState.timerExpired = true;
         
-        // ディスプレイから発信された場合のみ、全員に通知
-        if (socket === activeConnections.display) {
-          console.log(`クイズ ${quizId} のタイマーが終了しました - 自動的に解答表示に移行します`);
-          
-          // 少し遅延を入れてから解答表示に移行（ディスプレイが先に処理する時間を確保）
-          setTimeout(async () => {
-            // 解答表示をブロードキャスト
-            io.emit('quiz_event', { 
-              event: 'show_answer', 
-              quizId 
-            });
-            
-            // クイズ状態を更新
-            currentQuizState.phase = 'answer';
-            
-            // セッションの answer_displayed フラグを更新
-            const db = require('../database/db');
-            await db.markAnswerAsDisplayed(quizId);
-            
-            console.log(`タイマー終了により、クイズ ${quizId} の解答が自動表示されました`);
-          }, 500);
-        }
+        // 全員に通知
+        console.log(`クイズ ${quizId} のタイマーが終了しました - 自動的に解答表示に移行します`);
+        
+        // 解答表示をブロードキャスト
+        io.emit('quiz_event', { 
+          event: 'show_answer', 
+          quizId 
+        });
+        
+        // クイズ状態を更新
+        currentQuizState.phase = 'answer';
+        
+        // セッションの answer_displayed フラグを更新
+        const db = require('../database/db');
+        await db.markAnswerAsDisplayed(quizId);
+        
+        // タイマー同期を停止
+        stopTimerSync();
+        
+        console.log(`タイマー終了により、クイズ ${quizId} の解答が自動表示されました`);
       }
     });
     
@@ -311,6 +386,65 @@ function setupSocketHandlers(io) {
       }
     });
   });
+}
+
+// タイマー同期機能を開始
+function startTimerSync(quizId) {
+  // 既存の同期を停止
+  stopTimerSync();
+  
+  // 1秒ごとに全クライアントにタイマー情報を送信
+  timerSyncInterval = setInterval(() => {
+    if (currentQuizState.quizId !== quizId || currentQuizState.phase !== 'question' || !currentQuizState.timerStartTime) {
+      stopTimerSync();
+      return;
+    }
+    
+    // 経過時間の計算
+    const elapsed = Date.now() - currentQuizState.timerStartTime;
+    const remainingTime = Math.max(0, Math.floor((currentQuizState.timerDuration * 1000 - elapsed) / 1000));
+    
+    // タイマー同期イベントを送信
+    io.emit('timer_sync', {
+      quizId,
+      remainingTime
+    });
+    
+    // タイマーが終了したら自動的に解答表示へ
+    if (remainingTime <= 0 && !currentQuizState.timerExpired) {
+      currentQuizState.timerExpired = true;
+      
+      // 解答表示をブロードキャスト
+      io.emit('quiz_event', { 
+        event: 'show_answer', 
+        quizId 
+      });
+      
+      // クイズ状態を更新
+      currentQuizState.phase = 'answer';
+      
+      // セッションの answer_displayed フラグを更新
+      const db = require('../database/db');
+      db.markAnswerAsDisplayed(quizId)
+        .then(() => {
+          console.log(`タイマー同期による自動遷移: クイズ ${quizId} の解答が表示されました`);
+        })
+        .catch(err => {
+          console.error('解答表示フラグの更新中にエラーが発生しました:', err);
+        });
+      
+      // タイマー同期を停止
+      stopTimerSync();
+    }
+  }, 1000); // 1秒ごとに同期
+}
+
+// タイマー同期を停止
+function stopTimerSync() {
+  if (timerSyncInterval) {
+    clearInterval(timerSyncInterval);
+    timerSyncInterval = null;
+  }
 }
 
 // 接続統計をブロードキャスト
