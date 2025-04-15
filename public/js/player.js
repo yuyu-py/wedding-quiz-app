@@ -504,7 +504,13 @@ document.addEventListener('DOMContentLoaded', function() {
       const resultIcon = document.createElement('span');
       resultIcon.className = 'material-symbols-rounded';
       
-      if (isCorrect) {
+      if (playerAnswer === null) {
+        // 新規追加: 回答なしの場合の処理
+        answerResultHeader.className = 'answer-result-header no-answer';
+        resultIcon.textContent = 'timer_off';
+        answerResultHeader.appendChild(resultIcon);
+        answerResultHeader.appendChild(document.createTextNode(' 時間切れ'));
+      } else if (isCorrect) {
         answerResultHeader.className = 'answer-result-header correct';
         resultIcon.textContent = 'check_circle';
         answerResultHeader.appendChild(resultIcon);
@@ -639,7 +645,7 @@ document.addEventListener('DOMContentLoaded', function() {
       }, 5000);
     }
   }
-  
+    
   // プレイヤーのランキングを取得して表示
   async function fetchAndShowRanking() {
     if (!playerId) return;
