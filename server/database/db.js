@@ -559,9 +559,9 @@ async function getRankings() {
   }
 }
 
-// クイズの解答が公開されているか確認する関数（自動遷移用）
+// isQuizAnswerAvailable関数のパフォーマンス改善
 async function isQuizAnswerAvailable(quizId) {
-  // キャッシュをチェック（高速化のため）
+  // キャッシュをチェック
   const cacheKey = `answer_displayed_${quizId}`;
   if (cache.has(cacheKey)) {
     return cache.get(cacheKey);
@@ -587,7 +587,7 @@ async function isQuizAnswerAvailable(quizId) {
       // session.answer_displayed が true であれば解答が公開されている
       const isAvailable = session.answer_displayed === true;
       
-      // 結果をキャッシュに保存（複数回のポーリングを高速化）
+      // 結果をキャッシュに保存
       cache.set(cacheKey, isAvailable);
       
       return isAvailable;
@@ -600,9 +600,9 @@ async function isQuizAnswerAvailable(quizId) {
   }
 }
 
-// 解答表示フラグを設定する関数（自動遷移用）
+// markAnswerAsDisplayed関数のパフォーマンス改善
 async function markAnswerAsDisplayed(quizId) {
-  // キャッシュにフラグを設定（アプリケーション全体で答え表示状態をすぐに反映）
+  // キャッシュにフラグを設定
   const cacheKey = `answer_displayed_${quizId}`;
   cache.set(cacheKey, true);
   
@@ -638,7 +638,6 @@ async function markAnswerAsDisplayed(quizId) {
       };
       
       await dynamodb.send(new UpdateCommand(updateParams));
-      console.log(`クイズ ${quizId} の解答表示フラグを更新しました`);
       return true;
     }
     

@@ -152,7 +152,7 @@ document.addEventListener('DOMContentLoaded', function() {
       if (timeLeft <= 0) {
         clearInterval(timerInterval);
         
-        // 時間切れになったら自動的に解答画面に遷移
+        // 時間切れ: 自動的に解答画面に遷移
         if (currentScreen === quizQuestionScreen && currentQuizId) {
           console.log('時間切れ: 自動的に解答画面に遷移します');
           
@@ -497,7 +497,7 @@ document.addEventListener('DOMContentLoaded', function() {
     participantCount.textContent = stats.players;
   });
   
-  // タイマー同期イベント
+  // タイマー同期処理
   socket.on('timer_sync', (data) => {
     const { quizId, remainingTime } = data;
     
@@ -511,8 +511,8 @@ document.addEventListener('DOMContentLoaded', function() {
       if (timeLeft > 0) {
         startTimer(timeLeft);
       } else if (timeLeft <= 0 && currentScreen === quizQuestionScreen) {
-        // 時間切れで自動的に解答画面に遷移
-        stopTimer();
+        // タイマーが0で問題画面の場合は自動的に解答画面へ
+        clearInterval(timerInterval);
         showAnswer(currentQuizId);
         markAnswerAsDisplayed(currentQuizId);
       }
@@ -521,7 +521,7 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // クイズイベントの処理
   socket.on('quiz_event', (data) => {
-    const { event, quizId, position } = data;
+    const { event, quizId, position, auto, manual } = data;
     
     switch (event) {
       case 'quiz_started':
@@ -537,10 +537,22 @@ document.addEventListener('DOMContentLoaded', function() {
         break;
         
       case 'next_slide':
-        if (currentScreen === quizTitleScreen && currentQuizId) {
-          showQuestion(currentQuizId);
-        } else if (currentScreen === quizQuestionScreen && currentQuizId) {
-          showAnswer(currentQuizId);
+        if (manual) { // 管理者による手動操作の場合
+          if (currentScreen === quizTitleScreen && currentQuizId) {
+            showQuestion(currentQuizId);
+          } else if (currentScreen === quizQuestionScreen && currentQuizId) {
+            // タイマーが進行中でも強制的に解答画面へ
+            stopTimer();
+            showAnswer(currentQuizId);
+            markAnswerAsDisplayed(currentQuizId);
+          }
+        } else {
+          // 通常の自動遷移
+          if (currentScreen === quizTitleScreen && currentQuizId) {
+            showQuestion(currentQuizId);
+          } else if (currentScreen === quizQuestionScreen && currentQuizId) {
+            showAnswer(currentQuizId);
+          }
         }
         break;
         
@@ -555,6 +567,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
       case 'show_answer':
         if (currentQuizId) {
+          console.log('show_answer イベント受信: 解答画面に遷移します', auto ? '自動遷移' : '手動遷移');
           showAnswer(currentQuizId);
         }
         break;
