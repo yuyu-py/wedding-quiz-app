@@ -1,14 +1,14 @@
 // server/routes/quiz.js
 const express = require('express');
 const router = express.Router();
-const db = require('../database/db'); // db.jsから直接インポート
+const db = require('../database/db'); // db.js from direct import
 
-// 全てのクイズを取得
+// Retrieve all quizzes
 router.get('/', async (req, res) => {
   try {
     const quizzes = await db.getAllQuizzes();
     
-    // 選択肢をJSON文字列から配列に変換
+    // Convert options from JSON string to array
     const formattedQuizzes = quizzes.map(quiz => ({
       ...quiz,
       options: JSON.parse(quiz.options)
@@ -16,22 +16,22 @@ router.get('/', async (req, res) => {
     
     res.json(formattedQuizzes);
   } catch (error) {
-    console.error('クイズの取得中にエラーが発生しました:', error);
-    res.status(500).json({ error: 'サーバーエラーが発生しました' });
+    console.error('Error retrieving quizzes:', error);
+    res.status(500).json({ error: 'Server error occurred' });
   }
 });
 
-// 特定のクイズを取得（解答なし）
+// Retrieve a specific quiz (without answers)
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const quiz = await db.getQuiz(id);
     
     if (!quiz) {
-      return res.status(404).json({ error: 'クイズが見つかりません' });
+      return res.status(404).json({ error: 'Quiz not found' });
     }
     
-    // 解答情報を削除した安全なバージョンを作成
+    // Create a safe version without answer information
     const safeQuiz = {
       id: quiz.id,
       question: quiz.question,
@@ -42,33 +42,33 @@ router.get('/:id', async (req, res) => {
     
     res.json(safeQuiz);
   } catch (error) {
-    console.error('クイズの取得中にエラーが発生しました:', error);
-    res.status(500).json({ error: 'サーバーエラーが発生しました' });
+    console.error('Error retrieving quiz:', error);
+    res.status(500).json({ error: 'Server error occurred' });
   }
 });
 
-// クイズセッションの開始
+// Start a quiz session
 router.post('/start/:id', async (req, res) => {
   try {
     const { id } = req.params;
     
-    // クイズの存在を確認
+    // Verify quiz exists
     const quiz = await db.getQuiz(id);
     if (!quiz) {
-      return res.status(404).json({ error: 'クイズが見つかりません' });
+      return res.status(404).json({ error: 'Quiz not found' });
     }
     
-    // 新しいセッションを開始
+    // Start a new session
     const result = await db.startQuizSession(id);
     
     res.json(result);
   } catch (error) {
-    console.error('クイズセッションの開始中にエラーが発生しました:', error);
-    res.status(500).json({ error: 'サーバーエラーが発生しました' });
+    console.error('Error starting quiz session:', error);
+    res.status(500).json({ error: 'Server error occurred' });
   }
 });
 
-// クイズの回答状況を取得
+// Get quiz statistics
 router.get('/:id/stats', async (req, res) => {
   try {
     const { id } = req.params;
@@ -85,60 +85,74 @@ router.get('/:id/stats', async (req, res) => {
     
     res.json(stats);
   } catch (error) {
-    console.error('クイズ統計の取得中にエラーが発生しました:', error);
-    res.status(500).json({ error: 'サーバーエラーが発生しました' });
+    console.error('Error retrieving quiz statistics:', error);
+    res.status(500).json({ error: 'Server error occurred' });
   }
 });
 
-// ランキングの取得
-router.get('/ranking/all', async (req, res) => {
-  try {
-    const rankings = await db.getRankings();
-    res.json(rankings);
-  } catch (error) {
-    console.error('ランキングの取得中にエラーが発生しました:', error);
-    res.status(500).json({ error: 'サーバーエラーが発生しました' });
-  }
-});
-
-// 参加者数の取得
+// Get number of participants
 router.get('/stats/participants', async (req, res) => {
   try {
     const count = await db.getParticipantCount();
     res.json({ count });
   } catch (error) {
-    console.error('参加者数の取得中にエラーが発生しました:', error);
-    res.status(500).json({ error: 'サーバーエラーが発生しました' });
+    console.error('Error retrieving participant count:', error);
+    res.status(500).json({ error: 'Server error occurred', count: 0 });
   }
 });
 
-// クイズの解答が公開されているか確認するAPI
-router.get('/:id/answer-available', async (req, res) => {
+// Get rankings
+router.get('/ranking/all', async (req, res) => {
+  try {
+    const rankings = await db.getRankings();
+    res.json(rankings);
+  } catch (error) {
+    console.error('Error retrieving rankings:', error);
+    res.status(500).json({ error: 'Server error occurred' });
+  }
+});
+
+// Check if answer is available for a quiz
+router.get('/:id/answer-status', async (req, res) => {
   try {
     const { id } = req.params;
     
-    // クイズの解答が公開されているか確認
+    // Check if answer is available
     const isAnswerAvailable = await db.isQuizAnswerAvailable(id);
     
-    res.json({ available: isAnswerAvailable });
+    res.json({ 
+      quizId: id,
+      isAnswerAvailable 
+    });
   } catch (error) {
-    console.error('解答公開状態の確認中にエラーが発生しました:', error);
-    res.status(500).json({ error: 'サーバーエラーが発生しました', available: false });
+    console.error('Error checking answer availability status:', error);
+    res.status(500).json({ 
+      error: 'Server error occurred', 
+      isAnswerAvailable: false 
+    });
   }
 });
 
-// タイマー終了を通知するAPI
-router.post('/:id/end-timer', async (req, res) => {
+// Update answer display status
+router.post('/:id/mark-answer-displayed', async (req, res) => {
   try {
     const { id } = req.params;
+    const { displayed } = req.body;
     
-    // タイマー終了を記録
-    await db.markQuizTimerEnded(id);
+    // Update answer display status
+    const result = await db.markQuizAnswerDisplayed(id, displayed);
     
-    res.json({ success: true });
+    res.json({ 
+      success: result,
+      quizId: id,
+      answerDisplayed: displayed 
+    });
   } catch (error) {
-    console.error('タイマー終了の記録中にエラーが発生しました:', error);
-    res.status(500).json({ error: 'サーバーエラーが発生しました' });
+    console.error('Error updating answer display status:', error);
+    res.status(500).json({ 
+      error: 'Server error occurred',
+      success: false
+    });
   }
 });
 

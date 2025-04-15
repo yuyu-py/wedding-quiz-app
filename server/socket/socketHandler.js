@@ -1,66 +1,59 @@
 // server/socket/socketHandler.js
 const { getDb } = require('../database/db');
 
-// ソケット接続の管理
+// Socket connection management
 let activeConnections = {
-  display: null, // メイン表示用の接続
-  admin: [],     // 管理者用の接続
-  players: {}    // プレイヤー用の接続 (player_id: socket)
+  display: null, // Main display connection
+  admin: [],     // Admin connections
+  players: {}    // Player connections (player_id: socket)
 };
 
-// アクティブな接続数のカウント
+// Active connection counter
 let connectionCounter = {
   total: 0,
   players: 0
 };
 
-// 現在のクイズ状態を追跡
-let currentQuizState = {
-  quizId: null,
-  phase: null, // 'question', 'answer'など
-  timerExpired: false
-};
-
 function setupSocketHandlers(io) {
-  // グローバル変数にioを保存（ブロードキャスト用）
+  // Save io to global for broadcasting
   global.io = io;
   
   io.on('connection', (socket) => {
-    console.log(`新しい接続: ${socket.id}`);
+    console.log(`New connection: ${socket.id}`);
     connectionCounter.total++;
     
-    // 接続タイプの登録
+    // Connection type registration
     socket.on('register', (data) => {
       const { type, playerId = null } = data;
       
-      // 接続タイプに応じた処理
+      // Process based on connection type
       switch (type) {
         case 'display':
-          // 1つのディスプレイ接続のみ許可
+          // Allow only one display connection
           if (activeConnections.display) {
-            // 古い接続を切断
+            // Disconnect old connection
             const oldSocket = activeConnections.display;
-            oldSocket.emit('connection_rejected', { reason: '新しいディスプレイ接続がありました' });
+            oldSocket.emit('connection_rejected', { reason: 'New display connection detected' });
           }
           activeConnections.display = socket;
           socket.emit('registered', { type });
-          console.log('ディスプレイ接続が登録されました');
+          console.log('Display connection registered');
           break;
           
         case 'admin':
           activeConnections.admin.push(socket);
           socket.emit('registered', { type });
-          // 現在の接続状態を送信
+          // Send current connection status
           socket.emit('connection_stats', {
             total: connectionCounter.total,
             players: connectionCounter.players
           });
-          console.log('管理者接続が登録されました');
+          console.log('Admin connection registered');
           break;
           
         case 'player':
           if (!playerId) {
-            socket.emit('registration_error', { message: 'プレイヤーIDが必要です' });
+            socket.emit('registration_error', { message: 'Player ID required' });
             return;
           }
           
@@ -69,186 +62,116 @@ function setupSocketHandlers(io) {
           
           socket.emit('registered', { type, playerId });
           
-          // プレイヤー数の更新を全体に通知
+          // Broadcast player count update
           broadcastConnectionStats();
           
-          console.log(`プレイヤー接続が登録されました: ${playerId}`);
+          console.log(`Player connection registered: ${playerId}`);
           break;
           
         default:
-          socket.emit('registration_error', { message: '不明な接続タイプです' });
-      }
-      
-      // 現在のクイズ状態に応じて必要な情報を送信
-      if (currentQuizState.quizId && currentQuizState.phase) {
-        // 既に進行中のクイズがある場合は現在の状態を通知
-        if (currentQuizState.phase === 'answer') {
-          socket.emit('quiz_event', { 
-            event: 'show_answer',
-            quizId: currentQuizState.quizId
-          });
-        } else if (currentQuizState.phase === 'question') {
-          socket.emit('quiz_event', { 
-            event: 'show_question',
-            quizId: currentQuizState.quizId
-          });
-          
-          // タイマーが既に切れていれば通知
-          if (currentQuizState.timerExpired) {
-            socket.emit('timer_expired', { quizId: currentQuizState.quizId });
-          }
-        }
+          socket.emit('registration_error', { message: 'Unknown connection type' });
       }
     });
     
-    // クイズ制御コマンド（管理者用）
+    // Quiz control commands (admin)
     socket.on('quiz_command', async (data) => {
       const { command, quizId, params = {} } = data;
       
-      // 管理者かどうか確認
+      // Verify admin status
       if (!activeConnections.admin.includes(socket)) {
-        socket.emit('command_error', { message: '権限がありません' });
+        socket.emit('command_error', { message: 'Insufficient permissions' });
         return;
       }
       
-      const db = require('../database/db');
-      
       switch (command) {
         case 'start_quiz':
-          // クイズの開始をブロードキャスト
+          // Broadcast quiz start
           io.emit('quiz_event', { 
-            event: 'quiz_started' 
+            event: 'quiz_started', 
+            quizId 
           });
-          
-          // クイズ状態をリセット
-          currentQuizState = {
-            quizId: null,
-            phase: null,
-            timerExpired: false
-          };
-          
-          console.log(`クイズが開始されました`);
+          console.log(`Quiz started`);
           break;
           
         case 'show_question':
-          // 問題表示をブロードキャスト
+          // Broadcast question display
           io.emit('quiz_event', { 
             event: 'show_question', 
             quizId 
           });
-          
-          // クイズ状態を更新
-          currentQuizState = {
-            quizId,
-            phase: 'question',
-            timerExpired: false
-          };
-          
-          console.log(`クイズ ${quizId} の問題が表示されました`);
+          console.log(`Quiz ${quizId} question displayed`);
           break;
           
         case 'show_answer':
-          // 解答表示をブロードキャスト
+          // Broadcast answer display
           io.emit('quiz_event', { 
             event: 'show_answer', 
             quizId 
           });
-          
-          // クイズ状態を更新
-          currentQuizState.phase = 'answer';
-          currentQuizState.timerExpired = true;
-          
-          // セッションの answer_displayed フラグを更新
-          await db.markAnswerAsDisplayed(quizId);
-          
-          console.log(`クイズ ${quizId} の解答が表示されました`);
+          console.log(`Quiz ${quizId} answer displayed`);
           break;
           
         case 'show_ranking':
-          // ランキング表示をブロードキャスト
+          // Broadcast ranking display
           io.emit('quiz_event', { 
             event: 'show_ranking',
             position: params.position || 'all'
           });
-          
-          console.log(`ランキングが表示されました: ${params.position || 'all'}`);
+          console.log(`Ranking displayed: ${params.position || 'all'}`);
           break;
           
         case 'next_slide':
-          // 次のスライドに進む
+          // Advance to next slide
           io.emit('quiz_event', { 
             event: 'next_slide' 
           });
-          console.log('次のスライドに進みました');
+          console.log('Advanced to next slide');
           break;
           
         case 'prev_slide':
-          // 前のスライドに戻る
+          // Return to previous slide
           io.emit('quiz_event', { 
             event: 'prev_slide' 
           });
-          console.log('前のスライドに戻りました');
+          console.log('Returned to previous slide');
           break;
           
         case 'reset_all':
-          // リセットコマンドを送信
+          // Send reset command
           io.emit('quiz_event', {
             event: 'reset_all'
           });
+          console.log('All data has been reset');
+          break;
           
-          // クイズ状態をリセット
-          currentQuizState = {
-            quizId: null,
-            phase: null,
-            timerExpired: false
-          };
+        case 'time_expired':
+          // Broadcast timer expiration event
+          io.emit('quiz_event', { 
+            event: 'time_expired', 
+            quizId 
+          });
           
-          console.log('すべてのデータがリセットされました');
+          // Update session timer expiration flag
+          try {
+            const db = require('../database/db');
+            await db.markQuizTimerExpired(quizId, true);
+          } catch (error) {
+            console.error(`Error updating timer expiration flag for quiz ${quizId}:`, error);
+          }
+          
+          console.log(`Timer expired for quiz ${quizId}`);
           break;
           
         default:
-          socket.emit('command_error', { message: '不明なコマンドです' });
+          socket.emit('command_error', { message: 'Unknown command' });
       }
     });
     
-    // タイマー終了時のイベント
-    socket.on('timer_expired', async (data) => {
-      const { quizId } = data;
-      
-      // タイマー終了状態を更新
-      if (currentQuizState.quizId === quizId && currentQuizState.phase === 'question') {
-        currentQuizState.timerExpired = true;
-        
-        // ディスプレイから発信された場合のみ、全員に通知
-        if (socket === activeConnections.display) {
-          console.log(`クイズ ${quizId} のタイマーが終了しました - 自動的に解答表示に移行します`);
-          
-          // 少し遅延を入れてから解答表示に移行（ディスプレイが先に処理する時間を確保）
-          setTimeout(async () => {
-            // 解答表示をブロードキャスト
-            io.emit('quiz_event', { 
-              event: 'show_answer', 
-              quizId 
-            });
-            
-            // クイズ状態を更新
-            currentQuizState.phase = 'answer';
-            
-            // セッションの answer_displayed フラグを更新
-            const db = require('../database/db');
-            await db.markAnswerAsDisplayed(quizId);
-            
-            console.log(`タイマー終了により、クイズ ${quizId} の解答が自動表示されました`);
-          }, 500);
-        }
-      }
-    });
-    
-    // 回答イベント（プレイヤー用）
+    // Answer submission event (player)
     socket.on('submit_answer', (data) => {
       const { playerId, quizId, answer } = data;
       
-      // プレイヤー登録確認
+      // Verify player registration
       let isRegisteredPlayer = false;
       Object.entries(activeConnections.players).forEach(([id, s]) => {
         if (s === socket && id === playerId) {
@@ -257,17 +180,17 @@ function setupSocketHandlers(io) {
       });
       
       if (!isRegisteredPlayer) {
-        socket.emit('answer_error', { message: '登録されていないプレイヤーです' });
+        socket.emit('answer_error', { message: 'Unregistered player' });
         return;
       }
       
-      // 回答をデータベースに記録（APIで処理するので通知のみ）
+      // Notify of answer submission (actual recording is handled by API)
       io.emit('answer_submitted', {
         playerId,
         quizId
       });
       
-      // 管理者に回答状況を通知
+      // Notify admins of answer status
       activeConnections.admin.forEach(adminSocket => {
         adminSocket.emit('answer_update', {
           playerId,
@@ -277,17 +200,30 @@ function setupSocketHandlers(io) {
       });
     });
     
-    // ホーム画面に戻る
+    // Request to show answer (player)
+    socket.on('request_show_answer', (data) => {
+      const { quizId } = data;
+      
+      // Only notify admins - they can decide whether to show the answer
+      activeConnections.admin.forEach(adminSocket => {
+        adminSocket.emit('answer_requested', {
+          quizId,
+          socketId: socket.id
+        });
+      });
+    });
+    
+    // Return to home screen
     socket.on('go_home', () => {
       socket.emit('go_home_event');
     });
     
-    // 切断時の処理
+    // Disconnection handling
     socket.on('disconnect', () => {
-      console.log(`接続が切断されました: ${socket.id}`);
+      console.log(`Connection disconnected: ${socket.id}`);
       connectionCounter.total--;
       
-      // 接続リストから削除
+      // Remove from connection list
       if (activeConnections.display === socket) {
         activeConnections.display = null;
       }
@@ -313,7 +249,7 @@ function setupSocketHandlers(io) {
   });
 }
 
-// 接続統計をブロードキャスト
+// Broadcast connection statistics
 function broadcastConnectionStats() {
   const io = global.io;
   if (!io) return;
@@ -323,7 +259,7 @@ function broadcastConnectionStats() {
     players: connectionCounter.players
   };
   
-  // 管理者とディスプレイに通知
+  // Notify display and admins
   if (activeConnections.display) {
     activeConnections.display.emit('connection_stats', stats);
   }

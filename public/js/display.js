@@ -33,7 +33,7 @@ document.addEventListener('DOMContentLoaded', function() {
   let timeLeft = 30;
   let displayedRankings = [];
   let refreshInterval = null;
-  let autoAnswerDisplayed = false; // タイマー終了後に自動遷移したかのフラグ
+  let isTimerExpired = false;
   
   // 画像のプリロード処理
   function preloadImages() {
@@ -68,7 +68,10 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // 画面を表示する関数
   function showScreen(screen) {
+    // 前の画面を非表示
     currentScreen.classList.add('hidden');
+    
+    // 新しい画面を表示
     screen.classList.remove('hidden');
     currentScreen = screen;
     
@@ -119,7 +122,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // 状態をリセット
     currentQuizId = null;
     displayedRankings = [];
-    autoAnswerDisplayed = false;
     
     // ホーム画面を表示
     showScreen(welcomeScreen);
@@ -130,7 +132,7 @@ document.addEventListener('DOMContentLoaded', function() {
     clearInterval(timerInterval);
     timeLeft = seconds;
     floatingTimerValue.textContent = timeLeft;
-    autoAnswerDisplayed = false; // 自動遷移フラグをリセット
+    isTimerExpired = false;
     
     // フローティングタイマーを表示
     floatingTimer.classList.remove('hidden');
@@ -148,22 +150,16 @@ document.addEventListener('DOMContentLoaded', function() {
       
       if (timeLeft <= 0) {
         clearInterval(timerInterval);
+        isTimerExpired = true;
         
-        // 時間切れ時の処理: 自動的に解答画面に遷移
-        if (currentScreen === quizQuestionScreen && currentQuizId && !autoAnswerDisplayed) {
-          console.log('時間切れ: 自動的に解答画面に遷移します');
-          autoAnswerDisplayed = true; // 二重実行防止のためフラグを設定
-          
-          // サーバーにクイズが終了したことを通知
-          fetch(`/api/quiz/${currentQuizId}/end-timer`, {
-            method: 'POST'
-          }).then(() => {
-            console.log('タイマー終了をサーバーに通知しました');
-          }).catch(error => {
-            console.error('タイマー終了通知中にエラーが発生しました:', error);
-          });
-          
-          // 解答画面に遷移
+        // タイマー終了をSocket.ioで通知
+        socket.emit('quiz_command', {
+          command: 'time_expired',
+          quizId: currentQuizId
+        });
+        
+        // 時間切れになったら自動的に解答画面へ遷移
+        if (currentScreen === quizQuestionScreen && currentQuizId) {
           showAnswer(currentQuizId);
         }
       }
@@ -233,7 +229,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // 選択肢を設定（画像選択肢）
         optionsContainer.innerHTML = '';
         optionsContainer.className = 'image-options-container';
-        optionsContainer.setAttribute('data-quiz-id', quizId); // 問題IDを設定（CSS用）
+        optionsContainer.setAttribute('data-quiz-id', quizId);
         
         quizData.options.forEach((imagePath, index) => {
           const optionDiv = document.createElement('div');
@@ -370,17 +366,19 @@ document.addEventListener('DOMContentLoaded', function() {
         answerStats.style.display = 'none';
       }
       
+      // 解答画面表示時に、解答が表示されたことをデータベースに記録
+      await fetch(`/api/quiz/${quizId}/mark-answer-displayed`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          displayed: true
+        })
+      });
+      
       // 画面を解答画面に切り替え
       showScreen(quizAnswerScreen);
-      
-      // タイマー終了をサーバーに通知
-      if (autoAnswerDisplayed) {
-        // Socket.ioで解答表示イベントを送信
-        socket.emit('quiz_command', {
-          command: 'show_answer',
-          quizId: currentQuizId
-        });
-      }
       
     } catch (error) {
       console.error('解答データの取得に失敗しました:', error);
@@ -519,7 +517,6 @@ document.addEventListener('DOMContentLoaded', function() {
         if (currentScreen === quizQuestionScreen) {
           stopTimer();
           showScreen(quizTitleScreen);
-          autoAnswerDisplayed = false; // 戻る操作の場合、自動遷移フラグをリセット
         } else if (currentScreen === quizAnswerScreen) {
           showQuestion(currentQuizId);
         }
@@ -527,6 +524,15 @@ document.addEventListener('DOMContentLoaded', function() {
         
       case 'show_answer':
         if (currentQuizId) {
+          showAnswer(currentQuizId);
+        }
+        break;
+        
+      case 'time_expired':
+        // タイマー終了イベントの処理
+        isTimerExpired = true;
+        if (currentScreen === quizQuestionScreen && currentQuizId) {
+          // 時間切れの場合、自動的に答えを表示
           showAnswer(currentQuizId);
         }
         break;
