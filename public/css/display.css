@@ -1,26 +1,109 @@
-/* QRコード表示画面の横並びレイアウト */
+/* Base styles */
+body {
+  background-color: #f0f8ff;
+  color: #000;
+  font-family: 'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif;
+  overflow: hidden;
+  font-weight: 700;
+  margin: 0;
+  padding: 0;
+}
+
+#app {
+  height: 100vh;
+  width: 100vw;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: url('/images/backgrounds/main-bg.jpg') no-repeat center center;
+  background-size: cover;
+  position: relative;
+}
+
+.main-display {
+  width: 98%;
+  height: 96%;
+  max-width: 2500px;
+  background-color: rgba(255, 255, 255, 0.95);
+  border-radius: 16px;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+  position: relative;
+}
+
+.screen {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 1vh 1vw;
+  box-sizing: border-box;
+  transition: opacity 0.3s ease;
+  overflow: hidden;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.content {
+  width: 98%;
+  max-width: 2400px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Typography */
+h1 {
+  font-size: 72px;
+  font-weight: 800;
+  margin-bottom: 40px;
+  color: #000;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+h2 {
+  font-size: 56px;
+  font-weight: 800;
+  margin-bottom: 30px;
+  color: #000;
+  line-height: 1.4;
+}
+
+h3 {
+  font-size: 48px;
+  font-weight: 800;
+  margin-bottom: 20px;
+  color: #000;
+}
+
+/* QR code layout container */
 .qr-layout-container {
   display: flex;
   justify-content: center;
   align-items: center;
   width: 90%;
   margin: 0 auto;
-  gap: 60px; /* 左右の間隔 */
+  gap: 60px;
 }
 
-/* 左側のQRコード - サイズ2倍に拡大 */
+/* Left side QR code - doubled size */
 .qr-code-left {
-  flex: 0 0 auto; /* 固定サイズ */
+  flex: 0 0 auto;
 }
 
 .qr-code {
-  width: 800px; /* 400px から 800px に拡大 */
-  height: 800px; /* 400px から 800px に拡大 */
+  width: 800px;
+  height: 800px;
   padding: 20px;
   background-color: white;
   border-radius: 15px;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-  border: 4px solid #000; /* 黒い枠線で視認性向上 */
+  border: 4px solid #000;
 }
 
 .qr-code img {
@@ -29,17 +112,17 @@
   object-fit: contain;
 }
 
-/* 右側の情報エリア */
+/* Right side info area */
 .qr-info-right {
   flex: 1;
   display: flex;
   flex-direction: column;
-  align-items: flex-start; /* 左揃え */
+  align-items: flex-start;
   text-align: left;
   gap: 30px;
 }
 
-/* QRコード説明文 */
+/* QR code instruction */
 .qr-instruction {
   font-size: 48px;
   font-weight: 700;
@@ -47,7 +130,7 @@
   margin: 0;
 }
 
-/* 参加者数表示 */
+/* Participant count display */
 .participants {
   font-size: 48px;
   font-weight: 700;
@@ -55,10 +138,10 @@
   background-color: rgba(0, 123, 255, 0.2);
   padding: 15px 40px;
   border-radius: 50px;
-  align-self: flex-start; /* 左揃え */
+  align-self: flex-start;
 }
 
-/* 手作りアプリの説明 - 完全な設定 */
+/* App description notice */
 .handmade-app-notice {
   padding: 25px 40px;
   background-color: rgba(255, 255, 255, 0.95);
@@ -66,9 +149,9 @@
   border-left: 8px solid #0066cc;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
   animation: gentle-fade-in 1.5s ease-in-out;
-  width: 90%; /* 新レイアウト用に幅を調整 */
-  margin: 10px 0; /* 新レイアウト用にマージンを調整 */
-  align-self: flex-start; /* 左揃え */
+  width: 90%;
+  margin: 10px 0;
+  align-self: flex-start;
 }
 
 .handmade-app-notice p {
@@ -76,18 +159,137 @@
   line-height: 1.6;
   color: #000;
   font-weight: 700;
-  text-align: left; /* 左揃えに変更 */
+  text-align: left;
   margin: 0;
 }
 
-/* アニメーション定義を保持 */
-@keyframes gentle-fade-in {
-  0% { opacity: 0; transform: translateY(10px); }
-  100% { opacity: 1; transform: translateY(0); }
+/* Quiz explanation text */
+.explanation {
+  font-size: 48px;
+  line-height: 1.6;
+  font-weight: 700;
+  text-align: center;
+  margin: 30px 0;
+  color: #000;
 }
 
-/* 問題3と4の画像選択肢のサイズ調整 - 3/4サイズに縮小 */
-/* 問題IDに基づいて特定の要素を選択するためのJavaScript関数を使用 */
+/* Question and answer images */
+.question-image {
+  margin: 30px 0;
+  max-width: 90%;
+  max-height: 45vh;
+  display: flex;
+  justify-content: center;
+}
+
+.question-image img, .answer-image img {
+  max-width: 90%;
+  max-height: 45vh;
+  object-fit: contain;
+  border-radius: 10px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  border: 6px solid #000;
+}
+
+/* Options container */
+.options {
+  width: 96%;
+  display: flex;
+  justify-content: center;
+  margin: 30px 0;
+}
+
+/* Text options */
+.options-container {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 30px 40px;
+  width: 96%;
+  max-width: 2200px;
+}
+
+.option {
+  background-color: #fff;
+  padding: 30px;
+  border-radius: 15px;
+  font-size: 48px;
+  font-weight: 800;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  border: 6px solid #000;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 120px;
+}
+
+/* Problem 5 specific styling */
+.option.groom, .option.bride {
+  padding: 50px;
+  font-size: 84px;
+  min-height: 200px;
+  letter-spacing: 5px;
+}
+
+.option.groom {
+  background-color: #e6f0ff;
+  border-color: #0044aa;
+  border-width: 8px;
+  color: #0044aa;
+}
+
+.option.bride {
+  background-color: #ffebf2;
+  border-color: #b30047;
+  border-width: 8px;
+  color: #b30047;
+}
+
+/* Floating timer */
+.floating-timer {
+  position: absolute;
+  top: 25px;
+  right: 25px;
+  background-color: rgba(255, 0, 0, 0.95);
+  color: white;
+  font-size: 80px;
+  font-weight: 800;
+  padding: 15px 30px;
+  border-radius: 20px;
+  z-index: 100;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.timer-unit {
+  font-size: 48px;
+  margin-left: 10px;
+}
+
+/* Image options container */
+.image-options-container {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 30px 40px;
+  width: 96%;
+  max-width: 2200px;
+}
+
+/* Standard image options (for problems 1, 2, 5) */
+.image-option {
+  position: relative;
+  background-color: #fff;
+  border-radius: 15px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  aspect-ratio: 4/3;
+  border: 6px solid #000;
+  height: 50vh;
+}
+
+/* Reduced size image options for problems 3 and 4 */
 .image-options-container[data-quiz-id="3"] .image-option,
 .image-options-container[data-quiz-id="4"] .image-option {
   position: relative;
@@ -95,39 +297,20 @@
   border-radius: 15px;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
   overflow: hidden;
-  aspect-ratio: 4/3; /* アスペクト比を維持 */
+  aspect-ratio: 4/3;
   border: 6px solid #000;
-  height: 37.5vh; /* 50vh × 0.75 = 37.5vh - 3/4サイズに縮小 */
-  width: 75%; /* 幅も75%に縮小 */
-  margin: 0 auto; /* 中央揃え */
+  height: 37.5vh;
+  width: 75%;
+  margin: 0 auto;
 }
 
-.image-options-container[data-quiz-id="3"] .image-option img,
-.image-options-container[data-quiz-id="4"] .image-option img {
+.image-option img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-/* 画像選択肢 - 標準サイズ (問題3,4以外) */
-.image-options-container:not([data-quiz-id="3"]):not([data-quiz-id="4"]) .image-option {
-  position: relative;
-  background-color: #fff;
-  border-radius: 15px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-  overflow: hidden;
-  aspect-ratio: 4/3; /* アスペクト比を維持 */
-  border: 6px solid #000;
-  height: 50vh; /* 標準の高さ */
-}
-
-.image-options-container:not([data-quiz-id="3"]):not([data-quiz-id="4"]) .image-option img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-/* 選択肢番号は全問題共通 */
+/* Option numbers */
 .option-number {
   position: absolute;
   top: 20px;
@@ -143,4 +326,176 @@
   font-weight: 800;
   font-size: 42px;
   border: 3px solid white;
+}
+
+/* Problem 3 comparison images */
+.before-after-container {
+  display: flex;
+  justify-content: center;
+  gap: 60px;
+  margin: 30px 0;
+  width: 90%;
+}
+
+.before-after-item {
+  flex: 1;
+  max-width: 45%;
+  text-align: center;
+}
+
+.before-after-item img {
+  width: 100%;
+  max-height: 50vh;
+  object-fit: contain;
+  border-radius: 15px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  border: 6px solid #000;
+  margin-bottom: 20px;
+}
+
+.before-after-item .label {
+  font-size: 36px;
+  font-weight: 800;
+  margin-top: 15px;
+  color: #000;
+  background-color: #f0f0f0;
+  padding: 10px 25px;
+  border-radius: 30px;
+  display: inline-block;
+  border: 2px solid #000;
+}
+
+/* Problem 5 large text answer */
+.big-text-answer {
+  font-size: 150px;
+  font-weight: 800;
+  text-align: center;
+  margin: 50px 0;
+  padding: 40px 60px;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  letter-spacing: 5px;
+}
+
+.big-text-answer.groom {
+  color: #0044aa;
+  background-color: #e6f0ff;
+  border: 8px solid #0044aa;
+}
+
+.big-text-answer.bride {
+  color: #b30047;
+  background-color: #ffebf2;
+  border: 8px solid #b30047;
+}
+
+/* Ranking section */
+.ranking-container {
+  width: 85%;
+  margin-top: 40px;
+}
+
+.ranking-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #fff;
+  padding: 25px 40px;
+  border-radius: 20px;
+  margin-bottom: 25px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  transform-origin: center;
+  animation: fadeInUp 0.6s ease forwards;
+  opacity: 0;
+  border: 6px solid #000;
+}
+
+.ranking-item.highlight {
+  background-color: #fffbe6;
+  border: 6px solid #ffc107;
+}
+
+.ranking-position {
+  font-size: 60px;
+  font-weight: 800;
+  min-width: 120px;
+  color: #000;
+}
+
+.ranking-name {
+  font-size: 48px;
+  font-weight: 700;
+  text-align: left;
+  flex-grow: 1;
+  margin: 0 40px;
+  color: #000;
+}
+
+.ranking-score {
+  font-size: 42px;
+  font-weight: 700;
+}
+
+.correct-count {
+  color: #0055cc;
+  font-weight: 800;
+  margin-right: 20px;
+}
+
+.response-time {
+  color: #cc0000;
+  font-weight: 700;
+}
+
+/* Home button */
+.home-button {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  background-color: rgba(0, 86, 179, 0.95);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  padding: 18px 30px;
+  font-size: 24px;
+  font-weight: 700;
+  cursor: pointer;
+  z-index: 1000;
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+  transition: all 0.2s;
+}
+
+.home-button:hover {
+  background-color: rgba(0, 66, 138, 0.95);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+}
+
+/* Animations */
+@keyframes gentle-fade-in {
+  0% { opacity: 0; transform: translateY(10px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Ranking animation delays */
+.ranking-item:nth-child(1) { animation-delay: 0.1s; }
+.ranking-item:nth-child(2) { animation-delay: 0.2s; }
+.ranking-item:nth-child(3) { animation-delay: 0.3s; }
+.ranking-item:nth-child(4) { animation-delay: 0.4s; }
+.ranking-item:nth-child(5) { animation-delay: 0.5s; }
+
+/* Hide removed elements */
+.answer-stats {
+  display: none;
 }

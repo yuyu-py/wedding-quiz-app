@@ -67,10 +67,7 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // 画面を表示する関数
   function showScreen(screen) {
-    // 前の画面を非表示
     currentScreen.classList.add('hidden');
-    
-    // 新しい画面を表示
     screen.classList.remove('hidden');
     currentScreen = screen;
     
@@ -148,11 +145,7 @@ document.addEventListener('DOMContentLoaded', function() {
       
       if (timeLeft <= 0) {
         clearInterval(timerInterval);
-        // 時間切れになったら自動的に解答画面に遷移
-        if (currentScreen === quizQuestionScreen && currentQuizId) {
-          console.log('時間切れ: 自動的に解答画面に遷移します');
-          showAnswer(currentQuizId);
-        }
+        // 時間切れ時の処理があればここに追加
       }
     }, 1000);
   }
@@ -173,7 +166,7 @@ document.addEventListener('DOMContentLoaded', function() {
       // 問題のタイトルを設定
       quizTitle.textContent = `問題 ${quizId}`;
       
-      // 問題文を設定
+      // 問題文と画像を設定
       questionText.textContent = quizData.question;
       
       // 画像選択肢か通常選択肢かで表示方法を変える
@@ -197,18 +190,8 @@ document.addEventListener('DOMContentLoaded', function() {
             // 新郎・新婦別のクラスを追加
             if (option === '新郎') {
               optionDiv.classList.add('groom');
-              // より大きく見やすく表示するための調整
-              optionDiv.style.fontSize = 'min(64px, 7vw)';
-              optionDiv.style.padding = '40px';
-              optionDiv.style.fontWeight = '900';
-              optionDiv.style.letterSpacing = '2px';
             } else if (option === '新婦') {
               optionDiv.classList.add('bride');
-              // より大きく見やすく表示するための調整
-              optionDiv.style.fontSize = 'min(64px, 7vw)';
-              optionDiv.style.padding = '40px';
-              optionDiv.style.fontWeight = '900';
-              optionDiv.style.letterSpacing = '2px';
             }
             
             optionDiv.textContent = option;
@@ -230,6 +213,9 @@ document.addEventListener('DOMContentLoaded', function() {
         // 選択肢を設定（画像選択肢）
         optionsContainer.innerHTML = '';
         optionsContainer.className = 'image-options-container';
+        
+        // 問題IDを設定 - これを追加して問題3, 4を特定できるようにする
+        optionsContainer.setAttribute('data-quiz-id', quizId);
         
         quizData.options.forEach((imagePath, index) => {
           const optionDiv = document.createElement('div');
@@ -346,16 +332,8 @@ document.addEventListener('DOMContentLoaded', function() {
         // 新郎・新婦別のクラスを追加
         if (answerData.correct_answer === '新郎') {
           bigTextAnswer.classList.add('groom');
-          // より大きく見やすく表示
-          bigTextAnswer.style.fontSize = 'min(100px, 12vw)';
-          bigTextAnswer.style.padding = '50px';
-          bigTextAnswer.style.fontWeight = '900';
         } else if (answerData.correct_answer === '新婦') {
           bigTextAnswer.classList.add('bride');
-          // より大きく見やすく表示
-          bigTextAnswer.style.fontSize = 'min(100px, 12vw)';
-          bigTextAnswer.style.padding = '50px';
-          bigTextAnswer.style.fontWeight = '900';
         }
         
         bigTextAnswer.textContent = answerData.correct_answer;
@@ -368,10 +346,121 @@ document.addEventListener('DOMContentLoaded', function() {
         answerImageContainer.style.display = answerData.answer_image_path ? 'block' : 'none';
       }
       
-      // 回答状況セクションを非表示に設定（要件に従い削除）
-      const answerStats = document.querySelector('.answer-stats');
-      if (answerStats) {
-        answerStats.style.display = 'none';
+      // 回答状況を取得
+      const statsResponse = await fetch(`/api/quiz/${quizId}/stats`);
+      const statsData = await statsResponse.json();
+      
+      // 問題4と5の場合は画像選択肢の回答状況表示を変更
+      if (parseInt(quizId) === 4 || parseInt(quizId) === 5) {
+        if (parseInt(quizId) === 5) {
+          // 問題5の場合は特別なテキスト表示
+          answerStatsContainer.className = 'stats-container';
+          answerStatsContainer.innerHTML = '';
+          
+          statsData.stats.forEach((stat, index) => {
+            const statDiv = document.createElement('div');
+            statDiv.className = 'stat-item';
+            
+            // 新郎・新婦別のクラスを追加
+            if (stat.option === '新郎') {
+              statDiv.classList.add('groom');
+            } else if (stat.option === '新婦') {
+              statDiv.classList.add('bride');
+            }
+            
+            if (stat.isCorrect) {
+              statDiv.classList.add('correct');
+            }
+            
+            const optionSpan = document.createElement('span');
+            optionSpan.className = 'stat-option';
+            optionSpan.textContent = stat.option;
+            
+            const countSpan = document.createElement('span');
+            countSpan.className = 'stat-count';
+            countSpan.textContent = `${stat.count}人`;
+            
+            statDiv.appendChild(optionSpan);
+            statDiv.appendChild(countSpan);
+            answerStatsContainer.appendChild(statDiv);
+          });
+        } else {
+          // 問題4の場合は画像表示
+          answerStatsContainer.className = 'image-stats-container';
+          answerStatsContainer.innerHTML = '';
+          
+          // 画像パスの設定
+          const optionImages = [
+            '/images/quiz-images/quiz4_option1.png',
+            '/images/quiz-images/quiz4_option2.png',
+            '/images/quiz-images/quiz4_option3.png',
+            '/images/quiz-images/quiz4_option4.png'
+          ];
+          
+          statsData.stats.forEach((stat, index) => {
+            const statDiv = document.createElement('div');
+            statDiv.className = 'image-stat-item';
+            if (stat.isCorrect) {
+              statDiv.classList.add('correct');
+            }
+            
+            const img = document.createElement('img');
+            img.src = optionImages[index] || '';
+            img.alt = `選択肢 ${index + 1}`;
+            
+            const overlay = document.createElement('div');
+            overlay.className = 'image-stat-overlay';
+            
+            const optionNumber = document.createElement('span');
+            optionNumber.className = 'image-stat-number';
+            optionNumber.textContent = `選択肢 ${index + 1}`;
+            
+            const countSpan = document.createElement('span');
+            countSpan.className = 'image-stat-count';
+            countSpan.textContent = `${stat.count}人`;
+            
+            overlay.appendChild(optionNumber);
+            overlay.appendChild(countSpan);
+            
+            statDiv.appendChild(img);
+            statDiv.appendChild(overlay);
+            answerStatsContainer.appendChild(statDiv);
+          });
+        }
+      } else {
+        // 通常の選択肢の場合
+        answerStatsContainer.className = 'stats-container';
+        answerStatsContainer.innerHTML = '';
+        
+        // 画像選択肢かどうかを判定
+        const isImageOptions = answerData.is_image_options === 1;
+        
+        statsData.stats.forEach((stat, index) => {
+          const statDiv = document.createElement('div');
+          statDiv.className = 'stat-item';
+          if (stat.isCorrect) {
+            statDiv.classList.add('correct');
+          }
+          
+          const optionSpan = document.createElement('span');
+          optionSpan.className = 'stat-option';
+          
+          if (isImageOptions) {
+            // 画像選択肢の場合は番号を表示
+            optionSpan.textContent = `選択肢 ${index + 1}`;
+          } else {
+            // 通常選択肢の場合はテキストを表示
+            optionSpan.textContent = stat.option;
+          }
+          
+          const countSpan = document.createElement('span');
+          countSpan.className = 'stat-count';
+          countSpan.textContent = `${stat.count}人`;
+          
+          statDiv.appendChild(optionSpan);
+          statDiv.appendChild(countSpan);
+          answerStatsContainer.appendChild(statDiv);
+        });
       }
       
       // 画面を解答画面に切り替え
@@ -537,9 +626,4 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // ホームボタンのクリックイベント
   homeButton.addEventListener('click', goToHome);
-  
-  // 初期表示時に参加者数の更新を開始
-  if (currentScreen === welcomeScreen) {
-    startParticipantCountRefresh();
-  }
 });
