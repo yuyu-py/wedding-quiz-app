@@ -86,28 +86,6 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log(`画面を切り替えました: ${screen.id}`);
   }
   
-  // 参加者数の更新を10秒ごとに行う関数
-  function startParticipantCountRefresh() {
-    // まず既存の更新を停止
-    stopParticipantCountRefresh();
-    
-    // 10秒ごとに参加者数を更新する間隔を設定
-    refreshInterval = setInterval(async () => {
-      try {
-        // サーバーから最新の参加者数を取得
-        const response = await fetch('/api/quiz/stats/participants');
-        const data = await response.json();
-        
-        // 参加者数を更新（API対応がなければSocket.ioイベントを使用）
-        if (data && data.count !== undefined) {
-          participantCount.textContent = data.count;
-        }
-      } catch (error) {
-        console.log('参加者数の更新中にエラーが発生しました。Socket.ioイベントを使用します。');
-      }
-    }, 10000); // 10秒間隔
-  }
-  
   // 参加者数更新の停止
   function stopParticipantCountRefresh() {
     if (refreshInterval) {
@@ -530,8 +508,23 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // 接続数の更新
   socket.on('connection_stats', (stats) => {
-    participantCount.textContent = stats.players;
+    // プレイヤー数の表示を更新（最大値は39に制限）
+    const playerCount = stats.displayCount;
+    participantCount.textContent = `${Math.min(playerCount, 39)}/39`;
+    
+    // もし接続数が39人に達したら視覚的なフィードバックを追加
+    if (playerCount >= 39) {
+      participantCount.parentElement.classList.add('full-participants');
+    } else {
+      participantCount.parentElement.classList.remove('full-participants');
+    }
   });
+
+  // 初期表示時に参加者数の更新を開始
+if (currentScreen === welcomeScreen) {
+  // Socket.ioで常に最新状態を取得するため、APIポーリングは不要
+  // broadcastConnectionStats()が接続時に呼ばれるため、特別な初期化は不要
+}
   
   // 強制遷移イベントのハンドラを追加
   socket.on('force_transition', (data) => {
