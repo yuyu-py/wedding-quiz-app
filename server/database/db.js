@@ -245,6 +245,44 @@ async function getQuiz(id) {
       return null;
     }
     
+    // 問題5の場合は、現在のセッションから最新の回答を取得
+    if (id === '5') {
+      const quiz = result.Item;
+      
+      try {
+        // 最新の未終了セッションを取得
+        const queryParams = {
+          TableName: TABLES.SESSION,
+          IndexName: 'quiz_id-index', 
+          KeyConditionExpression: 'quiz_id = :quizId',
+          FilterExpression: 'attribute_not_exists(ended_at)',
+          ExpressionAttributeValues: {
+            ':quizId': '5'
+          },
+          ScanIndexForward: false,
+          Limit: 1
+        };
+        
+        const sessionResult = await dynamodb.send(new QueryCommand(queryParams));
+        
+        if (sessionResult.Items && sessionResult.Items.length > 0) {
+          const session = sessionResult.Items[0];
+          
+          // セッションにカスタム答えがあればそれを使用
+          if (session.custom_answer) {
+            quiz.correct_answer = session.custom_answer;
+            console.log(`問題5: セッションからカスタム答え "${quiz.correct_answer}" を使用します`);
+          }
+        }
+      } catch (error) {
+        console.error('問題5のセッション情報取得中にエラーが発生しました:', error);
+      }
+      
+      // 結果をキャッシュに保存
+      cache.set(cacheKey, quiz);
+      return quiz;
+    }
+    
     // 結果をキャッシュに保存
     cache.set(cacheKey, result.Item);
     return result.Item;

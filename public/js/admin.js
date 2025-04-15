@@ -278,6 +278,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // クイズ5の答えを設定
+    // admin.js - 問題5の答え設定関数の改善
     async function setQuiz5Answer(answer) {
       try {
         const response = await fetch('/api/admin/quiz/5/set-answer', {
@@ -287,6 +288,10 @@ document.addEventListener('DOMContentLoaded', function() {
           },
           body: JSON.stringify({ answer })
         });
+        
+        if (!response.ok) {
+          throw new Error(`API エラー: ${response.status}`);
+        }
         
         const result = await response.json();
         
@@ -304,14 +309,24 @@ document.addEventListener('DOMContentLoaded', function() {
             quiz5Option2.classList.add('selected');
           }
           
+          // 答え設定成功メッセージの表示（少し目立つように）
+          quiz5Status.style.color = '#4caf50';
+          quiz5Status.style.fontWeight = 'bold';
+          setTimeout(() => {
+            quiz5Status.style.color = '';
+            quiz5Status.style.fontWeight = '';
+          }, 3000);
+          
           return true;
         } else {
-          quiz5Status.textContent = '答えの設定に失敗しました';
+          quiz5Status.textContent = `答えの設定に失敗しました: ${result.error || '不明なエラー'}`;
+          quiz5Status.style.color = '#f44336';
           return false;
         }
       } catch (error) {
-        console.error('クイズ5の答え設定に失敗しました:', error);
-        quiz5Status.textContent = 'エラーが発生しました';
+        console.error('クイズ5の答え設定中にエラーが発生しました:', error);
+        quiz5Status.textContent = `エラーが発生しました: ${error.message}`;
+        quiz5Status.style.color = '#f44336';
         return false;
       }
     }

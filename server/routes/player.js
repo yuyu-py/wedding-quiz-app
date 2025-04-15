@@ -51,13 +51,10 @@ router.get('/:id', async (req, res) => {
 });
 
 // クイズの回答を提出
+// routes/player.js - 回答処理の改善
 router.post('/answer', async (req, res) => {
   try {
     const { playerId, quizId, answer, responseTime } = req.body;
-    
-    if (!playerId || !quizId || !answer) {
-      return res.status(400).json({ error: '必須パラメータが不足しています' });
-    }
     
     // プレイヤーの存在確認
     const player = await db.getPlayer(playerId);
@@ -69,6 +66,11 @@ router.post('/answer', async (req, res) => {
     const quiz = await db.getQuiz(quizId);
     if (!quiz) {
       return res.status(404).json({ error: 'クイズが見つかりません' });
+    }
+    
+    // デバッグログ追加（問題5のみ）
+    if (quizId === '5') {
+      console.log(`問題5回答処理: プレイヤー回答="${answer}", システム正解="${quiz.correct_answer}"`);
     }
     
     // 正解かどうか判定

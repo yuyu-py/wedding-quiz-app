@@ -48,21 +48,43 @@ router.post('/quiz/5/set-answer', async (req, res) => {
     const { answer } = req.body;
     
     if (!answer || (answer !== '新郎' && answer !== '新婦')) {
-      return res.status(400).json({ error: '答えは「新郎」または「新婦」である必要があります' });
+      return res.status(400).json({ 
+        success: false,
+        error: '答えは「新郎」または「新婦」である必要があります' 
+      });
     }
     
+    // 問題5の答えを設定
     const result = await db.setQuiz5Answer(answer);
     
-    res.json({ 
-      success: result, 
-      answer,
-      message: `クイズ5の答えを「${answer}」に設定しました` 
-    });
+    if (result) {
+      // 答え設定成功時に全クライアントに通知
+      if (global.io) {
+        global.io.emit('quiz5_answer_set', {
+          answer
+        });
+      }
+      
+      res.json({ 
+        success: true, 
+        answer,
+        message: `クイズ5の答えを「${answer}」に設定しました` 
+      });
+    } else {
+      res.status(500).json({ 
+        success: false,
+        error: '答えの設定に失敗しました' 
+      });
+    }
   } catch (error) {
     console.error('クイズ5の答え設定中にエラーが発生しました:', error);
-    res.status(500).json({ error: 'サーバーエラーが発生しました' });
+    res.status(500).json({ 
+      success: false,
+      error: 'サーバーエラーが発生しました' 
+    });
   }
 });
+
 
 // 新規追加: 解答表示状態を記録するAPI
 router.post('/quiz/:id/mark-answer-displayed', async (req, res) => {
