@@ -594,7 +594,7 @@ async function getRankings() {
     });
     
     // 上位30件に制限
-    const limitedRankings = rankingData.slice(0, 30);
+    const limitedRankings = rankingData.slice(0, 50);
     
     // 結果をキャッシュに保存
     cache.set(cacheKey, limitedRankings);
