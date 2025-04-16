@@ -379,13 +379,14 @@ async function startQuizSession(quizId) {
 }
 
 // プレイヤー登録
-async function registerPlayer(id, name) {
+async function registerPlayer(id, name, tableNumber) {
   try {
     const params = {
       TableName: TABLES.PLAYER,
       Item: {
         id,
         name,
+        table_number: tableNumber, // テーブルナンバーを追加
         joined_at: new Date().toISOString()
       }
     };
@@ -571,6 +572,7 @@ async function getRankings() {
       rankingData.push({
         player_id: player.id,
         player_name: player.name,
+        table_number: player.table_number || '-', // テーブルナンバーを追加 (未設定の場合は'-'を表示)
         correct_count: correctCount,
         total_time: totalTime,
         quiz_count: answers.length

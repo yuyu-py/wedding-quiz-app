@@ -86,6 +86,31 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log(`画面を切り替えました: ${screen.id}`);
   }
   
+  // 参加者数更新の定期実行
+  function startParticipantCountRefresh() {
+    refreshInterval = setInterval(() => {
+      fetchParticipantCount();
+    }, 10000); // 10秒ごとに更新
+  }
+  
+  // 参加者数の取得
+  async function fetchParticipantCount() {
+    try {
+      const response = await fetch('/api/quiz/stats/participants');
+      const data = await response.json();
+      participantCount.textContent = `${data.count}/39`;
+      
+      // 参加者が最大（39人）に達した場合は視覚的フィードバック
+      if (data.count >= 39) {
+        participantCount.parentElement.classList.add('full-participants');
+      } else {
+        participantCount.parentElement.classList.remove('full-participants');
+      }
+    } catch (error) {
+      console.error('参加者数の取得中にエラーが発生しました:', error);
+    }
+  }
+  
   // 参加者数更新の停止
   function stopParticipantCountRefresh() {
     if (refreshInterval) {
@@ -407,6 +432,11 @@ document.addEventListener('DOMContentLoaded', function() {
     positionDiv.className = 'ranking-position';
     positionDiv.textContent = `${position}位`;
     
+    // テーブルナンバーを表示するdiv要素を作成
+    const tableDiv = document.createElement('div');
+    tableDiv.className = 'ranking-table';
+    tableDiv.textContent = ranking.table_number || '-';
+    
     const nameDiv = document.createElement('div');
     nameDiv.className = 'ranking-name';
     nameDiv.textContent = ranking.player_name;
@@ -428,6 +458,7 @@ document.addEventListener('DOMContentLoaded', function() {
     scoreDiv.appendChild(timeSpan);
     
     rankingItem.appendChild(positionDiv);
+    rankingItem.appendChild(tableDiv); // テーブルナンバーを追加
     rankingItem.appendChild(nameDiv);
     rankingItem.appendChild(scoreDiv);
     
@@ -521,10 +552,10 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 
   // 初期表示時に参加者数の更新を開始
-if (currentScreen === welcomeScreen) {
-  // Socket.ioで常に最新状態を取得するため、APIポーリングは不要
-  // broadcastConnectionStats()が接続時に呼ばれるため、特別な初期化は不要
-}
+  if (currentScreen === welcomeScreen) {
+    // Socket.ioで常に最新状態を取得するため、APIポーリングは不要
+    // broadcastConnectionStats()が接続時に呼ばれるため、特別な初期化は不要
+  }
   
   // 強制遷移イベントのハンドラを追加
   socket.on('force_transition', (data) => {

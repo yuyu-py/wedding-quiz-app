@@ -1,4 +1,3 @@
-// public/js/player.js
 // 参加者画面用のJavaScript
 document.addEventListener('DOMContentLoaded', function() {
   // 画面要素
@@ -47,6 +46,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // 状態管理
   let playerId = null;
   let playerName = '';
+  let tableNumber = ''; // テーブルナンバーを追加
   let currentQuizId = null;
   let selectedAnswer = null;
   let timerInterval = null;
@@ -191,6 +191,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const player = await response.json();
         playerId = player.id;
         playerName = player.name;
+        tableNumber = player.table_number || 'A'; // テーブルナンバーを取得
         
         // プレイヤー名を表示
         displayName.textContent = playerName;
@@ -997,13 +998,19 @@ document.addEventListener('DOMContentLoaded', function() {
       return;
     }
     
+    // テーブルナンバーを取得
+    const tableNumber = document.querySelector('input[name="table-number"]:checked').value;
+    
     try {
       const response = await fetch('/api/player/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ name })
+        body: JSON.stringify({ 
+          name,
+          tableNumber  // テーブルナンバーを追加
+        })
       });
       
       const result = await response.json();
@@ -1011,6 +1018,7 @@ document.addEventListener('DOMContentLoaded', function() {
       if (result.success) {
         playerId = result.playerId;
         playerName = result.name;
+        tableNumber = result.tableNumber;
         
         // URLに参加者IDを追加（リロード時に再利用できるように）
         const url = new URL(window.location);

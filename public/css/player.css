@@ -106,6 +106,103 @@ h2 {
   background-color: #0069d9;
 }
 
+.table-selection {
+  margin: 20px 0;
+  width: 100%;
+}
+
+.table-selection-title {
+  text-align: center;
+  margin-bottom: 15px;
+  font-size: 16px;
+  font-weight: 500;
+  color: #333;
+}
+
+.table-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  width: 100%;
+}
+
+.table-option {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f8f9fa;
+  border: 2px solid #ddd;
+  border-radius: 12px;
+  padding: 15px 0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.table-option:hover {
+  background-color: #e9ecef;
+  border-color: #ced4da;
+}
+
+.table-option input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+}
+
+.table-option {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  padding: 0;
+  cursor: pointer;
+  overflow: hidden;
+  margin: 0;
+  border: none;
+}
+
+.table-option input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.table-button-appearance {
+  width: 100%;
+  padding: 15px 0;
+  font-size: 22px;
+  font-weight: 700;
+  text-align: center;
+  background-color: #f8f9fa;
+  border: 2px solid #ddd;
+  border-radius: 12px;
+  transition: all 0.2s ease;
+}
+
+.table-option input[type="radio"]:checked + .table-button-appearance {
+  background-color: #007bff;
+  color: white;
+  border-color: #0056b3;
+  box-shadow: 0 0 10px rgba(0, 123, 255, 0.5);
+}
+
+.table-option:hover .table-button-appearance {
+  background-color: #e9ecef;
+  border-color: #ced4da;
+}
+
+.table-option input[type="radio"]:checked:hover + .table-button-appearance {
+  background-color: #0069d9;
+  border-color: #0056b3;
+}
+
+.table-option-spacer {
+  /* 3x3グリッドの9番目のスペース */
+  visibility: hidden;
+}
+
 .material-symbols-rounded {
   font-size: 22px;
 }

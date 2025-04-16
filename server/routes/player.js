@@ -7,21 +7,28 @@ const db = require('../database/db'); // db.jsから直接インポート
 // プレイヤーの登録
 router.post('/register', async (req, res) => {
   try {
-    const { name } = req.body;
+    const { name, tableNumber } = req.body;
     
     if (!name || name.trim() === '') {
       return res.status(400).json({ error: '名前は必須です' });
     }
     
+    // テーブル番号のバリデーション
+    if (!tableNumber || !['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].includes(tableNumber)) {
+      return res.status(400).json({ error: 'テーブル番号が無効です' });
+    }
+    
     const playerId = nanoid(10); // 10文字のユニークID
     
-    const success = await db.registerPlayer(playerId, name);
+    // テーブルナンバーも一緒に保存
+    const success = await db.registerPlayer(playerId, name, tableNumber);
     
     if (success) {
       res.json({ 
         success: true, 
         playerId,
         name,
+        tableNumber,
         message: 'プレイヤーが登録されました' 
       });
     } else {
