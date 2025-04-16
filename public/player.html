@@ -21,13 +21,11 @@
         <h1>結婚式クイズ大会</h1>
         <p class="welcome-text">ようこそ！参加するにはお名前を入力してください</p>
         <div class="register-form">
-          <input type="text" id="player-name" placeholder="お名前を入力してください" maxlength="30">
-          
           <div class="table-selection">
             <p class="table-selection-title">あなたのテーブルを選択してください</p>
             <div class="table-grid">
               <label class="table-option">
-                <input type="radio" name="table-number" value="A" checked> <!-- checked属性を必ず設定 -->
+                <input type="radio" name="table-number" value="A" checked>
                 <div class="table-button-appearance">A</div>
               </label>
               <label class="table-option">
@@ -62,11 +60,14 @@
             </div>
           </div>
           
+          <input type="text" id="player-name" placeholder="お名前を入力してください" maxlength="30">
+          
           <button id="register-button" class="primary-button">
             <span class="material-symbols-rounded">login</span>
             参加する
           </button>
         </div>
+        
         <!-- 手作りアプリの説明 -->
         <div class="player-handmade-notice">
           <span class="material-symbols-rounded heart-icon">favorite</span>

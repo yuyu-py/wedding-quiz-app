@@ -64,7 +64,7 @@ h2 {
 .register-form {
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: 20px; /* 間隔を少し広げる */
 }
 
 #player-name {
@@ -74,6 +74,7 @@ h2 {
   font-size: 17px;
   background-color: #f9f9f9;
   transition: border-color 0.2s;
+  margin-top: 5px;
 }
 
 #player-name:focus {
@@ -107,13 +108,13 @@ h2 {
 }
 
 .table-selection {
-  margin: 20px 0;
+  margin: 10px 0;
   width: 100%;
 }
 
 .table-selection-title {
   text-align: center;
-  margin-bottom: 15px;
+  margin-bottom: 12px;
   font-size: 16px;
   font-weight: 500;
   color: #333;
@@ -144,9 +145,84 @@ h2 {
   border-color: #ced4da;
 }
 
-.table-option input[type="radio"] {
-  position: absolute;
-  opacity: 0;
+/* ベースのスタイル */
+.table-option input[type="radio"]:checked + .table-button-appearance {
+  color: white;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+}
+
+/* テーブルごとの色 */
+.table-option input[type="radio"][value="A"]:checked + .table-button-appearance {
+  background-color: #007bff; /* 青 */
+  border-color: #0056b3;
+}
+
+.table-option input[type="radio"][value="B"]:checked + .table-button-appearance {
+  background-color: #28a745; /* 緑 */
+  border-color: #1e7e34;
+}
+
+.table-option input[type="radio"][value="C"]:checked + .table-button-appearance {
+  background-color: #dc3545; /* 赤 */
+  border-color: #bd2130;
+}
+
+.table-option input[type="radio"][value="D"]:checked + .table-button-appearance {
+  background-color: #6f42c1; /* 紫 */
+  border-color: #59339d;
+}
+
+.table-option input[type="radio"][value="E"]:checked + .table-button-appearance {
+  background-color: #fd7e14; /* オレンジ */
+  border-color: #dc6502;
+}
+
+.table-option input[type="radio"][value="F"]:checked + .table-button-appearance {
+  background-color: #20c997; /* ティール */
+  border-color: #199d76;
+}
+
+.table-option input[type="radio"][value="G"]:checked + .table-button-appearance {
+  background-color: #e83e8c; /* ピンク */
+  border-color: #d21e66;
+}
+
+.table-option input[type="radio"][value="H"]:checked + .table-button-appearance {
+  background-color: #6c757d; /* グレー */
+  border-color: #545b62;
+}
+
+/* ホバー時のスタイルも各色に対応 */
+.table-option input[type="radio"][value="A"]:checked:hover + .table-button-appearance {
+  background-color: #0069d9;
+}
+
+.table-option input[type="radio"][value="B"]:checked:hover + .table-button-appearance {
+  background-color: #218838;
+}
+
+.table-option input[type="radio"][value="C"]:checked:hover + .table-button-appearance {
+  background-color: #c82333;
+}
+
+.table-option input[type="radio"][value="D"]:checked:hover + .table-button-appearance {
+  background-color: #6610f2;
+}
+
+.table-option input[type="radio"][value="E"]:checked:hover + .table-button-appearance {
+  background-color: #e67e22;
+}
+
+.table-option input[type="radio"][value="F"]:checked:hover + .table-button-appearance {
+  background-color: #1ba385;
+}
+
+.table-option input[type="radio"][value="G"]:checked:hover + .table-button-appearance {
+  background-color: #d6336c;
+}
+
+.table-option input[type="radio"][value="H"]:checked:hover + .table-button-appearance {
+  background-color: #5a6268;
 }
 
 .table-option {

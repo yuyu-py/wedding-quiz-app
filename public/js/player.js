@@ -1090,7 +1090,8 @@ document.addEventListener('DOMContentLoaded', function() {
   // エンターキーでの登録
   playerNameInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') {
-      registerButton.click();
+      e.preventDefault(); // Enterキーの動作を無効化
+      // registerButtonは呼び出さない
     }
   });
   
