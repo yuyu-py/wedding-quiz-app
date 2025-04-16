@@ -961,3 +961,48 @@ h2 {
   color: #666;
   margin-top: 15px;
 }
+
+/* 登録完了メッセージスタイル */
+.registration-success {
+  background-color: #d4edda;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 25px;
+  text-align: center;
+  border-left: 5px solid #28a745;
+  animation: fadeInDown 0.5s ease-out;
+}
+
+.registration-success h2 {
+  color: #155724;
+  font-size: 22px;
+  margin: 10px 0;
+}
+
+.registration-success p {
+  color: #155724;
+  font-size: 16px;
+  margin: 5px 0 0;
+}
+
+.success-icon {
+  font-size: 40px !important;
+  color: #28a745;
+  margin-bottom: 5px;
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 既存のh1マージンを調整（登録完了メッセージを追加したため） */
+#explanation-screen h1 {
+  margin-top: 5px;
+}

@@ -1075,8 +1075,11 @@ document.addEventListener('DOMContentLoaded', function() {
         // Socket.io接続を開始
         initSocketConnection();
         
-        // 説明画面に切り替え
-        showScreen(explanationScreen);
+        // わずかな遅延を追加して、登録アクションとの因果関係を明確にする
+        setTimeout(() => {
+          // 説明画面に切り替え
+          showScreen(explanationScreen);
+        }, 300); // 300ミリ秒の遅延
         
       } else {
         alert('登録に失敗しました: ' + result.error);
