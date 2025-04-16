@@ -227,3 +227,16 @@ body {
   margin-top: 10px;
   text-align: center;
 }
+
+.quiz5-instruction {
+  margin-top: 15px;
+  padding: 10px;
+  background-color: #fff3cd;
+  border-left: 4px solid #ffc107;
+  font-size: 14px;
+  color: #856404;
+}
+
+.quiz5-instruction p {
+  margin: 0;
+}

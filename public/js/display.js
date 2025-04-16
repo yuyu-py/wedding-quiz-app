@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const quizTitleScreen = document.getElementById('quiz-title-screen');
   const quizQuestionScreen = document.getElementById('quiz-question-screen');
   const quizAnswerScreen = document.getElementById('quiz-answer-screen');
+  const quizPracticeScreen = document.getElementById('quiz-practice-screen'); // 追加: 実践待機画面
   const rankingScreen = document.getElementById('ranking-screen');
   const homeButton = document.getElementById('home-button');
   
@@ -86,29 +87,22 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log(`画面を切り替えました: ${screen.id}`);
   }
   
-  // 参加者数更新の定期実行
+  // 参加者数を定期的に更新する
   function startParticipantCountRefresh() {
-    refreshInterval = setInterval(() => {
-      fetchParticipantCount();
-    }, 10000); // 10秒ごとに更新
+    // 既存の更新処理があれば停止
+    stopParticipantCountRefresh();
+    
+    // まず一度更新
+    refreshParticipantCount();
+    
+    // 10秒ごとに更新
+    refreshInterval = setInterval(refreshParticipantCount, 10000);
   }
   
-  // 参加者数の取得
-  async function fetchParticipantCount() {
-    try {
-      const response = await fetch('/api/quiz/stats/participants');
-      const data = await response.json();
-      participantCount.textContent = `${data.count}/39`;
-      
-      // 参加者が最大（39人）に達した場合は視覚的フィードバック
-      if (data.count >= 39) {
-        participantCount.parentElement.classList.add('full-participants');
-      } else {
-        participantCount.parentElement.classList.remove('full-participants');
-      }
-    } catch (error) {
-      console.error('参加者数の取得中にエラーが発生しました:', error);
-    }
+  // 参加者数の更新
+  function refreshParticipantCount() {
+    // Socket.ioを通じて最新の参加者数が得られるため、
+    // APIリクエストは不要。connection_statsイベントで更新される。
   }
   
   // 参加者数更新の停止
@@ -158,18 +152,25 @@ document.addEventListener('DOMContentLoaded', function() {
       if (timeLeft <= 0) {
         clearInterval(timerInterval);
         
-        // 時間切れになったら自動的に解答画面に遷移
+        // 時間切れになったら自動的に解答画面もしくは実践画面に遷移
         if (currentScreen === quizQuestionScreen && currentQuizId) {
-          console.log('時間切れ: 自動的に解答画面に遷移します');
+          console.log('時間切れ: 自動的に解答画面または実践画面に遷移します');
           
           // タイマー終了イベントをサーバーに送信
           socket.emit('timer_expired', { quizId: currentQuizId });
           
-          // 解答画面に遷移
-          showAnswer(currentQuizId);
-          
-          // 解答が表示されたことをサーバーに通知
-          markAnswerAsDisplayed(currentQuizId);
+          // 問題5（ストップウォッチ問題）の場合
+          if (currentQuizId === '5') {
+            // 実践待機画面に遷移
+            console.log('問題5: 実践待機画面に遷移します');
+            showScreen(quizPracticeScreen);
+          } else {
+            // 通常の問題は解答画面に遷移
+            showAnswer(currentQuizId);
+            
+            // 解答が表示されたことをサーバーに通知
+            markAnswerAsDisplayed(currentQuizId);
+          }
         }
       }
     }, 1000);
@@ -435,7 +436,31 @@ document.addEventListener('DOMContentLoaded', function() {
     // テーブルナンバーを表示するdiv要素を作成
     const tableDiv = document.createElement('div');
     tableDiv.className = 'ranking-table';
-    tableDiv.textContent = ranking.table_number || '-';
+    
+    // テーブルナンバーがあれば表示、なければ「-」表示
+    // カラーコード化してテーブルごとに色を変える
+    if (ranking.table_number) {
+      tableDiv.textContent = ranking.table_number;
+      
+      // テーブルごとに色を変える（オプション）
+      const tableColors = {
+        'A': '#007bff', // 青
+        'B': '#28a745', // 緑
+        'C': '#dc3545', // 赤
+        'D': '#6f42c1', // 紫
+        'E': '#fd7e14', // オレンジ
+        'F': '#20c997', // ティール
+        'G': '#e83e8c', // ピンク
+        'H': '#6c757d'  // グレー
+      };
+      
+      if (tableColors[ranking.table_number]) {
+        tableDiv.style.backgroundColor = tableColors[ranking.table_number];
+      }
+    } else {
+      tableDiv.textContent = '-';
+      tableDiv.style.backgroundColor = '#6c757d'; // 未設定は灰色
+    }
     
     const nameDiv = document.createElement('div');
     nameDiv.className = 'ranking-name';
@@ -540,7 +565,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // 接続数の更新
   socket.on('connection_stats', (stats) => {
     // プレイヤー数の表示を更新（最大値は39に制限）
-    const playerCount = stats.displayCount;
+    const playerCount = stats.players;
     participantCount.textContent = `${Math.min(playerCount, 39)}/39`;
     
     // もし接続数が39人に達したら視覚的なフィードバックを追加
@@ -554,7 +579,6 @@ document.addEventListener('DOMContentLoaded', function() {
   // 初期表示時に参加者数の更新を開始
   if (currentScreen === welcomeScreen) {
     // Socket.ioで常に最新状態を取得するため、APIポーリングは不要
-    // broadcastConnectionStats()が接続時に呼ばれるため、特別な初期化は不要
   }
   
   // 強制遷移イベントのハンドラを追加
@@ -578,6 +602,14 @@ document.addEventListener('DOMContentLoaded', function() {
       
       // 解答表示フラグを設定
       markAnswerAsDisplayed(quizId);
+    } else if (target === 'practice') {
+      // タイマーを停止
+      stopTimer();
+      
+      // 実践待機画面に強制遷移
+      console.log('サーバーからの指示により実践待機画面に強制遷移します');
+      // 実践待機画面の表示
+      showScreen(quizPracticeScreen);
     }
   });
   
@@ -642,6 +674,15 @@ document.addEventListener('DOMContentLoaded', function() {
         if (currentScreen === quizTitleScreen && currentQuizId) {
           showQuestion(currentQuizId);
         } else if (currentScreen === quizQuestionScreen && currentQuizId) {
+          if (currentQuizId === '5') {
+            // 問題5の場合は実践待機画面に
+            showScreen(quizPracticeScreen);
+          } else {
+            // それ以外は通常の解答画面に
+            showAnswer(currentQuizId);
+          }
+        } else if (currentScreen === quizPracticeScreen && currentQuizId === '5') {
+          // 実践待機画面から解答画面へ
           showAnswer(currentQuizId);
         }
         break;
@@ -652,12 +693,22 @@ document.addEventListener('DOMContentLoaded', function() {
           showScreen(quizTitleScreen);
         } else if (currentScreen === quizAnswerScreen) {
           showQuestion(currentQuizId);
+        } else if (currentScreen === quizPracticeScreen && currentQuizId === '5') {
+          // 実践待機画面から問題画面に戻る
+          showQuestion(currentQuizId);
         }
         break;
         
       case 'show_answer':
         if (currentQuizId) {
           showAnswer(currentQuizId);
+        }
+        break;
+        
+      case 'show_practice':
+        // 実践待機画面表示
+        if (currentQuizId === '5') {
+          showScreen(quizPracticeScreen);
         }
         break;
         

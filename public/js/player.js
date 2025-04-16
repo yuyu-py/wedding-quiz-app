@@ -1,3 +1,4 @@
+// public/js/player.js
 // 参加者画面用のJavaScript
 document.addEventListener('DOMContentLoaded', function() {
   // 画面要素
@@ -7,6 +8,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const quizScreen = document.getElementById('quiz-screen');
   const answeredScreen = document.getElementById('answered-screen');
   const answerResultScreen = document.getElementById('answer-result-screen');
+  const practiceScreen = document.getElementById('practice-screen'); // 追加: 実践待機画面
   const rankingWaitingScreen = document.getElementById('ranking-waiting-screen');
   const resultScreen = document.getElementById('result-screen');
   
@@ -46,7 +48,6 @@ document.addEventListener('DOMContentLoaded', function() {
   // 状態管理
   let playerId = null;
   let playerName = '';
-  let tableNumber = ''; // テーブルナンバーを追加
   let currentQuizId = null;
   let selectedAnswer = null;
   let timerInterval = null;
@@ -77,6 +78,7 @@ document.addEventListener('DOMContentLoaded', function() {
     quizScreen.classList.add('hidden');
     answeredScreen.classList.add('hidden');
     answerResultScreen.classList.add('hidden');
+    practiceScreen.classList.add('hidden'); // 実践待機画面も対象に
     rankingWaitingScreen.classList.add('hidden');
     resultScreen.classList.add('hidden');
     
@@ -116,8 +118,13 @@ document.addEventListener('DOMContentLoaded', function() {
         // 時間切れの処理
         answerStatusText.textContent = '時間切れです';
         
-        // 自動的に答え合わせ画面への遷移を試みる
-        tryShowAnswerResult();
+        // 問題5の場合は実践待機画面に、それ以外は自動的に答え合わせ画面への遷移を試みる
+        if (currentQuizId === '5') {
+          displayCurrentScreen = 'practice';
+          showScreen(practiceScreen);
+        } else {
+          tryShowAnswerResult();
+        }
       }
     }, 1000);
   }
@@ -191,7 +198,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const player = await response.json();
         playerId = player.id;
         playerName = player.name;
-        tableNumber = player.table_number || 'A'; // テーブルナンバーを取得
         
         // プレイヤー名を表示
         displayName.textContent = playerName;
@@ -871,6 +877,14 @@ document.addEventListener('DOMContentLoaded', function() {
           clearInterval(answerCheckInterval);
           answerCheckInterval = null;
         }
+      } else if (target === 'practice') {
+        // タイマーを停止
+        stopTimer();
+        
+        // 実践待機画面に遷移
+        console.log('サーバーからの指示により実践待機画面に遷移します');
+        displayCurrentScreen = 'practice';
+        showScreen(practiceScreen);
       }
     });
     
@@ -907,19 +921,31 @@ document.addEventListener('DOMContentLoaded', function() {
             fetchAndShowQuestion(currentQuizId);
           } 
           else if (displayCurrentScreen === 'quiz_question') {
-            // ディスプレイが問題表示から解答表示へ
-            displayCurrentScreen = 'quiz_answer';
-            
-            // すでに回答済みなら答え合わせ画面へ、そうでなければタイマーを停止
-            if (playerAnswers[currentQuizId]) {
-              showAnswerResult(currentQuizId);
+            // ディスプレイが問題表示から解答表示または実践画面へ
+            if (currentQuizId === '5') {
+              // 問題5の場合は実践待機画面へ
+              displayCurrentScreen = 'practice';
+              showScreen(practiceScreen);
             } else {
-              // まだ回答していない場合、タイマーを停止して時間切れとする
-              stopTimer();
-              answerStatusText.textContent = '時間切れです';
-              // 答え合わせ画面に遷移
-              showAnswerResult(currentQuizId);
+              // それ以外は通常の解答画面へ
+              displayCurrentScreen = 'quiz_answer';
+              
+              // すでに回答済みなら答え合わせ画面へ、そうでなければタイマーを停止
+              if (playerAnswers[currentQuizId]) {
+                showAnswerResult(currentQuizId);
+              } else {
+                // まだ回答していない場合、タイマーを停止して時間切れとする
+                stopTimer();
+                answerStatusText.textContent = '時間切れです';
+                // 答え合わせ画面に遷移
+                showAnswerResult(currentQuizId);
+              }
             }
+          }
+          else if (displayCurrentScreen === 'practice') {
+            // 実践待機画面から解答画面へ
+            displayCurrentScreen = 'quiz_answer';
+            showAnswerResult(currentQuizId);
           }
           break;
           
@@ -939,6 +965,11 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
               fetchAndShowQuestion(currentQuizId);
             }
+          }
+          else if (displayCurrentScreen === 'practice') {
+            // 実践待機画面から問題画面に戻る
+            displayCurrentScreen = 'quiz_question';
+            fetchAndShowQuestion(currentQuizId);
           }
           break;
           
@@ -960,6 +991,14 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
               console.log('遷移中のため、show_answerイベントを無視します');
             }
+          }
+          break;
+          
+        case 'show_practice':
+          // 実践待機画面表示の処理
+          if (currentQuizId === '5') {
+            displayCurrentScreen = 'practice';
+            showScreen(practiceScreen);
           }
           break;
           
@@ -998,10 +1037,16 @@ document.addEventListener('DOMContentLoaded', function() {
       return;
     }
     
-    // テーブルナンバーを取得
-    const tableNumber = document.querySelector('input[name="table-number"]:checked').value;
+    // テーブルナンバーを取得（チェックされたラジオボタンが存在する場合のみ）
+    let tableNumber = null;
+    const selectedTable = document.querySelector('input[name="table-number"]:checked');
+    if (selectedTable) {
+      tableNumber = selectedTable.value;
+    }
     
     try {
+      console.log('登録データ:', { name, tableNumber }); // デバッグ用
+  
       const response = await fetch('/api/player/register', {
         method: 'POST',
         headers: {
@@ -1009,7 +1054,7 @@ document.addEventListener('DOMContentLoaded', function() {
         },
         body: JSON.stringify({ 
           name,
-          tableNumber  // テーブルナンバーを追加
+          tableNumber 
         })
       });
       
@@ -1018,7 +1063,6 @@ document.addEventListener('DOMContentLoaded', function() {
       if (result.success) {
         playerId = result.playerId;
         playerName = result.name;
-        tableNumber = result.tableNumber;
         
         // URLに参加者IDを追加（リロード時に再利用できるように）
         const url = new URL(window.location);

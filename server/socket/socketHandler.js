@@ -407,31 +407,51 @@ function setupSocketHandlers(io) {
       
       // タイマー終了フラグを設定
       currentQuizState.timerExpired = true;
-      currentQuizState.phase = 'answer';
       
-      // 重要: 全クライアントに強制的に画面遷移を指示
-      io.emit('force_transition', {
-        quizId,
-        target: 'answer',
-        timestamp: Date.now()
-      });
-      
-      // 従来の互換性のためのイベントも送信
-      io.emit('quiz_event', { 
-        event: 'show_answer', 
-        quizId,
-        auto: true
-      });
-      
-      // 解答表示フラグをデータベースに記録
-      const db = require('../database/db');
-      db.markAnswerAsDisplayed(quizId)
-        .then(() => {
-          console.log(`タイマー終了: クイズ ${quizId} の解答表示フラグを設定しました`);
-        })
-        .catch(err => {
-          console.error('解答表示フラグの更新中にエラーが発生しました:', err);
+      // 問題5（ストップウォッチ問題）の場合は特別処理
+      if (quizId === '5') {
+        // 問題5の場合は実践待機画面に遷移
+        currentQuizState.phase = 'practice';
+        
+        io.emit('force_transition', {
+          quizId,
+          target: 'practice', // 実践待機画面へ
+          timestamp: Date.now()
         });
+        
+        io.emit('quiz_event', { 
+          event: 'show_practice', 
+          quizId,
+          auto: true
+        });
+        
+        console.log(`問題5のタイマー終了: 実践待機画面に移行します`);
+      } else {
+        // 他の問題は通常通り解答画面へ
+        currentQuizState.phase = 'answer';
+        
+        io.emit('force_transition', {
+          quizId,
+          target: 'answer',
+          timestamp: Date.now()
+        });
+        
+        io.emit('quiz_event', { 
+          event: 'show_answer', 
+          quizId,
+          auto: true
+        });
+        
+        // 解答表示フラグをデータベースに記録
+        const db = require('../database/db');
+        db.markAnswerAsDisplayed(quizId)
+          .then(() => {
+            console.log(`タイマー終了: クイズ ${quizId} の解答表示フラグを設定しました`);
+          })
+          .catch(err => {
+            console.error('解答表示フラグの更新中にエラーが発生しました:', err);
+          });
+      }
       
       currentQuizState.activeTimerId = null;
     }, timerDuration);

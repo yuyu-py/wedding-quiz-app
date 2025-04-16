@@ -820,3 +820,56 @@ h2 {
   0% { box-shadow: 0 0 5px rgba(0, 123, 255, 0.1); }
   100% { box-shadow: 0 0 10px rgba(0, 123, 255, 0.2); }
 }
+
+/* 実践待機画面のスタイル */
+.practice-animation {
+  display: flex;
+  justify-content: center;
+  margin: 30px 0;
+}
+
+.stopwatch-container {
+  position: relative;
+  width: 100px;
+  height: 100px;
+}
+
+.stopwatch-icon {
+  font-size: 80px !important;
+  color: #333;
+  position: relative;
+  z-index: 1;
+}
+
+.stopwatch-animation {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: 3px solid #007bff;
+  border-radius: 50%;
+  border-top-color: transparent;
+  animation: spin 2s linear infinite;
+  z-index: 0;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.practice-text {
+  font-size: 18px;
+  font-weight: 500;
+  text-align: center;
+  margin: 20px 0;
+  color: #333;
+}
+
+.practice-instruction {
+  font-size: 16px;
+  text-align: center;
+  color: #666;
+  margin-top: 15px;
+}

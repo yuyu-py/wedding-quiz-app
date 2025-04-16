@@ -27,7 +27,7 @@
             <p class="table-selection-title">あなたのテーブルを選択してください</p>
             <div class="table-grid">
               <label class="table-option">
-                <input type="radio" name="table-number" value="A" checked>
+                <input type="radio" name="table-number" value="A" checked> <!-- checked属性を必ず設定 -->
                 <div class="table-button-appearance">A</div>
               </label>
               <label class="table-option">
@@ -155,6 +155,21 @@
         <div class="your-answer">
           <p>あなたの回答: <span id="your-answer"></span></p>
         </div>
+      </div>
+    </div>
+
+    <!-- 問題5の実践待機画面 -->
+    <div id="practice-screen" class="screen hidden">
+      <div class="content">
+        <h2>ストップウォッチ実践中</h2>
+        <div class="practice-animation">
+          <div class="stopwatch-container">
+            <span class="material-symbols-rounded stopwatch-icon">timer</span>
+            <div class="stopwatch-animation"></div>
+          </div>
+        </div>
+        <p class="practice-text">15秒に近づけるチャレンジ実施中です...</p>
+        <p class="practice-instruction">結果が表示されるまでお待ちください</p>
       </div>
     </div>
     

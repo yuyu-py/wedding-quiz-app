@@ -35,7 +35,7 @@ document.addEventListener('DOMContentLoaded', function() {
   let quizzes = [];
   let currentScreen = 'welcome'; // 画面状態: welcome, explanation, quiz_title, quiz_question, quiz_answer, ranking
   let currentQuizId = null;      // 現在の問題ID
-  let quizPhase = 'title';       // 問題表示状態: title, question, answer
+  let quizPhase = 'title';       // 問題表示状態: title, question, answer, practice
   let rankingPosition = 'none';  // ランキング表示: none, 5, 4, 3, 2, 1, all
   let quiz5Answer = '';          // クイズ5の答え
   
@@ -57,6 +57,7 @@ document.addEventListener('DOMContentLoaded', function() {
     { id: 'quiz4_answer', label: '問題4 解答', quizId: 4, phase: 'answer', step: stepQuiz4 },
     { id: 'quiz5_title', label: '問題5 タイトル', quizId: 5, phase: 'title', step: stepQuiz5 },
     { id: 'quiz5_question', label: '問題5 問題', quizId: 5, phase: 'question', step: stepQuiz5 },
+    { id: 'quiz5_practice', label: '問題5 実践', quizId: 5, phase: 'practice', step: stepQuiz5 }, // 追加: 実践フェーズ
     { id: 'quiz5_answer', label: '問題5 解答', quizId: 5, phase: 'answer', step: stepQuiz5 },
     { id: 'ranking5', label: 'ランキング 5位', rankingPos: '5', step: stepRanking },
     { id: 'ranking4', label: 'ランキング 4位', rankingPos: '4', step: stepRanking },
@@ -122,7 +123,7 @@ document.addEventListener('DOMContentLoaded', function() {
           
           // シーケンス更新
           const quizTitleIndex = sequence.findIndex(item => 
-            item.quizId === quizId && item.phase === 'title');
+            item.quizId === parseInt(quizId) && item.phase === 'title');
           if (quizTitleIndex !== -1) {
             updateSequenceDisplay(quizTitleIndex);
           }
@@ -137,18 +138,45 @@ document.addEventListener('DOMContentLoaded', function() {
           
           // シーケンス更新
           const quizQuestionIndex = sequence.findIndex(item => 
-            item.quizId === currentQuizId && item.phase === 'question');
+            item.quizId === parseInt(currentQuizId) && item.phase === 'question');
           if (quizQuestionIndex !== -1) {
             updateSequenceDisplay(quizQuestionIndex);
           }
         } else if (currentScreen === 'quiz_question') {
+          if (currentQuizId === '5') {
+            // 問題5の場合は実践待機画面へ
+            currentScreen = 'practice';
+            quizPhase = 'practice';
+            currentMode.textContent = `問題${currentQuizId} 実践中`;
+            
+            // シーケンス更新
+            const quizPracticeIndex = sequence.findIndex(item => 
+              item.quizId === 5 && item.phase === 'practice');
+            if (quizPracticeIndex !== -1) {
+              updateSequenceDisplay(quizPracticeIndex);
+            }
+          } else {
+            // 通常の問題は解答画面へ
+            currentScreen = 'quiz_answer';
+            quizPhase = 'answer';
+            currentMode.textContent = `問題${currentQuizId} 解答`;
+            
+            // シーケンス更新
+            const quizAnswerIndex = sequence.findIndex(item => 
+              item.quizId === parseInt(currentQuizId) && item.phase === 'answer');
+            if (quizAnswerIndex !== -1) {
+              updateSequenceDisplay(quizAnswerIndex);
+            }
+          }
+        } else if (currentScreen === 'practice' && currentQuizId === '5') {
+          // 実践画面から解答画面へ
           currentScreen = 'quiz_answer';
           quizPhase = 'answer';
           currentMode.textContent = `問題${currentQuizId} 解答`;
           
           // シーケンス更新
           const quizAnswerIndex = sequence.findIndex(item => 
-            item.quizId === currentQuizId && item.phase === 'answer');
+            item.quizId === 5 && item.phase === 'answer');
           if (quizAnswerIndex !== -1) {
             updateSequenceDisplay(quizAnswerIndex);
           }
@@ -166,7 +194,7 @@ document.addEventListener('DOMContentLoaded', function() {
           
           // シーケンス更新
           const quizTitleIndex = sequence.findIndex(item => 
-            item.quizId === currentQuizId && item.phase === 'title');
+            item.quizId === parseInt(currentQuizId) && item.phase === 'title');
           if (quizTitleIndex !== -1) {
             updateSequenceDisplay(quizTitleIndex);
           }
@@ -177,7 +205,19 @@ document.addEventListener('DOMContentLoaded', function() {
           
           // シーケンス更新
           const quizQuestionIndex = sequence.findIndex(item => 
-            item.quizId === currentQuizId && item.phase === 'question');
+            item.quizId === parseInt(currentQuizId) && item.phase === 'question');
+          if (quizQuestionIndex !== -1) {
+            updateSequenceDisplay(quizQuestionIndex);
+          }
+        } else if (currentScreen === 'practice' && currentQuizId === '5') {
+          // 実践画面から問題画面へ
+          currentScreen = 'quiz_question';
+          quizPhase = 'question';
+          currentMode.textContent = `問題${currentQuizId} 出題中`;
+          
+          // シーケンス更新
+          const quizQuestionIndex = sequence.findIndex(item => 
+            item.quizId === 5 && item.phase === 'question');
           if (quizQuestionIndex !== -1) {
             updateSequenceDisplay(quizQuestionIndex);
           }
@@ -191,9 +231,24 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // シーケンス更新
         const quizAnswerIndex = sequence.findIndex(item => 
-          item.quizId === currentQuizId && item.phase === 'answer');
+          item.quizId === parseInt(currentQuizId) && item.phase === 'answer');
         if (quizAnswerIndex !== -1) {
           updateSequenceDisplay(quizAnswerIndex);
+        }
+        break;
+        
+      case 'show_practice':
+        if (currentQuizId === '5') {
+          currentScreen = 'practice';
+          quizPhase = 'practice';
+          currentMode.textContent = `問題${currentQuizId} 実践中`;
+          
+          // シーケンス更新
+          const quizPracticeIndex = sequence.findIndex(item => 
+            item.quizId === 5 && item.phase === 'practice');
+          if (quizPracticeIndex !== -1) {
+            updateSequenceDisplay(quizPracticeIndex);
+          }
         }
         break;
         
@@ -261,25 +316,24 @@ document.addEventListener('DOMContentLoaded', function() {
         const result = await response.json();
         console.log('クイズセッション開始:', result);
         return result.success;
-        
+
       } catch (error) {
         console.error('クイズセッション開始に失敗しました:', error);
         return false;
       }
-    }
-    
-    // クイズコマンドを送信
-    function sendQuizCommand(command, quizId = null, params = {}) {
+      }
+      
+      // クイズコマンドを送信
+      function sendQuizCommand(command, quizId = null, params = {}) {
       socket.emit('quiz_command', {
         command,
         quizId,
         params
       });
-    }
-    
-    // クイズ5の答えを設定
-    // admin.js - 問題5の答え設定関数の改善
-    async function setQuiz5Answer(answer) {
+      }
+      
+      // クイズ5の答えを設定
+      async function setQuiz5Answer(answer) {
       try {
         const response = await fetch('/api/admin/quiz/5/set-answer', {
           method: 'POST',
@@ -329,10 +383,10 @@ document.addEventListener('DOMContentLoaded', function() {
         quiz5Status.style.color = '#f44336';
         return false;
       }
-    }
-    
-    // データをリセット
-    async function resetAllData() {
+      }
+      
+      // データをリセット
+      async function resetAllData() {
       try {
         // 確認ダイアログを表示
         if (!confirm('本当にすべてのデータをリセットしますか？\n参加者情報、回答データ、セッション情報がすべて削除されます。')) {
@@ -369,22 +423,24 @@ document.addEventListener('DOMContentLoaded', function() {
         resetStatus.textContent = 'エラーが発生しました';
         return false;
       }
-    }
-    
-    // クイズ5の設定パネル表示/非表示
-    function toggleQuiz5Panel() {
-      if (currentQuizId === 5 && (currentScreen === 'quiz_title' || currentScreen === 'quiz_question')) {
+      }
+      
+      // クイズ5の設定パネル表示/非表示
+      function toggleQuiz5Panel() {
+      if (currentQuizId === '5') {
+        // 問題5の場合は常にパネルを表示（問題表示と実践画面の時は設定可能に）
         quiz5Panel.classList.remove('hidden');
       } else {
         quiz5Panel.classList.add('hidden');
       }
-    }
-    
-    // 次の画面に進む
-    async function goToNextScreen() {
-      // クイズ5の解答前に答えが設定されているか確認
-      if (currentQuizId === 5 && currentScreen === 'quiz_question' && !quiz5Answer) {
+      }
+      
+      // 次の画面に進む
+      async function goToNextScreen() {
+      // 問題5の実践画面から解答画面へ進む場合、答えが設定されているか確認
+      if (currentQuizId === '5' && currentScreen === 'practice' && !quiz5Answer) {
         quiz5Status.textContent = '先に答えを設定してください';
+        quiz5Status.style.color = '#f44336';
         return;
       }
       
@@ -399,12 +455,18 @@ document.addEventListener('DOMContentLoaded', function() {
         else if (nextStep.phase === 'title' && nextStep.quizId) {
           // 問題表示開始
           if (await startQuizSession(nextStep.quizId)) {
-            sendQuizCommand('show_question', nextStep.quizId);
+            sendQuizCommand('show_question', nextStep.quizId.toString());
           }
         }
-        else if (nextStep.phase === 'question' || nextStep.phase === 'answer') {
+        else if (nextStep.phase === 'question' || nextStep.phase === 'answer' || nextStep.phase === 'practice') {
           // 次のスライドに移動
-          sendQuizCommand('next_slide');
+          if (nextStep.phase === 'practice') {
+            // 実践待機画面への遷移
+            sendQuizCommand('show_practice', nextStep.quizId.toString());
+          } else {
+            // 通常の次のスライドへ
+            sendQuizCommand('next_slide');
+          }
         }
         else if (nextStep.rankingPos) {
           // ランキング表示
@@ -413,10 +475,10 @@ document.addEventListener('DOMContentLoaded', function() {
         
         updateSequenceDisplay(currentSequenceIndex);
       }
-    }
-    
-    // 前の画面に戻る
-    function goToPrevScreen() {
+      }
+      
+      // 前の画面に戻る
+      function goToPrevScreen() {
       if (currentSequenceIndex > 0) {
         currentSequenceIndex--;
         const prevStep = sequence[currentSequenceIndex];
@@ -426,7 +488,7 @@ document.addEventListener('DOMContentLoaded', function() {
           // 最初の2ステップに戻る場合は制御しない
           // 実装が複雑になるため、最初からやり直す場合はページリロードを推奨
         }
-        else if (prevStep.phase === 'title' || prevStep.phase === 'question') {
+        else if (prevStep.phase === 'title' || prevStep.phase === 'question' || prevStep.phase === 'practice') {
           // 前のスライドに移動
           sendQuizCommand('prev_slide');
         }
@@ -437,10 +499,10 @@ document.addEventListener('DOMContentLoaded', function() {
         
         updateSequenceDisplay(currentSequenceIndex);
       }
-    }
-    
-    // シーケンス表示を更新
-    function updateSequenceDisplay(index) {
+      }
+      
+      // シーケンス表示を更新
+      function updateSequenceDisplay(index) {
       // 現在のシーケンスインデックスを更新
       currentSequenceIndex = index;
       
@@ -470,7 +532,7 @@ document.addEventListener('DOMContentLoaded', function() {
       
       // 問題番号の更新
       if (currentStep.quizId) {
-        currentQuizId = currentStep.quizId;
+        currentQuizId = currentStep.quizId.toString();
         currentQuizNumber.textContent = currentStep.quizId;
         
         // クイズ5の設定パネル表示/非表示
@@ -481,19 +543,19 @@ document.addEventListener('DOMContentLoaded', function() {
       } else {
         currentQuizNumber.textContent = '-';
       }
-    }
-    
-    // ボタンイベントの設定
-    prevSlideButton.addEventListener('click', goToPrevScreen);
-    nextSlideButton.addEventListener('click', goToNextScreen);
-    
-    // クイズ5の答え設定ボタン
-    quiz5Option1.addEventListener('click', () => setQuiz5Answer('新郎'));
-    quiz5Option2.addEventListener('click', () => setQuiz5Answer('新婦'));
-    
-    // リセットボタン
-    resetButton.addEventListener('click', resetAllData);
-    
-    // 初期化：最初のシーケンスステップをアクティブに
-    updateSequenceDisplay(0);
-  });
+      }
+      
+      // ボタンイベントの設定
+      prevSlideButton.addEventListener('click', goToPrevScreen);
+      nextSlideButton.addEventListener('click', goToNextScreen);
+      
+      // クイズ5の答え設定ボタン
+      quiz5Option1.addEventListener('click', () => setQuiz5Answer('新郎'));
+      quiz5Option2.addEventListener('click', () => setQuiz5Answer('新婦'));
+      
+      // リセットボタン
+      resetButton.addEventListener('click', resetAllData);
+      
+      // 初期化：最初のシーケンスステップをアクティブに
+      updateSequenceDisplay(0);
+      });

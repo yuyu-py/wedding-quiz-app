@@ -379,16 +379,22 @@ async function startQuizSession(quizId) {
 }
 
 // プレイヤー登録
-async function registerPlayer(id, name, tableNumber) {
+async function registerPlayer(id, name, tableNumber = null) {
   try {
+    const playerItem = {
+      id,
+      name,
+      joined_at: new Date().toISOString()
+    };
+    
+    // テーブルナンバーが有効な場合のみ追加
+    if (tableNumber) {
+      playerItem.table_number = tableNumber;
+    }
+    
     const params = {
       TableName: TABLES.PLAYER,
-      Item: {
-        id,
-        name,
-        table_number: tableNumber, // テーブルナンバーを追加
-        joined_at: new Date().toISOString()
-      }
+      Item: playerItem
     };
     
     await dynamodb.send(new PutCommand(params));

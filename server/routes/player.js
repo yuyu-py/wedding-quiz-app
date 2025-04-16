@@ -13,14 +13,12 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ error: '名前は必須です' });
     }
     
-    // テーブル番号のバリデーション
-    if (!tableNumber || !['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].includes(tableNumber)) {
+    // テーブル番号のバリデーション - オプショナルに変更
+    if (tableNumber && !['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].includes(tableNumber)) {
       return res.status(400).json({ error: 'テーブル番号が無効です' });
     }
     
-    const playerId = nanoid(10); // 10文字のユニークID
-    
-    // テーブルナンバーも一緒に保存
+    const playerId = nanoid(10);
     const success = await db.registerPlayer(playerId, name, tableNumber);
     
     if (success) {
