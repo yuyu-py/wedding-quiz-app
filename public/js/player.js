@@ -59,6 +59,8 @@ document.addEventListener('DOMContentLoaded', function() {
   let displayCurrentScreen = ''; // メイン画面の現在の状態
   let answerCheckInterval = null; // 答え確認用の間隔タイマー
   let isTransitioning = false; // 画面遷移中フラグ
+  let serverTimeOffset = 0; // サーバーとクライアントの時刻差
+  let timerEndTime = 0;     // タイマー終了予定時刻
   
   // URLからプレイヤーIDを取得（既存ユーザーの場合）
   const urlParams = new URLSearchParams(window.location.search);
@@ -814,19 +816,38 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // タイマー同期イベント
     socket.on('timer_sync', (data) => {
-      const { quizId, remainingTime } = data;
+      const { quizId, remainingTime, timestamp, startTime, totalDuration } = data;
+      
+      // 時刻差を計算（サーバー時刻 - クライアント時刻）
+      const receivedTime = Date.now();
+      const estimatedLatency = 100; // 平均的な片道レイテンシをミリ秒で推定
+      serverTimeOffset = timestamp - receivedTime + estimatedLatency;
       
       // 現在のクイズIDが一致する場合のみタイマーを同期
       if (currentQuizId === quizId && currentScreen === quizScreen) {
-        // タイマーをリセットして残り時間から開始
         clearInterval(timerInterval);
+        
+        // サーバーから送られた情報を使って終了時刻を計算
+        timerEndTime = startTime + (totalDuration * 1000);
+        
+        // 現在の残り時間を表示
         timeLeft = remainingTime;
         timerValue.textContent = timeLeft;
         
-        if (timeLeft > 0) {
-          // 新たなタイマーを開始
+        if (timeLeft <= 0) {
+          // タイマーが0の場合は時間切れ表示
+          answerStatusText.textContent = '時間切れです';
+        } else {
+          // 新しいタイマーをスタート - サーバー時計に同期
           timerInterval = setInterval(() => {
-            timeLeft--;
+            // 現在のサーバー時刻を推定
+            const currentServerTime = Date.now() + serverTimeOffset;
+            // 残り時間を計算（ミリ秒）
+            const msRemaining = timerEndTime - currentServerTime;
+            // 秒に変換
+            timeLeft = Math.max(0, Math.ceil(msRemaining / 1000));
+            
+            // 表示を更新
             timerValue.textContent = timeLeft;
             
             if (timeLeft <= 10) {
@@ -844,11 +865,7 @@ document.addEventListener('DOMContentLoaded', function() {
               clearInterval(timerInterval);
               answerStatusText.textContent = '時間切れです';
             }
-          }, 1000);
-        } else if (timeLeft <= 0) {
-          // タイマーが0の場合は時間切れ表示
-          answerStatusText.textContent = '時間切れです';
-          clearInterval(timerInterval);
+          }, 100); // 100msごとに更新（滑らかなカウントダウン）
         }
       }
     });

@@ -32,6 +32,8 @@ document.addEventListener('DOMContentLoaded', function() {
   let displayedRankings = [];
   let refreshInterval = null;
   let isTransitioning = false; // 画面遷移中フラグ
+  let serverTimeOffset = 0; // サーバーとクライアントの時刻差
+  let timerEndTime = 0;     // タイマー終了予定時刻
   
   // 画像のプリロード処理
   function preloadImages() {
@@ -603,16 +605,24 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // タイマー同期イベント
   socket.on('timer_sync', (data) => {
-    const { quizId, remainingTime } = data;
+    const { quizId, remainingTime, timestamp, startTime, totalDuration } = data;
+    
+    // 時刻差を計算（サーバー時刻 - クライアント時刻）
+    const receivedTime = Date.now();
+    const estimatedLatency = 100; // 平均的な片道レイテンシをミリ秒で推定
+    serverTimeOffset = timestamp - receivedTime + estimatedLatency;
     
     // 現在のクイズIDが一致し、問題表示中の場合のみタイマーを同期
     if (currentQuizId === quizId && currentScreen === quizQuestionScreen) {
-      // タイマーをリセットして残り時間から開始
       clearInterval(timerInterval);
+      
+      // サーバーから送られた情報を使って終了時刻を計算
+      timerEndTime = startTime + (totalDuration * 1000);
+      
+      // 現在の残り時間を表示
       timeLeft = remainingTime;
       floatingTimerValue.textContent = timeLeft;
       
-      // タイマーが0以下なら停止、そうでなければ新たなタイマーを開始
       if (timeLeft <= 0) {
         // タイマーが0の場合は停止して時間切れ処理
         stopTimer();
@@ -620,9 +630,16 @@ document.addEventListener('DOMContentLoaded', function() {
         // フローティングタイマーを表示
         floatingTimer.classList.remove('hidden');
         
-        // 新たなタイマーを開始
+        // 新しいタイマーをスタート - サーバー時計に同期
         timerInterval = setInterval(() => {
-          timeLeft--;
+          // 現在のサーバー時刻を推定
+          const currentServerTime = Date.now() + serverTimeOffset;
+          // 残り時間を計算（ミリ秒）
+          const msRemaining = timerEndTime - currentServerTime;
+          // 秒に変換
+          timeLeft = Math.max(0, Math.ceil(msRemaining / 1000));
+          
+          // 表示を更新
           floatingTimerValue.textContent = timeLeft;
           
           // 残り時間が10秒以下で警告色に
@@ -636,7 +653,7 @@ document.addEventListener('DOMContentLoaded', function() {
             clearInterval(timerInterval);
             // タイマー終了時の処理はサーバーからの指示を待つ
           }
-        }, 1000);
+        }, 100); // 100msごとに更新（滑らかなカウントダウン）
       }
     }
   });

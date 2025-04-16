@@ -381,21 +381,26 @@ function setupSocketHandlers(io) {
     
     // 1秒ごとの同期処理
     const syncInterval = setInterval(() => {
-      // 経過時間の計算
-      const elapsed = Date.now() - currentQuizState.timerStartTime;
-      const remainingTime = Math.max(0, Math.floor((currentQuizState.timerDuration * 1000 - elapsed) / 1000));
+      // 経過時間の計算（ミリ秒単位で精密に）
+      const now = Date.now();
+      const elapsed = now - currentQuizState.timerStartTime;
+      const remainingMs = Math.max(0, currentQuizState.timerDuration * 1000 - elapsed);
+      const remainingTime = Math.ceil(remainingMs / 1000); // 切り上げて秒数に変換
       
-      // クライアントへタイマー情報を送信
+      // より詳細なタイマー情報を送信
       io.emit('timer_sync', {
         quizId,
-        remainingTime
+        remainingTime,
+        timestamp: now,         // 現在時刻を送信
+        startTime: currentQuizState.timerStartTime, // 開始時刻を送信
+        totalDuration: currentQuizState.timerDuration // 合計時間を送信
       });
       
-      // デバッグ（10秒ごとに残り時間をログ出力）
-      if (remainingTime % 10 === 0 && remainingTime > 0) {
+      // デバッグログ（10秒ごと）
+      if (remainingTime % 10 === 0 && remainingTime > 0 && remainingTime <= 30) {
         console.log(`クイズ ${quizId} タイマー: 残り ${remainingTime}秒`);
       }
-    }, 1000);
+    }, 500); // 500msごとに同期（頻度を上げる）
     
     // タイマー終了時の処理（厳密な終了時間を設定）
     const timerDuration = currentQuizState.timerDuration * 1000; // ミリ秒に変換
