@@ -131,23 +131,6 @@ h3 {
   margin: 0;
 }
 
-/* Participant count display */
-.participants {
-  font-size: 48px;
-  font-weight: 700;
-  color: #000;
-  background-color: rgba(0, 123, 255, 0.2);
-  padding: 15px 40px;
-  border-radius: 50px;
-  align-self: flex-start;
-}
-
-/* 参加者数が最大に達した場合のスタイル */
-.participants.full-participants {
-  background-color: rgba(76, 175, 80, 0.3); /* 緑色の背景 */
-  animation: pulse 2s infinite;
-}
-
 /* App description notice */
 .handmade-app-notice {
   padding: 25px 40px;

@@ -11,9 +11,6 @@ document.addEventListener('DOMContentLoaded', function() {
   const rankingScreen = document.getElementById('ranking-screen');
   const homeButton = document.getElementById('home-button');
   
-  // 参加者カウント表示
-  const participantCount = document.getElementById('participant-count');
-  
   // クイズ要素
   const quizTitle = document.getElementById('quiz-title');
   const questionText = document.getElementById('question-text');
@@ -564,16 +561,7 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // 接続数の更新
   socket.on('connection_stats', (stats) => {
-    // プレイヤー数の表示を更新（最大値は39に制限）
-    const playerCount = stats.players;
-    participantCount.textContent = `${Math.min(playerCount, 39)}/39`;
-    
-    // もし接続数が39人に達したら視覚的なフィードバックを追加
-    if (playerCount >= 39) {
-      participantCount.parentElement.classList.add('full-participants');
-    } else {
-      participantCount.parentElement.classList.remove('full-participants');
-    }
+    console.log('接続統計更新:', stats); // ログ出力のみ残す（デバッグ用）
   });
 
   // 初期表示時に参加者数の更新を開始
