@@ -1,14 +1,16 @@
 // public/js/display.js
 // メイン画面用のJavaScript
 document.addEventListener('DOMContentLoaded', function() {
-  // 画面要素
-  const welcomeScreen = document.getElementById('welcome-screen');
-  const explanationScreen = document.getElementById('explanation-screen');
-  const quizTitleScreen = document.getElementById('quiz-title-screen');
-  const quizQuestionScreen = document.getElementById('quiz-question-screen');
-  const quizAnswerScreen = document.getElementById('quiz-answer-screen');
-  const rankingScreen = document.getElementById('ranking-screen');
-  const homeButton = document.getElementById('home-button');
+// 画面要素
+const welcomeScreen = document.getElementById('welcome-screen');
+const explanationScreen = document.getElementById('explanation-screen');
+const quizTitleScreen = document.getElementById('quiz-title-screen');
+const quizQuestionScreen = document.getElementById('quiz-question-screen');
+const quizAnswerScreen = document.getElementById('quiz-answer-screen');
+const rankingScreen = document.getElementById('ranking-screen');
+// 追加: ランキング準備画面の参照
+const rankingIntroScreen = document.getElementById('ranking-intro-screen');
+const homeButton = document.getElementById('home-button');
   
   // 参加者カウント表示
   const participantCount = document.getElementById('participant-count');
@@ -487,15 +489,18 @@ document.addEventListener('DOMContentLoaded', function() {
     return rankingItem;
   }
   
-  // ランキングを表示する関数
+  // ランキングの表示関数を修正
   async function showRanking(position = 'all') {
     try {
-      // 重複呼び出し防止
+      // 重複遷移防止
       if (isTransitioning) {
         console.log('画面遷移中のため、重複した呼び出しを無視します');
         return;
       }
       isTransitioning = true;
+      
+      // ランキング画面に切り替え
+      showScreen(rankingScreen);
       
       // まだランキングデータを取得していない場合は取得
       if (displayedRankings.length === 0) {
@@ -537,9 +542,6 @@ document.addEventListener('DOMContentLoaded', function() {
           rankingContainer.appendChild(rankingItem);
         }
       }
-      
-      // 画面をランキング画面に切り替え
-      showScreen(rankingScreen);
       
       // 遷移完了
       isTransitioning = false;
@@ -710,8 +712,6 @@ document.addEventListener('DOMContentLoaded', function() {
   socket.on('quiz_event', (data) => {
     const { event, quizId, position, auto, manual, fromPractice } = data;
     
-    console.log(`Display: イベント受信: ${event}, クイズID: ${quizId || currentQuizId}`);
-    
     switch (event) {
       case 'quiz_started':
         showScreen(explanationScreen);
@@ -727,11 +727,8 @@ document.addEventListener('DOMContentLoaded', function() {
         
       case 'next_slide':
         if (currentScreen === quizTitleScreen && currentQuizId) {
-          console.log('Display: タイトル画面から問題画面へ遷移');
           showQuestion(currentQuizId);
-          // タイマーはサーバーからのタイマー開始イベントで開始
         } else if (currentScreen === quizQuestionScreen && currentQuizId) {
-          console.log('Display: 問題画面から解答画面へ遷移');
           showAnswer(currentQuizId);
         }
         break;
@@ -746,35 +743,48 @@ document.addEventListener('DOMContentLoaded', function() {
         break;
         
       case 'show_answer':
-        // 問題5の実践画面からの遷移を特別処理
+        // 追加: 問題5の実践画面からの遷移を特別処理
         if (quizId === '5' && fromPractice) {
           console.log('Display: 問題5の実践画面から解答画面への遷移');
           // 解答画面に強制遷移
           showAnswer('5');
         } else if (currentQuizId) {
-          // 通常の解答表示
           showAnswer(currentQuizId);
         }
         break;
         
       case 'show_practice':
         // 問題5の実践待機画面表示
-        if (currentQuizId === '5') {
+        if (quizId === '5') {
           const practiceSreen = document.getElementById('quiz-practice-screen');
-          showScreen(practiceSreen);
-          console.log('Display: ストップウォッチ実践待機画面を表示');
+          if (practiceSreen) {
+            showScreen(practiceSreen);
+          }
         }
         break;
         
+      // ランキング準備画面表示イベント追加
+      case 'show_ranking_intro':
+        console.log('Display: ランキング準備画面を表示');
+        showScreen(rankingIntroScreen);
+        break;
+        
       case 'show_ranking':
-        showRanking(position);
+        // 修正: positionが'intro'の場合はランキング準備画面に
+        if (position === 'intro') {
+          console.log('Display: ランキング準備画面を表示（intro）');
+          showScreen(rankingIntroScreen);
+        } else {
+          showRanking(position);
+        }
         break;
         
       case 'reset_all':
         goToHome();
         break;
     }
-  });  
+  });
+
   
   // ホームボタンのクリックイベント
   homeButton.addEventListener('click', goToHome);

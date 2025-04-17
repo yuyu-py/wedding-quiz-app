@@ -39,10 +39,9 @@ document.addEventListener('DOMContentLoaded', function() {
   let rankingPosition = 'none';  // ランキング表示: none, 5, 4, 3, 2, 1, all
   let quiz5Answer = '';          // クイズ5の答え
   
-  // 問題5の状態追跡用変数
   let currentQuizState = {
     quizId: null,
-    phase: null   // title, question, practice, answer
+    phase: null
   };
   
   // シーケンス管理
@@ -63,8 +62,10 @@ document.addEventListener('DOMContentLoaded', function() {
     { id: 'quiz4_answer', label: '問題4 解答', quizId: 4, phase: 'answer', step: stepQuiz4 },
     { id: 'quiz5_title', label: '問題5 タイトル', quizId: 5, phase: 'title', step: stepQuiz5 },
     { id: 'quiz5_question', label: '問題5 問題', quizId: 5, phase: 'question', step: stepQuiz5 },
-    { id: 'quiz5_practice', label: '問題5 実践', quizId: 5, phase: 'practice', step: stepQuiz5 }, // 実践フェーズの追加
+    { id: 'quiz5_practice', label: '問題5 実践', quizId: 5, phase: 'practice', step: stepQuiz5 },
     { id: 'quiz5_answer', label: '問題5 解答', quizId: 5, phase: 'answer', step: stepQuiz5 },
+    // 追加: ランキング準備（文字だけ）
+    { id: 'ranking_intro', label: 'ランキング準備', rankingPos: 'intro', step: stepRanking },
     { id: 'ranking5', label: 'ランキング 5位', rankingPos: '5', step: stepRanking },
     { id: 'ranking4', label: 'ランキング 4位', rankingPos: '4', step: stepRanking },
     { id: 'ranking3', label: 'ランキング 3位', rankingPos: '3', step: stepRanking },
@@ -72,7 +73,7 @@ document.addEventListener('DOMContentLoaded', function() {
     { id: 'ranking1', label: 'ランキング 1位', rankingPos: '1', step: stepRanking },
     { id: 'rankingAll', label: 'ランキング 全て', rankingPos: 'all', step: stepRanking }
   ];
-  
+    
   let currentSequenceIndex = 0;
   
   // Socket.io接続
@@ -104,7 +105,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
   
-  // クイズイベントを受信（プレビュー用）
+  // クイズイベント処理
   socket.on('quiz_event', (data) => {
     const { event, quizId, position, auto, manual } = data;
     
@@ -123,7 +124,7 @@ document.addEventListener('DOMContentLoaded', function() {
           quizPhase = 'title';
           currentMode.textContent = `問題${quizId} タイトル`;
           
-          // 問題5の状態追跡を更新
+          // クイズ状態を更新
           currentQuizState.quizId = quizId;
           currentQuizState.phase = 'title';
           
@@ -134,7 +135,7 @@ document.addEventListener('DOMContentLoaded', function() {
           
           // シーケンス更新
           const quizTitleIndex = sequence.findIndex(item => 
-            item.quizId === parseInt(quizId) && item.phase === 'title');
+            item.quizId === quizId && item.phase === 'title');
           if (quizTitleIndex !== -1) {
             updateSequenceDisplay(quizTitleIndex);
           }
@@ -147,12 +148,12 @@ document.addEventListener('DOMContentLoaded', function() {
           quizPhase = 'question';
           currentMode.textContent = `問題${currentQuizId} 出題中`;
           
-          // 問題5の状態追跡を更新
+          // クイズ状態を更新
           currentQuizState.phase = 'question';
           
           // シーケンス更新
           const quizQuestionIndex = sequence.findIndex(item => 
-            item.quizId === parseInt(currentQuizId) && item.phase === 'question');
+            item.quizId === currentQuizId && item.phase === 'question');
           if (quizQuestionIndex !== -1) {
             updateSequenceDisplay(quizQuestionIndex);
           }
@@ -161,12 +162,12 @@ document.addEventListener('DOMContentLoaded', function() {
           quizPhase = 'answer';
           currentMode.textContent = `問題${currentQuizId} 解答`;
           
-          // 問題5の状態追跡を更新
+          // クイズ状態を更新
           currentQuizState.phase = 'answer';
           
           // シーケンス更新
           const quizAnswerIndex = sequence.findIndex(item => 
-            item.quizId === parseInt(currentQuizId) && item.phase === 'answer');
+            item.quizId === currentQuizId && item.phase === 'answer');
           if (quizAnswerIndex !== -1) {
             updateSequenceDisplay(quizAnswerIndex);
           }
@@ -179,7 +180,7 @@ document.addEventListener('DOMContentLoaded', function() {
           quizPhase = 'title';
           currentMode.textContent = `問題${currentQuizId} タイトル`;
           
-          // 問題5の状態追跡を更新
+          // クイズ状態を更新
           currentQuizState.phase = 'title';
           
           // クイズ5の設定パネル表示/非表示
@@ -187,7 +188,7 @@ document.addEventListener('DOMContentLoaded', function() {
           
           // シーケンス更新
           const quizTitleIndex = sequence.findIndex(item => 
-            item.quizId === parseInt(currentQuizId) && item.phase === 'title');
+            item.quizId === currentQuizId && item.phase === 'title');
           if (quizTitleIndex !== -1) {
             updateSequenceDisplay(quizTitleIndex);
           }
@@ -196,12 +197,12 @@ document.addEventListener('DOMContentLoaded', function() {
           quizPhase = 'question';
           currentMode.textContent = `問題${currentQuizId} 出題中`;
           
-          // 問題5の状態追跡を更新
+          // クイズ状態を更新
           currentQuizState.phase = 'question';
           
           // シーケンス更新
           const quizQuestionIndex = sequence.findIndex(item => 
-            item.quizId === parseInt(currentQuizId) && item.phase === 'question');
+            item.quizId === currentQuizId && item.phase === 'question');
           if (quizQuestionIndex !== -1) {
             updateSequenceDisplay(quizQuestionIndex);
           }
@@ -213,25 +214,23 @@ document.addEventListener('DOMContentLoaded', function() {
         quizPhase = 'answer';
         currentMode.textContent = `問題${currentQuizId} 解答`;
         
-        // 問題5の状態追跡を更新
+        // クイズ状態を更新
         currentQuizState.phase = 'answer';
         
         // シーケンス更新
         const quizAnswerIndex = sequence.findIndex(item => 
-          item.quizId === parseInt(currentQuizId) && item.phase === 'answer');
+          item.quizId === currentQuizId && item.phase === 'answer');
         if (quizAnswerIndex !== -1) {
           updateSequenceDisplay(quizAnswerIndex);
         }
         break;
         
       case 'show_practice':
-        // 問題5の実践画面表示
         if (quizId === '5') {
+          currentMode.textContent = '問題5 実践中';
           currentScreen = 'practice';
-          quizPhase = 'practice';
-          currentMode.textContent = `問題5 実践中`;
           
-          // 問題5の状態追跡を更新
+          // クイズ状態を更新
           currentQuizState.phase = 'practice';
           
           // シーケンス更新
@@ -240,16 +239,20 @@ document.addEventListener('DOMContentLoaded', function() {
           if (quizPracticeIndex !== -1) {
             updateSequenceDisplay(quizPracticeIndex);
           }
-          
-          // クイズ5の設定パネル表示
-          toggleQuiz5Panel();
         }
         break;
         
       case 'show_ranking':
         currentScreen = 'ranking';
         rankingPosition = position;
-        currentMode.textContent = position === 'all' ? 'ランキング全表示' : `ランキング ${position}位`;
+        
+        if (position === 'intro') {
+          currentMode.textContent = 'ランキング準備';
+        } else if (position === 'all') {
+          currentMode.textContent = 'ランキング全表示';
+        } else {
+          currentMode.textContent = `ランキング ${position}位`;
+        }
         
         // シーケンス更新
         const rankingIndex = sequence.findIndex(item => 
@@ -259,35 +262,32 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         break;
         
-        case 'reset_all':
-          // リセットイベントの処理
-          currentScreen = 'welcome';
-          currentQuizId = null;
-          quizPhase = 'title';
-          rankingPosition = 'none';
-          quiz5Answer = '';
-          
-          // 問題5の状態追跡をリセット
-          currentQuizState = {
-            quizId: null,
-            phase: null
-          };
-          
-          updateSequenceDisplay(0);
-          break;
-      }
-    });
+      case 'reset_all':
+        // リセットイベントの処理
+        currentScreen = 'welcome';
+        currentQuizId = null;
+        quizPhase = 'title';
+        rankingPosition = 'none';
+        quiz5Answer = '';
+        
+        // クイズ状態をリセット
+        currentQuizState.quizId = null;
+        currentQuizState.phase = null;
+        
+        updateSequenceDisplay(0);
+        break;
+    }
+  });
     
-    // 強制遷移イベントも追跡
+    // 強制遷移イベントを追跡
     socket.on('force_transition', (data) => {
       const { quizId, target } = data;
       
       if (target === 'practice' && quizId === '5') {
+        // クイズ状態を更新
         currentQuizState.phase = 'practice';
         currentScreen = 'practice';
-        
-        // モード表示更新
-        currentMode.textContent = `問題5 実践中`;
+        currentMode.textContent = '問題5 実践中';
         
         // シーケンス更新
         const quizPracticeIndex = sequence.findIndex(item => 
@@ -295,9 +295,6 @@ document.addEventListener('DOMContentLoaded', function() {
         if (quizPracticeIndex !== -1) {
           updateSequenceDisplay(quizPracticeIndex);
         }
-        
-        // クイズ5の設定パネル表示
-        toggleQuiz5Panel();
       }
     });
     
@@ -488,7 +485,7 @@ document.addEventListener('DOMContentLoaded', function() {
           // 問題表示開始
           startQuizSession(nextStep.quizId).then(success => {
             if (success) {
-              sendQuizCommand('show_question', nextStep.quizId.toString());
+              sendQuizCommand('show_question', nextStep.quizId);
             }
           });
         }
@@ -496,22 +493,18 @@ document.addEventListener('DOMContentLoaded', function() {
           // 次のスライドに移動
           sendQuizCommand('next_slide');
         }
-        // 問題5の実践画面からの遷移を明示的に処理
-        else if (nextStep.phase === 'practice' && nextStep.quizId === 5) {
-          // 実践画面では何もしない（タイマー終了で自動遷移するため）
-          console.log('問題5: 実践画面は自動表示されます');
-        }
-        // 問題5の実践画面から解答画面への遷移
-        else if (nextStep.phase === 'answer' && nextStep.quizId === 5 && currentQuizState.phase === 'practice') {
+        // 追加: 問題5の実践画面からの遷移を明示
+        else if (currentQuizId === 5 && currentQuizState.phase === 'practice' && nextStep.phase === 'answer') {
           // 実践画面から解答画面への遷移を明示的に指示
           sendQuizCommand('show_answer', '5', { fromPractice: true });
-          console.log('問題5: 実践画面から解答画面への遷移を指示');
+          
+          console.log('Admin: 問題5 - 実践画面から解答画面への遷移を指示');
           
           // フェーズを更新
           currentQuizState.phase = 'answer';
         }
         else if (nextStep.rankingPos) {
-          // ランキング表示
+          // ランキング表示（intro, 5, 4, 3, 2, 1, all）
           sendQuizCommand('show_ranking', null, { position: nextStep.rankingPos });
         }
         
