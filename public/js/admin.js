@@ -31,10 +31,6 @@ document.addEventListener('DOMContentLoaded', function() {
   const stepQuiz5 = document.getElementById('step-quiz5');
   const stepRanking = document.getElementById('step-ranking');
   
-  // ランキングシーケンスの順序を確認
-  const rankingSequence = sequence.filter(item => item.rankingPos);
-  console.log('ランキング表示順序:', rankingSequence.map(item => item.rankingPos));
-  
   // 状態管理
   let quizzes = [];
   let currentScreen = 'welcome'; // 画面状態: welcome, explanation, quiz_title, quiz_question, quiz_answer, ranking, practice
@@ -77,6 +73,10 @@ document.addEventListener('DOMContentLoaded', function() {
     { id: 'ranking1', label: 'ランキング 1位', rankingPos: '1', step: stepRanking },
     { id: 'rankingAll', label: 'ランキング 全て', rankingPos: 'all', step: stepRanking }
   ];
+
+  // ランキングシーケンスの順序を確認
+  const rankingSequence = sequence.filter(item => item.rankingPos);
+  console.log('ランキング表示順序:', rankingSequence.map(item => item.rankingPos));
     
   let currentSequenceIndex = 0;
   
