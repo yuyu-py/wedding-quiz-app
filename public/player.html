@@ -18,8 +18,8 @@
     <!-- 参加者登録画面 -->
     <div id="register-screen" class="screen">
       <div class="content">
-        <h1>結婚式クイズ大会</h1>
-        <p class="welcome-text">ようこそ！参加するにはお名前を入力してください</p>
+        <h1>クイズ大会</h1>
+        <p class="welcome-text">ようこそ！参加するにはテーブルナンバーの選択とフルネームを入力してください</p>
         <div class="register-form">
           <div class="table-selection">
             <p class="table-selection-title">あなたのテーブルを選択してください</p>
@@ -71,7 +71,7 @@
         <!-- 手作りアプリの説明 -->
         <div class="player-handmade-notice">
           <span class="material-symbols-rounded heart-icon">favorite</span>
-          <p>このクイズは、新郎が皆さんに楽しんでいただけるようこだわってプログラミングで自作した世界に一つだけのアプリです</p>
+          <p>このクイズは、新郎が皆さんに楽しんでいただけるようこだわってプログラミングで自作した世界に1つだけのアプリです。どうぞ楽しんでください！</p>
         </div>
       </div>
     </div>
@@ -98,7 +98,7 @@
           </div>
           <div class="explanation-item">
             <span class="material-symbols-rounded icon">leaderboard</span>
-            <p>結果は正答数と速さの二点で順位が決まります</p>
+            <p>結果は正答数と正解した問題の回答時間の2点で順位が決まります</p>
           </div>
           <div class="explanation-item">
             <span class="material-symbols-rounded icon">warning</span>
@@ -213,7 +213,7 @@
         <p class="waiting-text">ランキングの発表をお待ちください...</p>
         <div class="quiz-summary">
           <p>正答数: <span id="waiting-correct-count">0</span>/5問</p>
-          <p>合計回答時間: <span id="waiting-total-time">0</span>秒</p>
+          <p>正解した問題の合計回答時間: <span id="waiting-total-time">0</span>秒</p>
         </div>
       </div>
     </div>
@@ -239,7 +239,7 @@
             <div class="result-item">
               <span class="material-symbols-rounded icon">timer</span>
               <div>
-                <p class="result-label">合計回答時間</p>
+                <p class="result-label">正解した問題の合計回答時間</p>
                 <p class="result-value"><span id="total-time">0</span>秒</p>
               </div>
             </div>
