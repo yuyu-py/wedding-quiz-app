@@ -9,9 +9,9 @@ document.addEventListener('DOMContentLoaded', function() {
   const quizAnswerScreen = document.getElementById('quiz-answer-screen');
   const rankingScreen = document.getElementById('ranking-screen');
   const homeButton = document.getElementById('home-button');
-  const practiceSreen = document.getElementById('quiz-practice-screen'); // 実践待機画面
   
-  // 参加者数表示は削除済みのため、ここで参照しない
+  // 参加者カウント表示
+  const participantCount = document.getElementById('participant-count');
   
   // クイズ要素
   const quizTitle = document.getElementById('quiz-title');
@@ -25,19 +25,19 @@ document.addEventListener('DOMContentLoaded', function() {
   const answerExplanation = document.getElementById('answer-explanation');
   const rankingContainer = document.getElementById('ranking-container');
   
+  // タイマー関連の状態変数
+  let timerInterval = null;
+  let timeLeft = 30;
+  let serverTimeOffset = 0;      // サーバーとの時間差
+  let timerEndTime = 0;          // 終了時刻（ローカル時間）
+  let lastDisplayedTime = 30;    // 最後に表示した時間（巻き戻り防止用）
+  
   // 現在の状態
   let currentScreen = welcomeScreen;
   let currentQuizId = null;
-  let timerInterval = null;
-  let timeLeft = 30;
   let displayedRankings = [];
   let refreshInterval = null;
   let isTransitioning = false; // 画面遷移中フラグ
-  
-  // サーバーとの時刻同期用
-  let serverTimeOffset = 0;
-  let timerStartTime = 0;
-  let timerEndTime = 0;
   
   // 画像のプリロード処理
   function preloadImages() {
@@ -79,72 +79,28 @@ document.addEventListener('DOMContentLoaded', function() {
     screen.classList.remove('hidden');
     currentScreen = screen;
     
-    console.log(`Display: 画面を切り替えました: ${screen.id}`);
-  }
-  
-  // タイマーを開始する関数 - シンプルな実装に修正
-  function startTimer(seconds = 30) {
-    clearInterval(timerInterval);
-    timeLeft = seconds;
-    floatingTimerValue.textContent = timeLeft;
-    
-    // フローティングタイマーを表示
-    floatingTimer.classList.remove('hidden');
-    
-    console.log(`Display: シンプルなタイマー開始 ${seconds}秒`);
-    
-    timerInterval = setInterval(() => {
-      timeLeft--;
-      floatingTimerValue.textContent = timeLeft;
-      
-      // 残り時間が10秒以下で警告色に
-      if (timeLeft <= 10) {
-        floatingTimer.style.backgroundColor = 'rgba(255, 0, 0, 0.9)';
-      } else {
-        floatingTimer.style.backgroundColor = 'rgba(255, 51, 51, 0.9)';
-      }
-      
-      if (timeLeft <= 0) {
-        clearInterval(timerInterval);
-        timerInterval = null;
-        
-        // 時間切れになったら自動的に解答画面に遷移
-        if (currentScreen === quizQuestionScreen && currentQuizId) {
-          console.log('Display: 時間切れ - サーバーに通知');
-          
-          // タイマー終了イベントをサーバーに送信
-          socket.emit('timer_expired', { quizId: currentQuizId });
-          
-          // 解答表示はサーバーからのイベントで処理
-        }
-      }
-    }, 1000);
-  }
-  
-  // 解答が表示されたことをサーバーに通知
-  async function markAnswerAsDisplayed(quizId) {
-    try {
-      await fetch(`/api/admin/quiz/${quizId}/mark-answer-displayed`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-      console.log(`Display: クイズ ${quizId} の解答表示をサーバーに通知しました`);
-    } catch (error) {
-      console.error('Display: 解答表示の通知に失敗しました:', error);
+    // QRコード画面の場合は、10秒ごとの更新を開始
+    if (screen === welcomeScreen) {
+      startParticipantCountRefresh();
+    } else {
+      // QRコード画面以外では更新を停止
+      stopParticipantCountRefresh();
     }
+    
+    console.log(`画面を切り替えました: ${screen.id}`);
   }
   
-  // タイマーを停止する関数
-  function stopTimer() {
-    if (timerInterval) {
-      clearInterval(timerInterval);
-      timerInterval = null;
+  // 参加者数の更新を開始
+  function startParticipantCountRefresh() {
+    // Socket.ioで常に最新状態を取得するため、APIポーリングは不要
+  }
+  
+  // 参加者数更新の停止
+  function stopParticipantCountRefresh() {
+    if (refreshInterval) {
+      clearInterval(refreshInterval);
+      refreshInterval = null;
     }
-    // フローティングタイマーを非表示
-    floatingTimer.classList.add('hidden');
-    console.log('Display: タイマーを停止しました');
   }
   
   // ホーム画面に戻る
@@ -160,12 +116,59 @@ document.addEventListener('DOMContentLoaded', function() {
     showScreen(welcomeScreen);
   }
   
+  // 精密なタイマー開始関数
+  function startPreciseTimer() {
+    // 既存のタイマーをクリア
+    if (timerInterval) {
+      clearInterval(timerInterval);
+    }
+    
+    // 高頻度更新タイマー（100ms間隔）
+    timerInterval = setInterval(() => {
+      // 現在のローカル時間でタイマーを更新
+      const now = Date.now();
+      const remainingMs = Math.max(0, timerEndTime - now);
+      const newTimeLeft = Math.ceil(remainingMs / 1000);
+      
+      // 時間の巻き戻りを防止（表示は単調減少のみ）
+      if (newTimeLeft < lastDisplayedTime) {
+        timeLeft = newTimeLeft;
+        lastDisplayedTime = newTimeLeft;
+        floatingTimerValue.textContent = newTimeLeft;
+        
+        // 残り時間が10秒以下で警告色に
+        if (newTimeLeft <= 10) {
+          floatingTimer.style.backgroundColor = 'rgba(255, 0, 0, 0.9)';
+        } else {
+          floatingTimer.style.backgroundColor = 'rgba(255, 51, 51, 0.9)';
+        }
+      }
+      
+      // タイマー終了処理
+      if (remainingMs <= 0) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+      }
+    }, 100);
+  }
+  
+  // タイマーを停止する関数
+  function stopTimer() {
+    if (timerInterval) {
+      clearInterval(timerInterval);
+      timerInterval = null;
+    }
+    // フローティングタイマーを非表示
+    floatingTimer.classList.add('hidden');
+    console.log('Display: タイマーを停止・リセットしました');
+  }
+  
   // クイズの問題を表示する関数
   async function showQuestion(quizId) {
     try {
       // 重複呼び出し防止
       if (isTransitioning) {
-        console.log('Display: 画面遷移中のため、重複した呼び出しを無視します');
+        console.log('画面遷移中のため、重複した呼び出しを無視します');
         return;
       }
       isTransitioning = true;
@@ -173,9 +176,9 @@ document.addEventListener('DOMContentLoaded', function() {
       // タイマーを必ず停止してリセット
       stopTimer();
       timeLeft = 30;
+      lastDisplayedTime = 30;
       floatingTimerValue.textContent = '30';
-      
-      console.log(`Display: 問題 ${quizId} の表示を開始します`);
+      floatingTimer.classList.add('hidden'); // タイマーを非表示に
       
       const response = await fetch(`/api/quiz/${quizId}`);
       const quizData = await response.json();
@@ -255,14 +258,14 @@ document.addEventListener('DOMContentLoaded', function() {
       // 画面を問題画面に切り替え
       showScreen(quizQuestionScreen);
       
-      // タイマーはサーバーからのtimer_startイベントで開始
-      console.log('Display: 問題表示完了、タイマーはサーバーから開始されます');
+      // タイマーはサーバーからのprecise_timer_startイベントで開始
       
       // 遷移完了
       isTransitioning = false;
+      console.log('Display: 問題画面への遷移完了');
       
     } catch (error) {
-      console.error('Display: クイズデータの取得に失敗しました:', error);
+      console.error('クイズデータの取得に失敗しました:', error);
       isTransitioning = false;
     }
   }
@@ -272,15 +275,13 @@ document.addEventListener('DOMContentLoaded', function() {
     try {
       // 重複呼び出し防止
       if (isTransitioning) {
-        console.log('Display: 画面遷移中のため、重複した呼び出しを無視します');
+        console.log('画面遷移中のため、重複した呼び出しを無視します');
         return;
       }
       isTransitioning = true;
       
       // タイマーを停止
       stopTimer();
-      
-      console.log(`Display: 解答画面 ${quizId} の表示を開始します`);
       
       // 管理者用APIで解答情報を取得
       const response = await fetch(`/api/admin/quiz/${quizId}/answer`);
@@ -376,17 +377,20 @@ document.addEventListener('DOMContentLoaded', function() {
         answerImageContainer.style.display = answerData.answer_image_path ? 'block' : 'none';
       }
       
+      // 回答状況セクションを非表示に設定
+      const answerStats = document.querySelector('.answer-stats');
+      if (answerStats) {
+        answerStats.style.display = 'none';
+      }
+      
       // 画面を解答画面に切り替え
       showScreen(quizAnswerScreen);
-      
-      // 解答表示を通知
-      markAnswerAsDisplayed(quizId);
       
       // 遷移完了
       isTransitioning = false;
       
     } catch (error) {
-      console.error('Display: 解答データの取得に失敗しました:', error);
+      console.error('解答データの取得に失敗しました:', error);
       isTransitioning = false;
     }
   }
@@ -406,7 +410,7 @@ document.addEventListener('DOMContentLoaded', function() {
     tableDiv.className = 'ranking-table';
     
     // テーブルナンバーがあれば表示、なければ「-」表示
-    // テーブルごとに色を変える
+    // カラーコード化してテーブルごとに色を変える
     if (ranking.table_number) {
       tableDiv.textContent = ranking.table_number;
       
@@ -451,7 +455,7 @@ document.addEventListener('DOMContentLoaded', function() {
     scoreDiv.appendChild(timeSpan);
     
     rankingItem.appendChild(positionDiv);
-    rankingItem.appendChild(tableDiv);  // テーブルナンバーを追加
+    rankingItem.appendChild(tableDiv); // テーブルナンバーを追加
     rankingItem.appendChild(nameDiv);
     rankingItem.appendChild(scoreDiv);
     
@@ -463,19 +467,15 @@ document.addEventListener('DOMContentLoaded', function() {
     try {
       // 重複呼び出し防止
       if (isTransitioning) {
-        console.log('Display: 画面遷移中のため、重複した呼び出しを無視します');
+        console.log('画面遷移中のため、重複した呼び出しを無視します');
         return;
       }
       isTransitioning = true;
-      
-      console.log(`Display: ランキング表示開始 - 位置: ${position}`);
       
       // まだランキングデータを取得していない場合は取得
       if (displayedRankings.length === 0) {
         const response = await fetch('/api/quiz/ranking/all');
         displayedRankings = await response.json();
-        
-        console.log(`Display: ランキングデータ取得 - ${displayedRankings.length}件`);
         
         // ランキングコンテナをクリア
         rankingContainer.innerHTML = '';
@@ -497,7 +497,6 @@ document.addEventListener('DOMContentLoaded', function() {
           if (!existingItem) {
             // 先頭に追加（一番上に最新のランキングを表示）
             rankingContainer.insertBefore(rankingItem, rankingContainer.firstChild);
-            console.log(`Display: ${position_num}位を表示しました - ${ranking.player_name}`);
           }
         }
       } else if (position === 'all') {
@@ -512,8 +511,6 @@ document.addEventListener('DOMContentLoaded', function() {
           const rankingItem = createRankingItem(ranking, position);
           rankingContainer.appendChild(rankingItem);
         }
-        
-        console.log(`Display: 全ランキング表示（上位5件）`);
       }
       
       // 画面をランキング画面に切り替え
@@ -523,8 +520,23 @@ document.addEventListener('DOMContentLoaded', function() {
       isTransitioning = false;
       
     } catch (error) {
-      console.error('Display: ランキングデータの取得に失敗しました:', error);
+      console.error('ランキングデータの取得に失敗しました:', error);
       isTransitioning = false;
+    }
+  }
+  
+  // 解答表示フラグをセットする関数（自動遷移用）
+  async function markAnswerAsDisplayed(quizId) {
+    try {
+      const response = await fetch(`/api/admin/quiz/${quizId}/mark-answer-displayed`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      console.log(`クイズ ${quizId} の解答表示をサーバーに通知しました`);
+    } catch (error) {
+      console.error('解答表示の通知に失敗しました:', error);
     }
   }
   
@@ -533,92 +545,105 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // 接続時の処理
   socket.on('connect', () => {
-    console.log('Display: Socket.io に接続しました');
+    console.log('Socket.io に接続しました');
     socket.emit('register', { type: 'display' });
   });
   
-  // タイマー準備イベントハンドラ
-  socket.on('timer_prepare', (data) => {
-    const { quizId } = data;
+  // 接続数の更新
+  socket.on('connection_stats', (stats) => {
+    // プレイヤー数の表示を更新（最大値は39に制限）
+    const playerCount = stats.displayCount;
+    participantCount.textContent = `${Math.min(playerCount, 39)}/39`;
+  });
+  
+  // 精密なタイマー開始イベント処理
+  socket.on('precise_timer_start', (data) => {
+    const { quizId, startTime, endTime, duration, serverTime } = data;
     
-    console.log(`Display: タイマー準備イベント受信 - クイズID ${quizId}`);
+    console.log(`Display: 精密タイマー開始イベント - クイズID ${quizId}, 持続時間 ${duration}秒`);
     
-    // 条件チェック
     if (currentQuizId === quizId && currentScreen === quizQuestionScreen) {
-      console.log('Display: タイマー準備OK - 現在問題画面を表示中');
+      // サーバーとの時間差を計算
+      const receivedTime = Date.now();
+      serverTimeOffset = serverTime - receivedTime;
       
-      // タイマー表示を初期化
-      timeLeft = 30;
-      floatingTimerValue.textContent = '30';
+      // 終了時刻をローカル時間に変換
+      timerEndTime = endTime - serverTimeOffset;
       
-      // フローティングタイマーを表示するが、カウントダウンはまだ開始しない
+      // タイマーをリセット
+      stopTimer();
+      timeLeft = duration;
+      lastDisplayedTime = duration;
+      floatingTimerValue.textContent = duration;
       floatingTimer.classList.remove('hidden');
+      
+      // 精密なタイマー開始
+      startPreciseTimer();
+      console.log('Display: 精密タイマー開始完了');
     } else {
-      console.log(`Display: タイマー準備条件不一致 - 現在のクイズID: ${currentQuizId}, 画面: ${currentScreen.id}`);
+      console.log(`Display: タイマー開始条件不一致 - 現在のクイズID: ${currentQuizId}, 画面ID: ${currentScreen.id}`);
     }
   });
   
-  // タイマー開始イベントハンドラ
-  socket.on('timer_start', (data) => {
-    const { quizId, duration, startTime, timestamp } = data;
+  // 精密なタイマー同期イベント処理
+  socket.on('precise_timer_sync', (data) => {
+    const { quizId, remaining, serverTime } = data;
     
-    console.log(`Display: タイマー開始イベント受信 - クイズID ${quizId}, 時間 ${duration}秒`);
-    
-    // 現在のクイズIDと画面をチェック
     if (currentQuizId === quizId && currentScreen === quizQuestionScreen) {
-      console.log('Display: タイマー開始条件OK - タイマー開始');
+      // サーバーとの時間差を更新
+      const receivedTime = Date.now();
+      serverTimeOffset = serverTime - receivedTime;
       
-      // サーバー時刻の差分を計算
-      serverTimeOffset = timestamp - Date.now();
+      // 残り時間を秒に変換（切り上げ）
+      const newTimeLeft = Math.ceil(remaining / 1000);
       
-      // サーバーから送られた情報を保存
-      timerStartTime = startTime;
-      timerEndTime = startTime + (duration * 1000);
-      
-      // タイマーを開始
-      startTimer(duration);
-    } else {
-      console.log(`Display: タイマー開始条件不一致 - 現在のクイズID: ${currentQuizId}, 画面: ${currentScreen.id}`);
-    }
-  });
-  
-  // タイマー同期イベント
-  socket.on('timer_sync', (data) => {
-    const { quizId, remainingTime, timestamp } = data;
-    
-    // デバッグログを控えめに（頻繁に発生するイベント）
-    if (remainingTime % 5 === 0) {
-      console.log(`Display: タイマー同期 - クイズ ${quizId}, 残り ${remainingTime}秒`);
-    }
-    
-    // 現在のクイズIDが一致し、問題表示中の場合のみタイマーを同期
-    if (currentQuizId === quizId && currentScreen === quizQuestionScreen) {
-      // サーバー時刻の差分を更新
-      serverTimeOffset = timestamp - Date.now();
-      
-      // タイマー値を同期
-      if (timeLeft !== remainingTime) {
-        console.log(`Display: タイマー値を同期: ${timeLeft} → ${remainingTime}秒`);
-        timeLeft = remainingTime;
-        floatingTimerValue.textContent = timeLeft;
+      // 時間の巻き戻りを防止（現在の表示より大きくならない）
+      if (newTimeLeft < lastDisplayedTime) {
+        timeLeft = newTimeLeft;
+        lastDisplayedTime = newTimeLeft;
+        floatingTimerValue.textContent = newTimeLeft;
         
-        // 残り時間に応じた表示変更
-        if (timeLeft <= 10) {
+        // 残り時間が10秒以下で警告色に
+        if (newTimeLeft <= 10) {
           floatingTimer.style.backgroundColor = 'rgba(255, 0, 0, 0.9)';
-        } else {
-          floatingTimer.style.backgroundColor = 'rgba(255, 51, 51, 0.9)';
         }
       }
+    }
+  });
+  
+  // 同期遷移イベント処理を追加
+  socket.on('synchronized_transition', (data) => {
+    const { quizId, target, transitionTime, serverTime } = data;
+    
+    if (quizId === currentQuizId) {
+      // サーバーとの時間差を計算
+      const receivedTime = Date.now();
+      serverTimeOffset = serverTime - receivedTime;
+      
+      // ローカル時間での遷移時刻を計算
+      const localTransitionTime = transitionTime - serverTimeOffset;
+      const waitTime = Math.max(0, localTransitionTime - receivedTime);
+      
+      console.log(`Display: 同期遷移イベント - 目標: ${target}, 待機時間: ${waitTime}ms`);
+      
+      // 指定された時刻まで待ってから遷移
+      setTimeout(() => {
+        console.log(`Display: 同期遷移実行 - ${target}`);
+        
+        if (target === 'question' && currentScreen === quizTitleScreen) {
+          showQuestion(currentQuizId);
+        }
+      }, waitTime);
     }
   });
   
   // 強制遷移イベントのハンドラを追加
   socket.on('force_transition', (data) => {
     const { quizId, target, timestamp } = data;
-    console.log(`Display: 強制遷移指示受信 - 遷移先: ${target}, クイズID: ${quizId}`);
+    console.log(`強制遷移指示受信: ${target} - クイズID: ${quizId}`);
     
     if (quizId !== currentQuizId) {
-      console.log('Display: 現在のクイズIDと一致しないため無視します');
+      console.log('現在のクイズIDと一致しないため無視します');
       return;
     }
     
@@ -628,15 +653,25 @@ document.addEventListener('DOMContentLoaded', function() {
       stopTimer();
       
       // 解答画面に強制遷移
-      console.log('Display: サーバーからの指示により解答画面に強制遷移します');
+      console.log('サーバーからの指示により解答画面に強制遷移します');
       showAnswer(quizId);
+      
+      // 解答表示フラグを設定
+      markAnswerAsDisplayed(quizId);
     } else if (target === 'practice') {
       // タイマーを停止
       stopTimer();
       
       // 実践待機画面に強制遷移
-      console.log('Display: サーバーからの指示により実践待機画面に強制遷移します');
-      showScreen(practiceSreen);
+      console.log('サーバーからの指示により実践待機画面に強制遷移します');
+      
+      // 実践待機画面の表示
+      const practiceSreen = document.getElementById('quiz-practice-screen');
+      if (practiceSreen) {
+        showScreen(practiceSreen);
+      } else {
+        console.error('実践待機画面が見つかりません');
+      }
     }
   });
   
@@ -644,14 +679,9 @@ document.addEventListener('DOMContentLoaded', function() {
   socket.on('quiz_event', (data) => {
     const { event, quizId, position, auto, manual, resetTimer } = data;
     
-    console.log(`Display: クイズイベント受信 - ${event}, クイズID: ${quizId || 'なし'}`);
-    
-    // タイマーリセットフラグが指定されていれば実行
     if (resetTimer) {
-      stopTimer();
-      timeLeft = 30;
-      floatingTimerValue.textContent = '30';
-      console.log('Display: タイマーリセット完了');
+      stopTimer(); // 明示的なタイマーリセット
+      console.log('Display: イベントによるタイマーリセット実行');
     }
     
     switch (event) {
@@ -694,10 +724,14 @@ document.addEventListener('DOMContentLoaded', function() {
         break;
         
       case 'show_practice':
-        // 実践待機画面表示（問題5用）
+        // 実践待機画面表示
         if (currentQuizId === '5') {
-          console.log('Display: 問題5の実践待機画面に遷移');
-          showScreen(practiceSreen);
+          const practiceSreen = document.getElementById('quiz-practice-screen');
+          if (practiceSreen) {
+            showScreen(practiceSreen);
+          } else {
+            console.error('実践待機画面が見つかりません');
+          }
         }
         break;
         
@@ -713,4 +747,9 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // ホームボタンのクリックイベント
   homeButton.addEventListener('click', goToHome);
+  
+  // 初期表示時に参加者数の更新を開始
+  if (currentScreen === welcomeScreen) {
+    startParticipantCountRefresh();
+  }
 });
