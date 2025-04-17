@@ -200,7 +200,7 @@ function setupSocketHandlers(io) {
             // 遷移タイムスタンプを作成（少し先の時間）
             const transitionTime = Date.now() + 500; // 500ms後
             
-            // 遷移イベントを送信
+            // 問題5も含めて同様の遷移処理をする
             io.emit('synchronized_transition', {
               quizId: currentQuizState.quizId,
               target: 'question',
@@ -213,6 +213,8 @@ function setupSocketHandlers(io) {
               // タイマー開始
               startPreciseQuizTimer(currentQuizState.quizId);
               currentQuizState.phase = 'question';
+              
+              console.log(`サーバー: クイズ ${currentQuizState.quizId} でタイマー開始 (問題5も同様に処理)`);
             }, 700); // 遷移完了するまで余裕を持って待機
           } else {
             // その他の遷移は通常処理
@@ -468,7 +470,7 @@ function setupSocketHandlers(io) {
     // タイマー終了フラグを設定
     currentQuizState.timerExpired = true;
     
-    // 問題5（ストップウォッチ問題）の場合は特別処理
+    // 問題5（ストップウォッチ問題）の場合も含めて、共通処理
     if (quizId === '5') {
       currentQuizState.phase = 'practice';
       io.emit('force_transition', {

@@ -554,7 +554,116 @@ document.addEventListener('DOMContentLoaded', function() {
       answerStatusText.textContent = '回答の送信に失敗しました';
     }
   }
-  
+
+  // showQuestion関数内のデバッグ情報を強化
+  async function showQuestion(quizId) {
+    try {
+      // 重複呼び出し防止
+      if (isTransitioning) {
+        console.log('画面遷移中のため、重複した呼び出しを無視します');
+        return;
+      }
+      isTransitioning = true;
+      
+      console.log(`Display: showQuestion開始 - クイズID: ${quizId}`);
+      
+      // タイマーを必ず停止してリセット
+      stopTimer();
+      timeLeft = 30;
+      lastDisplayedTime = 30;
+      nextScheduledSecond = 29;
+      floatingTimerValue.textContent = '30';
+      floatingTimer.classList.add('hidden'); // タイマーを非表示に
+      
+      const response = await fetch(`/api/quiz/${quizId}`);
+      const quizData = await response.json();
+      
+      // 問題のタイトルを設定
+      quizTitle.textContent = `問題 ${quizId}`;
+      
+      // 問題文と画像を設定
+      questionText.textContent = quizData.question;
+      
+      // 画像選択肢か通常選択肢かで表示方法を変える
+      const isImageOptions = quizData.is_image_options === 1;
+      
+      if (!isImageOptions) {
+        // 通常の問題表示
+        questionImage.src = quizData.question_image_path || '';
+        questionImage.style.display = quizData.question_image_path ? 'block' : 'none';
+        
+        // 選択肢を設定（テキスト選択肢）
+        optionsContainer.innerHTML = '';
+        optionsContainer.className = 'options-container';
+        
+        // 問題5の場合は選択肢に色を付ける
+        if (parseInt(quizId) === 5) {
+          console.log('Display: 問題5の選択肢をセットアップ中');
+          quizData.options.forEach(option => {
+            const optionDiv = document.createElement('div');
+            optionDiv.className = 'option';
+            
+            // 新郎・新婦別のクラスを追加
+            if (option === '新郎') {
+              optionDiv.classList.add('groom');
+            } else if (option === '新婦') {
+              optionDiv.classList.add('bride');
+            }
+            
+            optionDiv.textContent = option;
+            optionsContainer.appendChild(optionDiv);
+          });
+        } else {
+          // 通常のテキスト選択肢
+          quizData.options.forEach(option => {
+            const optionDiv = document.createElement('div');
+            optionDiv.className = 'option';
+            optionDiv.textContent = option;
+            optionsContainer.appendChild(optionDiv);
+          });
+        }
+      } else {
+        // 画像選択肢の問題表示
+        questionImage.style.display = 'none';
+        
+        // 選択肢を設定（画像選択肢）
+        optionsContainer.innerHTML = '';
+        optionsContainer.className = 'image-options-container';
+        
+        // 問題IDを設定（問題3と4用にサイズ調整するため）
+        optionsContainer.setAttribute('data-quiz-id', quizId);
+        
+        quizData.options.forEach((imagePath, index) => {
+          const optionDiv = document.createElement('div');
+          optionDiv.className = 'image-option';
+          
+          const optionNumber = document.createElement('div');
+          optionNumber.className = 'option-number';
+          optionNumber.textContent = (index + 1).toString();
+          
+          const optionImg = document.createElement('img');
+          optionImg.src = imagePath;
+          optionImg.alt = `選択肢 ${index + 1}`;
+          
+          optionDiv.appendChild(optionNumber);
+          optionDiv.appendChild(optionImg);
+          optionsContainer.appendChild(optionDiv);
+        });
+      }
+      
+      // 画面を問題画面に切り替え
+      showScreen(quizQuestionScreen);
+      console.log(`Display: 問題画面表示完了 - クイズID: ${quizId}, 画面ID: ${quizQuestionScreen.id}`);
+      
+      // 遷移完了
+      isTransitioning = false;
+      
+    } catch (error) {
+      console.error('クイズデータの取得に失敗しました:', error);
+      isTransitioning = false;
+    }
+  }
+    
   // 答え合わせ画面を表示
   async function showAnswerResult(quizId) {
     if (!quizId) return;
@@ -896,10 +1005,11 @@ document.addEventListener('DOMContentLoaded', function() {
     socket.on('precise_timer_start', (data) => {
       const { quizId, startTime, endTime, duration, serverTime } = data;
       
-      console.log(`Player: 精密タイマー開始イベント - クイズID ${quizId}, 持続時間 ${duration}秒`);
-      console.log(`Player: 現在の画面:`, currentScreen.id);
+      console.log(`Display: 精密タイマー開始イベント - クイズID ${quizId}, 持続時間 ${duration}秒`);
+      console.log(`Display: 現在の画面: ${currentScreen.id}, 現在のクイズID: ${currentQuizId}`);
       
-      if (currentQuizId === quizId && currentScreen === quizScreen) {
+      // 問題5も含めて確実に処理
+      if (currentQuizId === quizId && currentScreen === quizQuestionScreen) {
         // サーバーとの時間差を計算
         const receivedTime = Date.now();
         serverTimeOffset = serverTime - receivedTime;
@@ -908,25 +1018,21 @@ document.addEventListener('DOMContentLoaded', function() {
         timerEndTime = endTime - serverTimeOffset;
         
         // タイマーをリセット
-        if (timerInterval) {
-          clearInterval(timerInterval);
-          timerInterval = null;
-        }
-        
-        // 初期値設定
+        stopTimer();
         timeLeft = duration;
         lastDisplayedTime = duration;
-        nextScheduledSecond = duration - 1; // 次の表示は29
-        timerValue.textContent = duration;
+        nextScheduledSecond = duration - 1;
+        floatingTimerValue.textContent = duration;
+        floatingTimer.classList.remove('hidden');
         
         // 精密なタイマー開始
         startPreciseTimer();
         
-        console.log(`Player: タイマー開始 - ${duration}秒から開始、次は${nextScheduledSecond}秒`);
+        console.log(`Display: タイマー開始 - ${duration}秒から開始、次は${nextScheduledSecond}秒`);
       } else {
-        console.log(`Player: タイマー開始条件不一致 - ID:${currentQuizId}, 画面:${currentScreen.id}`);
+        console.log(`Display: タイマー開始条件不一致 - 表示されません`);
       }
-    });
+    });    
     
     // 精密なタイマー同期イベント処理
     socket.on('precise_timer_sync', (data) => {
@@ -980,15 +1086,16 @@ document.addEventListener('DOMContentLoaded', function() {
         const localTransitionTime = transitionTime - serverTimeOffset;
         const waitTime = Math.max(0, localTransitionTime - receivedTime);
         
-        console.log(`Player: 同期遷移イベント - 目標: ${target}, 待機時間: ${waitTime}ms`);
+        console.log(`Display: 同期遷移イベント - 目標: ${target}, 待機時間: ${waitTime}ms, クイズID: ${quizId}`);
         
         // 指定された時刻まで待ってから遷移
         setTimeout(() => {
-          console.log(`Player: 同期遷移実行 - ${target}`);
+          console.log(`Display: 同期遷移実行 - ${target}`);
           
-          if (target === 'question' && displayCurrentScreen === 'quiz_title') {
-            displayCurrentScreen = 'quiz_question';
-            fetchAndShowQuestion(currentQuizId);
+          if (target === 'question' && currentScreen === quizTitleScreen) {
+            // 問題5も含めて必ず遷移する
+            console.log(`Display: 問題画面に遷移します - クイズID: ${currentQuizId}`);
+            showQuestion(currentQuizId);
           }
         }, waitTime);
       }
