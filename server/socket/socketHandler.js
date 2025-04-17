@@ -1,5 +1,5 @@
 // server/socket/socketHandler.js
-const { getDb } = require('../database/db');
+// Socket.ioの接続管理とイベント処理
 
 // ソケット接続の管理
 let activeConnections = {
@@ -18,7 +18,7 @@ let connectionCounter = {
 // 現在のクイズ状態を追跡
 let currentQuizState = {
   quizId: null,
-  phase: null, // 'title', 'question', 'answer', 'practice'など
+  phase: null, // 'title', 'question', 'practice', 'answer'など
   timerExpired: false,
   timerStartTime: 0,
   timerDuration: 30, // 30秒固定
@@ -105,41 +105,30 @@ function setupSocketHandlers(io) {
             event: 'show_answer',
             quizId: currentQuizState.quizId
           });
-        } else if (currentQuizState.phase === 'title') {
+        } else if (currentQuizState.phase === 'question') {
           socket.emit('quiz_event', { 
             event: 'show_question',
             quizId: currentQuizState.quizId
           });
-        } else if (currentQuizState.phase === 'question') {
-          socket.emit('quiz_event', { 
-            event: 'next_slide',
-            quizId: currentQuizState.quizId
-          });
           
-          // タイマー進行中ならタイマー開始イベントを送信
-          if (currentQuizState.timerStartTime > 0 && !currentQuizState.timerExpired) {
-            socket.emit('timer_start', {
-              quizId: currentQuizState.quizId,
-              startTime: currentQuizState.timerStartTime,
-              duration: currentQuizState.timerDuration
-            });
-            
-            // タイマー同期情報も送信
-            const now = Date.now();
-            const elapsed = now - currentQuizState.timerStartTime;
-            const remainingMs = Math.max(0, currentQuizState.timerDuration * 1000 - elapsed);
-            const remainingTime = Math.ceil(remainingMs / 1000);
+          // タイマーが既に切れていれば通知
+          if (currentQuizState.timerExpired) {
+            socket.emit('timer_expired', { quizId: currentQuizState.quizId });
+          } else if (currentQuizState.timerStartTime > 0) {
+            // タイマー進行中なら残り時間を計算して同期
+            const elapsed = Date.now() - currentQuizState.timerStartTime;
+            const remainingTime = Math.max(0, Math.floor((currentQuizState.timerDuration * 1000 - elapsed) / 1000));
             
             socket.emit('timer_sync', {
               quizId: currentQuizState.quizId,
               remainingTime,
-              timestamp: now,
+              timestamp: Date.now(),
               startTime: currentQuizState.timerStartTime,
               totalDuration: currentQuizState.timerDuration
             });
           }
         } else if (currentQuizState.phase === 'practice') {
-          // 問題5の実践画面
+          // 実践画面表示中（問題5用）
           socket.emit('quiz_event', {
             event: 'show_practice',
             quizId: currentQuizState.quizId
@@ -187,10 +176,10 @@ function setupSocketHandlers(io) {
             quizId 
           });
           
-          // クイズ状態を更新（タイトル画面フェーズ）
+          // クイズ状態を更新（ただしタイマーはまだスタートしない）
           currentQuizState = {
             quizId,
-            phase: 'title', // 最初はタイトルフェーズ
+            phase: 'title', // 最初はtitleフェーズ
             timerExpired: false,
             timerStartTime: 0, // タイマーはまだ開始しない
             timerDuration: 30,
@@ -203,23 +192,36 @@ function setupSocketHandlers(io) {
         case 'next_slide':
           // 現在のフェーズを確認
           if (currentQuizState.phase === 'title') {
-            // タイトル画面から問題画面への遷移の場合にタイマーを開始
-            currentQuizState.phase = 'question';
-            currentQuizState.timerStartTime = Date.now();
+            // タイトル画面から問題画面への遷移の場合
             
-            console.log(`クイズ ${currentQuizState.quizId} の問題表示 - タイマー開始`);
-            
-            // タイマー開始を明示的に通知
-            io.emit('timer_start', {
-              quizId: currentQuizState.quizId,
-              startTime: currentQuizState.timerStartTime,
-              duration: currentQuizState.timerDuration
+            // 1. 次の画面に遷移するイベントを先に送信
+            io.emit('quiz_event', { 
+              event: 'next_slide',
+              manual: true,
+              isQuestionStart: true // これは問題開始を示すフラグ
             });
             
-            // サーバー側タイマーの開始
-            startQuizTimer(currentQuizState.quizId);
+            // 2. 少し遅延してタイマーを開始（両方のクライアントが画面遷移を完了する時間を確保）
+            setTimeout(() => {
+              // 状態更新
+              currentQuizState.phase = 'question';
+              currentQuizState.timerStartTime = Date.now();
+              
+              // サーバー側タイマーの開始
+              startQuizTimer(currentQuizState.quizId);
+              
+              console.log(`クイズ ${currentQuizState.quizId} の問題表示 - タイマー開始`);
+              
+              // すべてのクライアントに同時にタイマー開始を通知
+              io.emit('timer_start', {
+                quizId: currentQuizState.quizId,
+                startTime: currentQuizState.timerStartTime,
+                duration: currentQuizState.timerDuration,
+                remainingTime: currentQuizState.timerDuration // 初期値は満タン
+              });
+            }, 500); // 500ms遅延
           } else if (currentQuizState.phase === 'practice') {
-            // 問題5で実践画面表示中の場合は解答画面への移行
+            // 問題5の実践画面から解答画面への特別処理
             currentQuizState.phase = 'answer';
             
             // 解答表示をブロードキャスト
@@ -239,19 +241,23 @@ function setupSocketHandlers(io) {
             // セッションの answer_displayed フラグを更新
             await db.markAnswerAsDisplayed(currentQuizState.quizId);
             
-            console.log(`問題${currentQuizState.quizId}: 実践画面から解答画面に移行しました（手動）`);
-            
-            // 次のスライドイベントは送信しない
-            return;
+            console.log(`問題5: 実践画面から解答画面に移行しました（手動）`);
+          } else {
+            // その他の遷移（問題→答えなど）は通常通り処理
+            io.emit('quiz_event', { 
+              event: 'next_slide',
+              manual: true
+            });
+            console.log('管理者操作: 次のスライドに進みました');
           }
+          break;
           
-          // 次のスライドに進む
+        case 'prev_slide':
+          // 前のスライドに戻る
           io.emit('quiz_event', { 
-            event: 'next_slide',
-            manual: true // 手動遷移フラグ
+            event: 'prev_slide' 
           });
-          
-          console.log('管理者操作: 次のスライドに進みました');
+          console.log('前のスライドに戻りました');
           break;
           
         case 'show_answer':
@@ -283,14 +289,6 @@ function setupSocketHandlers(io) {
           });
           
           console.log(`ランキングが表示されました: ${params.position || 'all'}`);
-          break;
-          
-        case 'prev_slide':
-          // 前のスライドに戻る
-          io.emit('quiz_event', { 
-            event: 'prev_slide' 
-          });
-          console.log('前のスライドに戻りました');
           break;
           
         case 'reset_all':
@@ -330,7 +328,7 @@ function setupSocketHandlers(io) {
         
         // ディスプレイから発信された場合のみ、全員に通知
         if (socket === activeConnections.display) {
-          console.log(`クイズ ${quizId} のタイマーが終了しました - 自動的に解答表示に移行します`);
+          console.log(`クイズ ${quizId} のタイマーが終了しました - 次の処理に移行します`);
           
           // 問題5（ストップウォッチ問題）の場合は特別処理
           if (quizId === '5') {
@@ -361,14 +359,14 @@ function setupSocketHandlers(io) {
               timestamp: Date.now()
             });
             
-            // 解答表示をブロードキャスト
+            // 従来の互換性のためのイベントも送信
             io.emit('quiz_event', { 
               event: 'show_answer', 
               quizId,
               auto: true // 自動遷移フラグ
             });
             
-            // 解答表示フラグをデータベースに記録
+            // セッションの answer_displayed フラグを更新
             const db = require('../database/db');
             await db.markAnswerAsDisplayed(quizId)
               .then(() => {
@@ -464,6 +462,9 @@ function setupSocketHandlers(io) {
     
     console.log(`サーバー側タイマー開始: クイズID ${quizId} - ${currentQuizState.timerDuration}秒`);
     
+    // タイマー開始時刻を記録
+    currentQuizState.timerStartTime = Date.now();
+    
     // 1秒ごとの同期処理
     const syncInterval = setInterval(() => {
       // 経過時間の計算（ミリ秒単位で精密に）
@@ -543,6 +544,8 @@ function setupSocketHandlers(io) {
           .catch(err => {
             console.error('解答表示フラグの更新中にエラーが発生しました:', err);
           });
+        
+        console.log(`タイマー終了により、クイズ ${quizId} の解答が自動表示されました`);
       }
       
       currentQuizState.activeTimerId = null;
@@ -587,10 +590,10 @@ function broadcastConnectionStats() {
     socket.emit('connection_stats_raw', rawStats);
   });
   
-  // ディスプレイ用の調整された数値（運営者を除く）
+  // ディスプレイ用の調整された数値
   const displayStats = {
-    players: connectionCounter.players, // そのままのプレイヤー数
-    displayCount: Math.max(0, connectionCounter.players) // 表示用カウント
+    players: connectionCounter.players,
+    displayCount: Math.max(0, connectionCounter.players)
   };
   
   // ディスプレイに送信
