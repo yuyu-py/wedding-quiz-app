@@ -198,34 +198,40 @@ document.addEventListener('DOMContentLoaded', function() {
   }
   
   // 時間切れ時に答え合わせ画面への遷移を試みる
-  async function tryShowAnswerResult() {
-    if (!currentQuizId) return;
+  async function tryShowAnswerResult(quizId) {
+    if (!quizId) return;
+    
+    // 問題5は特殊対応するため、ここでは処理しない
+    if (quizId === '5') {
+      console.log('問題5の答え合わせは管理者操作で行われます');
+      return;
+    }
     
     // 既存の定期確認を停止
     clearInterval(answerCheckInterval);
     
     try {
       // サーバーに答えが公開されているか確認
-      const response = await fetch(`/api/quiz/${currentQuizId}/answer-status`);
+      const response = await fetch(`/api/quiz/${quizId}/answer-status`);
       const result = await response.json();
       
       if (result.available) {
         // 答えが公開されている場合は即座に答え合わせ画面に遷移
         console.log("答えが公開されています。答え合わせ画面に遷移します。");
-        showAnswerResult(currentQuizId);
+        showAnswerResult(quizId);
       } else {
         // 答えがまだ公開されていない場合は2秒ごとに再確認
         console.log("答えはまだ公開されていません。定期的に確認を開始します。");
         
         answerCheckInterval = setInterval(async () => {
           try {
-            const checkResponse = await fetch(`/api/quiz/${currentQuizId}/answer-status`);
+            const checkResponse = await fetch(`/api/quiz/${quizId}/answer-status`);
             const checkResult = await checkResponse.json();
             
             if (checkResult.available) {
               clearInterval(answerCheckInterval);
               console.log("答えが公開されました。答え合わせ画面に遷移します。");
-              showAnswerResult(currentQuizId);
+              showAnswerResult(quizId);
             }
           } catch (error) {
             console.error('答え確認中にエラーが発生しました:', error);
@@ -238,12 +244,12 @@ document.addEventListener('DOMContentLoaded', function() {
       // エラーが発生した場合も定期確認を開始
       answerCheckInterval = setInterval(async () => {
         try {
-          const checkResponse = await fetch(`/api/quiz/${currentQuizId}/answer-status`);
+          const checkResponse = await fetch(`/api/quiz/${quizId}/answer-status`);
           const checkResult = await checkResponse.json();
           
           if (checkResult.available) {
             clearInterval(answerCheckInterval);
-            showAnswerResult(currentQuizId);
+            showAnswerResult(quizId);
           }
         } catch (error) {
           console.error('答え確認中にエラーが発生しました:', error);
@@ -549,6 +555,19 @@ document.addEventListener('DOMContentLoaded', function() {
       // 回答待機画面に切り替え
       yourAnswer.textContent = answer;
       showScreen(answeredScreen);
+      
+      // 重要: 問題5の場合は答え合わせの自動チェックを行わない
+      if (quizId === '5') {
+        // 問題5では実践画面への遷移を待つ（自動チェックを停止）
+        if (answerCheckInterval) {
+          clearInterval(answerCheckInterval);
+          answerCheckInterval = null;
+        }
+        console.log('問題5: 回答後は管理者の操作を待機します');
+      } else {
+        // 問題5以外の場合は通常通り答え合わせを自動チェック
+        tryShowAnswerResult(quizId);
+      }
       
     } catch (error) {
       console.error('回答の送信に失敗しました:', error);

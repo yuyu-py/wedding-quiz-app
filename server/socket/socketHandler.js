@@ -140,6 +140,17 @@ function setupSocketHandlers(io) {
       }
     });
     
+    // タイマー同期リクエスト処理
+    socket.on('timer_sync_request', (data) => {
+      const { quizId } = data;
+      
+      // 問題5の特殊処理
+      if (quizId === '5' && currentQuizState.timerExpired && currentQuizState.phase !== 'practice') {
+        // タイマーは終了しているのに実践フェーズになっていない場合は修正
+        ensurePracticeTransition();
+      }
+    });
+    
     // クイズコマンド処理
     socket.on('quiz_command', async (data) => {
       const { command, quizId, params = {} } = data;
@@ -453,6 +464,31 @@ function setupSocketHandlers(io) {
     });
   });
   
+  // 問題5から実践画面への遷移を強制する新しい関数
+  function ensurePracticeTransition() {
+    if (currentQuizState.quizId === '5' && currentQuizState.phase === 'question' && currentQuizState.timerExpired) {
+      // すでにタイマーが切れているのに実践画面に遷移していない場合に強制遷移
+      currentQuizState.phase = 'practice';
+      
+      // 強制遷移指示を送信
+      io.emit('force_transition', {
+        quizId: '5',
+        target: 'practice',
+        timestamp: Date.now()
+      });
+      
+      // 実践画面表示イベントを送信
+      io.emit('quiz_event', { 
+        event: 'show_practice', 
+        quizId: '5',
+        auto: true,
+        forced: true
+      });
+      
+      console.log('問題5: 実践画面への遷移を強制しました');
+    }
+  }
+  
   // 正確なタイマー開始関数
   function startPreciseQuizTimer(quizId) {
     // 既存のタイマーをクリア
@@ -538,27 +574,33 @@ function setupSocketHandlers(io) {
     // タイマー終了フラグを設定
     currentQuizState.timerExpired = true;
     
-    // 問題5（ストップウォッチ問題）の場合は特別処理
+    // 問題5（ストップウォッチ問題）の場合は必ず実践画面へ
     if (quizId === '5') {
       currentQuizState.phase = 'practice';
       
-      // 強制遷移指示を送信
-      io.emit('force_transition', {
-        quizId,
-        target: 'practice',
-        timestamp: Date.now()
-      });
+      // より確実に全クライアントに通知するため、一度プッシュ通知
+      io.emit('timer_expired', { quizId });
       
-      // 実践画面表示イベントを送信
-      io.emit('quiz_event', { 
-        event: 'show_practice', 
-        quizId,
-        auto: true
-      });
-      
-      console.log(`問題5: タイマー終了により実践待機画面に移行します`);
+      // 短い遅延後に強制遷移を指示
+      setTimeout(() => {
+        // 強制遷移指示を送信
+        io.emit('force_transition', {
+          quizId,
+          target: 'practice',
+          timestamp: Date.now()
+        });
+        
+        // 実践画面表示イベントを送信
+        io.emit('quiz_event', { 
+          event: 'show_practice', 
+          quizId,
+          auto: true
+        });
+        
+        console.log(`問題5: タイマー終了により実践待機画面に移行します`);
+      }, 200);
     } else {
-      // 通常問題の場合は解答表示へ
+      // 通常問題は解答画面へ
       currentQuizState.phase = 'answer';
       io.emit('force_transition', {
         quizId,

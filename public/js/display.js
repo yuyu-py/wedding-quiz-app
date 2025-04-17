@@ -710,6 +710,18 @@ document.addEventListener('DOMContentLoaded', function() {
     const { quizId, target, timestamp } = data;
     console.log(`強制遷移指示受信: ${target} - クイズID: ${quizId}`);
     
+    // 問題5の実践画面への強制遷移は常に処理（クイズIDチェックをスキップ）
+    if (target === 'practice' && quizId === '5') {
+      // タイマーを停止
+      stopTimer();
+      
+      // 実践待機画面に強制遷移
+      console.log('Display: サーバーからの指示により問題5の実践待機画面に強制遷移します');
+      showScreen(practiceScreen);
+      return;
+    }
+    
+    // その他の通常ケースはクイズIDが一致する場合のみ処理
     if (quizId !== currentQuizId) {
       console.log('現在のクイズIDと一致しないため無視します');
       return;
@@ -726,13 +738,6 @@ document.addEventListener('DOMContentLoaded', function() {
       
       // 解答表示フラグを設定
       markAnswerAsDisplayed(quizId);
-    } else if (target === 'practice') {
-      // タイマーを停止
-      stopTimer();
-      
-      // 実践待機画面に強制遷移
-      console.log('サーバーからの指示により実践待機画面に強制遷移します');
-      showScreen(practiceScreen);
     }
   });
   
@@ -764,7 +769,7 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // クイズイベントの処理
   socket.on('quiz_event', (data) => {
-    const { event, quizId, position, auto, manual, fromPractice } = data;
+    const { event, quizId, position, auto, manual, fromPractice, forced } = data;
     
     switch (event) {
       case 'quiz_started':
@@ -807,9 +812,14 @@ document.addEventListener('DOMContentLoaded', function() {
         break;
       
       case 'show_practice':
-        // 実践待機画面表示
+        // 実践待機画面表示 - 優先度を高く扱う
         if (quizId === '5') {
           console.log('Display: 問題5の実践待機画面を表示');
+          // 強制フラグがあればタイマーも停止する
+          if (forced) {
+            stopTimer();
+          }
+          // 他の画面からも強制的に実践画面に遷移
           showScreen(practiceScreen);
         }
         break;
