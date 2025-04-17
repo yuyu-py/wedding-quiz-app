@@ -256,37 +256,8 @@ function setupSocketHandlers(io) {
           console.log('管理者操作: 次のスライドに進みました');
           break;
           
-        case 'prev_slide':
-          // 前のスライドに戻る
-          io.emit('quiz_event', { 
-            event: 'prev_slide' 
-          });
-          console.log('前のスライドに戻りました');
-          break;
-          
-        case 'show_answer':
-          // 解答表示をブロードキャスト
-          io.emit('quiz_event', { 
-            event: 'show_answer', 
-            quizId,
-            manual: true // 手動操作フラグ
-          });
-          
-          // タイマーを停止
-          stopQuizTimer();
-          
-          // クイズ状態を更新
-          currentQuizState.phase = 'answer';
-          currentQuizState.timerExpired = true;
-          
-          // セッションの answer_displayed フラグを更新
-          await db.markAnswerAsDisplayed(quizId);
-          
-          console.log(`クイズ ${quizId} の解答が表示されました（手動）`);
-          break;
-          
         case 'show_ranking':
-          // 修正: 'intro'パラメータを追加して文字だけの準備画面に対応
+          // ランキング表示改善
           if (!params.position || params.position === 'intro') {
             // ランキング準備画面（文字だけ）を表示
             io.emit('quiz_event', { 
@@ -294,15 +265,21 @@ function setupSocketHandlers(io) {
               position: 'intro'
             });
             
-            console.log('ランキング準備画面が表示されました');
-          } else {
-            // 従来の位置指定ランキング表示
-            io.emit('quiz_event', { 
-              event: 'show_ranking',
-              position: params.position || 'all'
+            // 全クライアントにランキング遷移を指示
+            io.emit('force_transition', {
+              target: 'ranking',
+              timestamp: Date.now()
             });
             
-            console.log(`ランキングが表示されました: ${params.position || 'all'}`);
+            console.log('ランキング準備画面が表示されました');
+          } else {
+            // 順位指定ランキング表示
+            io.emit('quiz_event', { 
+              event: 'show_ranking',
+              position: params.position
+            });
+            
+            console.log(`ランキングが表示されました: ${params.position}`);
           }
           break;
           
@@ -574,51 +551,51 @@ function setupSocketHandlers(io) {
     // タイマー終了フラグを設定
     currentQuizState.timerExpired = true;
     
-    // 問題5（ストップウォッチ問題）の場合は必ず実践画面へ
+    // 問題5（ストップウォッチ問題）の場合は実践画面へ遷移
     if (quizId === '5') {
       currentQuizState.phase = 'practice';
       
-      // より確実に全クライアントに通知するため、一度プッシュ通知
-      io.emit('timer_expired', { quizId });
+      // 強制遷移指示を送信
+      io.emit('force_transition', {
+        quizId,
+        target: 'practice',
+        timestamp: Date.now()
+      });
       
-      // 短い遅延後に強制遷移を指示
-      setTimeout(() => {
-        // 強制遷移指示を送信
-        io.emit('force_transition', {
-          quizId,
-          target: 'practice',
-          timestamp: Date.now()
-        });
-        
-        // 実践画面表示イベントを送信
-        io.emit('quiz_event', { 
-          event: 'show_practice', 
-          quizId,
-          auto: true
-        });
-        
-        console.log(`問題5: タイマー終了により実践待機画面に移行します`);
-      }, 200);
+      // 実践画面表示イベントを送信
+      io.emit('quiz_event', { 
+        event: 'show_practice', 
+        quizId,
+        auto: true
+      });
+      
+      console.log(`問題5: タイマー終了により実践待機画面に移行します`);
     } else {
       // 通常問題は解答画面へ
       currentQuizState.phase = 'answer';
+      
+      // 強制遷移通知を送信
       io.emit('force_transition', {
         quizId,
         target: 'answer',
         timestamp: Date.now()
       });
+      
+      // 解答表示をブロードキャスト
       io.emit('quiz_event', { 
         event: 'show_answer', 
         quizId,
         auto: true
       });
       
-      // 解答表示フラグをDBに記録
+      // セッションの answer_displayed フラグを更新
       const db = require('../database/db');
       db.markAnswerAsDisplayed(quizId)
         .catch(err => {
           console.error('解答表示フラグの更新中にエラーが発生しました:', err);
         });
+      
+      console.log(`タイマー終了により、クイズ ${quizId} の解答が自動表示されました`);
     }
   }
   

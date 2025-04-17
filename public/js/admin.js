@@ -31,6 +31,10 @@ document.addEventListener('DOMContentLoaded', function() {
   const stepQuiz5 = document.getElementById('step-quiz5');
   const stepRanking = document.getElementById('step-ranking');
   
+  // ランキングシーケンスの順序を確認
+  const rankingSequence = sequence.filter(item => item.rankingPos);
+  console.log('ランキング表示順序:', rankingSequence.map(item => item.rankingPos));
+  
   // 状態管理
   let quizzes = [];
   let currentScreen = 'welcome'; // 画面状態: welcome, explanation, quiz_title, quiz_question, quiz_answer, ranking, practice
@@ -476,19 +480,16 @@ document.addEventListener('DOMContentLoaded', function() {
     
   // 次の画面に進む
   function goToNextScreen() {
-    // 問題5の実践画面から解答画面への遷移時に厳格に検証
-    if (currentQuizId === 5 && currentQuizState.phase === 'practice') {
-      // 答えが設定されていない場合は進行不可
-      if (!quiz5Answer) {
+    // 問題5の処理を改善
+    if (currentQuizId === 5) {
+      // 実践画面から解答画面への遷移時に答えが設定されているか確認
+      if (currentQuizState.phase === 'practice' && !quiz5Answer) {
         quiz5Status.textContent = '先に勝者を選択してください';
         quiz5Status.style.color = '#dc3545';
         quiz5Status.style.fontWeight = 'bold';
-        
-        // 視覚的なフィードバックを一時的に強調
         setTimeout(() => {
           quiz5Status.style.fontWeight = 'normal';
         }, 1500);
-        
         return; // 遷移を中止
       }
     }
@@ -513,7 +514,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // 次のスライドに移動
         sendQuizCommand('next_slide');
       }
-      // 問題5の実践画面からの遷移を明示
+      // 追加: 問題5の実践画面からの遷移を明示
       else if (currentQuizId === 5 && currentQuizState.phase === 'practice' && nextStep.phase === 'answer') {
         // 実践画面から解答画面への遷移を明示的に指示
         sendQuizCommand('show_answer', '5', { fromPractice: true });
@@ -603,14 +604,26 @@ document.addEventListener('DOMContentLoaded', function() {
   // クイズ5の答え選択ボタンイベント
   quiz5Option1.addEventListener('click', () => {
     setQuiz5Answer('新郎');
+    
+    // ボタンの選択状態を明示的に更新
     quiz5Option1.classList.add('selected');
     quiz5Option2.classList.remove('selected');
+    
+    // 成功メッセージを表示
+    quiz5Status.textContent = '新郎を勝者に設定しました';
+    quiz5Status.style.color = '#4caf50';
   });
-
+  
   quiz5Option2.addEventListener('click', () => {
     setQuiz5Answer('新婦');
+    
+    // ボタンの選択状態を明示的に更新
     quiz5Option1.classList.remove('selected');
     quiz5Option2.classList.add('selected');
+    
+    // 成功メッセージを表示
+    quiz5Status.textContent = '新婦を勝者に設定しました';
+    quiz5Status.style.color = '#4caf50';
   });
     
   // ボタンイベントの設定
