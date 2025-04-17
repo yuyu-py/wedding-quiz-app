@@ -732,7 +732,6 @@ document.addEventListener('DOMContentLoaded', function() {
       
       // 実践待機画面に強制遷移
       console.log('サーバーからの指示により実践待機画面に強制遷移します');
-      // 実践待機画面の表示
       showScreen(practiceScreen);
     }
   });
@@ -801,7 +800,6 @@ document.addEventListener('DOMContentLoaded', function() {
         // 追加: 問題5の実践画面からの遷移を特別処理
         if (quizId === '5' && fromPractice) {
           console.log('Display: 問題5の実践画面から解答画面への遷移');
-          // 解答画面に強制遷移
           showAnswer('5');
         } else if (currentQuizId) {
           showAnswer(currentQuizId);
@@ -810,16 +808,10 @@ document.addEventListener('DOMContentLoaded', function() {
       
       case 'show_practice':
         // 実践待機画面表示
-        if (currentQuizId === '5') {
+        if (quizId === '5') {
           console.log('Display: 問題5の実践待機画面を表示');
           showScreen(practiceScreen);
         }
-        break;
-      
-      case 'show_ranking_intro':
-        // ランキング準備画面表示
-        console.log('Display: ランキング準備画面を表示');
-        showScreen(rankingIntroScreen);
         break;
       
       case 'show_ranking':

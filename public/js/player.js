@@ -555,116 +555,7 @@ document.addEventListener('DOMContentLoaded', function() {
       answerStatusText.textContent = '回答の送信に失敗しました';
     }
   }
-
-  // showQuestion関数内のデバッグ情報を強化
-  async function showQuestion(quizId) {
-    try {
-      // 重複呼び出し防止
-      if (isTransitioning) {
-        console.log('画面遷移中のため、重複した呼び出しを無視します');
-        return;
-      }
-      isTransitioning = true;
-      
-      console.log(`Display: showQuestion開始 - クイズID: ${quizId}`);
-      
-      // タイマーを必ず停止してリセット
-      stopTimer();
-      timeLeft = 30;
-      lastDisplayedTime = 30;
-      nextScheduledSecond = 29;
-      floatingTimerValue.textContent = '30';
-      floatingTimer.classList.add('hidden'); // タイマーを非表示に
-      
-      const response = await fetch(`/api/quiz/${quizId}`);
-      const quizData = await response.json();
-      
-      // 問題のタイトルを設定
-      quizTitle.textContent = `問題 ${quizId}`;
-      
-      // 問題文と画像を設定
-      questionText.textContent = quizData.question;
-      
-      // 画像選択肢か通常選択肢かで表示方法を変える
-      const isImageOptions = quizData.is_image_options === 1;
-      
-      if (!isImageOptions) {
-        // 通常の問題表示
-        questionImage.src = quizData.question_image_path || '';
-        questionImage.style.display = quizData.question_image_path ? 'block' : 'none';
-        
-        // 選択肢を設定（テキスト選択肢）
-        optionsContainer.innerHTML = '';
-        optionsContainer.className = 'options-container';
-        
-        // 問題5の場合は選択肢に色を付ける
-        if (parseInt(quizId) === 5) {
-          console.log('Display: 問題5の選択肢をセットアップ中');
-          quizData.options.forEach(option => {
-            const optionDiv = document.createElement('div');
-            optionDiv.className = 'option';
-            
-            // 新郎・新婦別のクラスを追加
-            if (option === '新郎') {
-              optionDiv.classList.add('groom');
-            } else if (option === '新婦') {
-              optionDiv.classList.add('bride');
-            }
-            
-            optionDiv.textContent = option;
-            optionsContainer.appendChild(optionDiv);
-          });
-        } else {
-          // 通常のテキスト選択肢
-          quizData.options.forEach(option => {
-            const optionDiv = document.createElement('div');
-            optionDiv.className = 'option';
-            optionDiv.textContent = option;
-            optionsContainer.appendChild(optionDiv);
-          });
-        }
-      } else {
-        // 画像選択肢の問題表示
-        questionImage.style.display = 'none';
-        
-        // 選択肢を設定（画像選択肢）
-        optionsContainer.innerHTML = '';
-        optionsContainer.className = 'image-options-container';
-        
-        // 問題IDを設定（問題3と4用にサイズ調整するため）
-        optionsContainer.setAttribute('data-quiz-id', quizId);
-        
-        quizData.options.forEach((imagePath, index) => {
-          const optionDiv = document.createElement('div');
-          optionDiv.className = 'image-option';
-          
-          const optionNumber = document.createElement('div');
-          optionNumber.className = 'option-number';
-          optionNumber.textContent = (index + 1).toString();
-          
-          const optionImg = document.createElement('img');
-          optionImg.src = imagePath;
-          optionImg.alt = `選択肢 ${index + 1}`;
-          
-          optionDiv.appendChild(optionNumber);
-          optionDiv.appendChild(optionImg);
-          optionsContainer.appendChild(optionDiv);
-        });
-      }
-      
-      // 画面を問題画面に切り替え
-      showScreen(quizQuestionScreen);
-      console.log(`Display: 問題画面表示完了 - クイズID: ${quizId}, 画面ID: ${quizQuestionScreen.id}`);
-      
-      // 遷移完了
-      isTransitioning = false;
-      
-    } catch (error) {
-      console.error('クイズデータの取得に失敗しました:', error);
-      isTransitioning = false;
-    }
-  }
-    
+  
   // 答え合わせ画面を表示
   async function showAnswerResult(quizId) {
     if (!quizId) return;
@@ -869,7 +760,7 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     }
   }
-    
+  
   // プレイヤーのランキングを取得して表示
   async function fetchAndShowRanking() {
     if (!playerId) return;
@@ -1010,7 +901,7 @@ document.addEventListener('DOMContentLoaded', function() {
       console.log(`Display: 現在の画面: ${currentScreen.id}, 現在のクイズID: ${currentQuizId}`);
       
       // 問題5も含めて確実に処理
-      if (currentQuizId === quizId && currentScreen === quizQuestionScreen) {
+      if (currentQuizId === quizId && currentScreen === quizScreen) {
         // サーバーとの時間差を計算
         const receivedTime = Date.now();
         serverTimeOffset = serverTime - receivedTime;
@@ -1023,8 +914,7 @@ document.addEventListener('DOMContentLoaded', function() {
         timeLeft = duration;
         lastDisplayedTime = duration;
         nextScheduledSecond = duration - 1;
-        floatingTimerValue.textContent = duration;
-        floatingTimer.classList.remove('hidden');
+        timerValue.textContent = duration;
         
         // 精密なタイマー開始
         startPreciseTimer();
@@ -1280,6 +1170,9 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // 実践画面を表示中の場合のみ解答画面に遷移
             if (currentScreen === practiceScreen) {
+              showAnswerResult('5');
+            } else {
+              // すでに回答済みで別の画面（待機画面など）にいる場合も遷移
               showAnswerResult('5');
             }
           } else if (currentQuizId) {

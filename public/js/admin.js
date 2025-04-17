@@ -107,7 +107,7 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // クイズイベント処理
   socket.on('quiz_event', (data) => {
-    const { event, quizId, position, auto, manual } = data;
+    const { event, quizId, position, auto, manual, fromPractice } = data;
     
     switch (event) {
       case 'quiz_started':
@@ -232,6 +232,13 @@ document.addEventListener('DOMContentLoaded', function() {
           
           // クイズ状態を更新
           currentQuizState.phase = 'practice';
+          
+          // 重要: 実践画面に遷移したら勝敗選択をリセット
+          quiz5Answer = '';
+          quiz5Option1.classList.remove('selected');
+          quiz5Option2.classList.remove('selected');
+          quiz5Status.textContent = '実践終了後、勝者を選択してください';
+          quiz5Status.style.color = '#856404';
           
           // シーケンス更新
           const quizPracticeIndex = sequence.findIndex(item => 
@@ -404,7 +411,7 @@ document.addEventListener('DOMContentLoaded', function() {
         quiz5Status.style.color = '#f44336';
         return false;
       }
-    }
+    }    
     
     // データをリセット
     async function resetAllData() {
@@ -468,8 +475,9 @@ document.addEventListener('DOMContentLoaded', function() {
       if (currentQuizId === 5) {
         // 実践画面から解答画面への遷移時に答えが設定されているか確認
         if (currentQuizState.phase === 'practice' && !quiz5Answer) {
-          quiz5Status.textContent = '先に答えを設定してください';
-          return;
+          quiz5Status.textContent = '先に勝者を選択してください';
+          quiz5Status.style.color = '#dc3545';
+          return; // 遷移を中止
         }
       }
       
@@ -510,7 +518,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         updateSequenceDisplay(currentSequenceIndex);
       }
-    }
+    }    
     
     // 前の画面に戻る
     function goToPrevScreen() {
@@ -585,8 +593,16 @@ document.addEventListener('DOMContentLoaded', function() {
     nextSlideButton.addEventListener('click', goToNextScreen);
     
     // クイズ5の答え設定ボタン
-    quiz5Option1.addEventListener('click', () => setQuiz5Answer('新郎'));
-    quiz5Option2.addEventListener('click', () => setQuiz5Answer('新婦'));
+    quiz5Option1.addEventListener('click', () => {
+      setQuiz5Answer('新郎');
+      quiz5Option1.classList.add('selected');
+      quiz5Option2.classList.remove('selected');
+    });
+    quiz5Option2.addEventListener('click', () => {
+      setQuiz5Answer('新婦');
+      quiz5Option1.classList.remove('selected');
+      quiz5Option2.classList.add('selected');
+    });
     
     // リセットボタン
     resetButton.addEventListener('click', resetAllData);

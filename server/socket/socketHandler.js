@@ -213,12 +213,12 @@ function setupSocketHandlers(io) {
               currentQuizState.phase = 'question';
             }, 700); // 遷移完了するまで余裕を持って待機
           } 
-          // 追加: 問題5の実践画面からの遷移を特別処理
+          // 問題5の実践画面からの遷移を特別処理
           else if (currentQuizState.quizId === '5' && currentQuizState.phase === 'practice') {
-            console.log('問題5: 実践画面から解答画面への遷移を実行');
-            
             // フェーズを解答に更新
             currentQuizState.phase = 'answer';
+            
+            console.log('問題5: 実践画面から解答画面への遷移を実行');
             
             // 解答表示イベントを送信
             io.emit('quiz_event', { 
@@ -541,16 +541,22 @@ function setupSocketHandlers(io) {
     // 問題5（ストップウォッチ問題）の場合は特別処理
     if (quizId === '5') {
       currentQuizState.phase = 'practice';
+      
+      // 強制遷移指示を送信
       io.emit('force_transition', {
         quizId,
         target: 'practice',
         timestamp: Date.now()
       });
+      
+      // 実践画面表示イベントを送信
       io.emit('quiz_event', { 
         event: 'show_practice', 
         quizId,
         auto: true
       });
+      
+      console.log(`問題5: タイマー終了により実践待機画面に移行します`);
     } else {
       // 通常問題の場合は解答表示へ
       currentQuizState.phase = 'answer';
