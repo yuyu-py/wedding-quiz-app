@@ -128,7 +128,7 @@ const homeButton = document.getElementById('home-button');
     }
     // フローティングタイマーを非表示
     floatingTimer.classList.add('hidden');
-    console.log('Display: タイマーを停止・リセットしました');
+    console.log('Display: タイマーを停止・非表示化');
   }
   
   // 精密なタイマー開始関数
@@ -204,10 +204,7 @@ const homeButton = document.getElementById('home-button');
       // タイマーを必ず停止してリセット
       stopTimer();
       timeLeft = 30;
-      lastDisplayedTime = 30;
-      nextScheduledSecond = 29;
       floatingTimerValue.textContent = '30';
-      floatingTimer.classList.add('hidden'); // タイマーを非表示に
       
       const response = await fetch(`/api/quiz/${quizId}`);
       const quizData = await response.json();
@@ -284,9 +281,10 @@ const homeButton = document.getElementById('home-button');
         });
       }
       
-      // 画面を問題画面に切り替え
+      // 画面を問題画面に切り替え - タイマーは表示しない（サーバーイベントで表示）
       showScreen(quizQuestionScreen);
-      console.log('Display: 問題画面表示完了、タイマー準備OK');
+      
+      console.log('Display: 問題画面に遷移完了 - タイマー表示待機中');
       
       // 遷移完了
       isTransitioning = false;
@@ -642,7 +640,9 @@ const homeButton = document.getElementById('home-button');
     
     console.log(`Display: 精密タイマー開始イベント - クイズID ${quizId}, 持続時間 ${duration}秒`);
     
-    if (currentQuizId === quizId && currentScreen === quizQuestionScreen) {
+    // 現在のクイズIDと画面をチェック - quizQuestionScreenの代わりに 
+    // ここでDOM要素のIDを直接チェックする（より確実）
+    if (currentQuizId === quizId && currentScreen.id === 'quiz-question-screen') {
       // サーバーとの時間差を計算
       const receivedTime = Date.now();
       serverTimeOffset = serverTime - receivedTime;
@@ -654,14 +654,17 @@ const homeButton = document.getElementById('home-button');
       stopTimer();
       timeLeft = duration;
       lastDisplayedTime = duration;
-      nextScheduledSecond = duration - 1;
       floatingTimerValue.textContent = duration;
-      floatingTimer.classList.remove('hidden');
       
-      // 精密なタイマー開始
-      startPreciseTimer();
-      
-      console.log(`Display: タイマー開始 - ${duration}秒から開始、次は${nextScheduledSecond}秒`);
+      // 確実にタイマーを表示（少し遅延させる）
+      setTimeout(() => {
+        floatingTimer.classList.remove('hidden');
+        console.log('Display: タイマー表示を確実に有効化');
+        // 精密なタイマー開始
+        startPreciseTimer();
+      }, 100);
+    } else {
+      console.log(`Display: タイマー開始条件不一致 - 現在のクイズID: ${currentQuizId}, 画面ID: ${currentScreen.id}`);
     }
   });
   
