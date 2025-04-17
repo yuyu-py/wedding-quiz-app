@@ -1206,7 +1206,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // クイズイベント処理
     socket.on('quiz_event', (data) => {
-      const { event, quizId, position, auto, manual, isQuestionStart, resetTimer } = data;
+      const { event, quizId, position, auto, manual, fromPractice } = data;
       console.log('イベント受信:', event, quizId, position, auto ? '自動遷移' : manual ? '手動遷移' : '');
       
       if (resetTimer) {
@@ -1296,23 +1296,18 @@ document.addEventListener('DOMContentLoaded', function() {
           break;
           
         case 'show_answer':
-          // 解答表示時の処理 - これはforce_transitionイベントによって処理される場合もある
-          if (currentQuizId) {
+          // 追加: 問題5の実践画面からの遷移を特別処理
+          if (quizId === '5' && fromPractice) {
+            console.log('Player: 問題5の実践画面から解答画面への遷移');
             displayCurrentScreen = 'quiz_answer';
             
-            // 遷移が既に進行中でなければ答え合わせ画面に遷移
-            if (!isTransitioning) {
-              console.log('show_answer イベントにより答え合わせ画面に遷移します');
-              showAnswerResult(currentQuizId);
-              
-              // 定期確認がある場合は停止
-              if (answerCheckInterval) {
-                clearInterval(answerCheckInterval);
-                answerCheckInterval = null;
-              }
-            } else {
-              console.log('遷移中のため、show_answerイベントを無視します');
+            // 実践画面を表示中の場合のみ解答画面に遷移
+            if (currentScreen === practiceScreen) {
+              showAnswerResult('5');
             }
+          } else if (currentQuizId) {
+            displayCurrentScreen = 'quiz_answer';
+            showAnswerResult(currentQuizId);
           }
           break;
           

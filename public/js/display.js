@@ -708,7 +708,7 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // クイズイベントの処理
   socket.on('quiz_event', (data) => {
-    const { event, quizId, position, auto, manual, resetTimer } = data;
+    const { event, quizId, position, auto, manual, fromPractice } = data;
     
     if (resetTimer) {
       stopTimer(); // 明示的なタイマーリセット
@@ -729,12 +729,10 @@ document.addEventListener('DOMContentLoaded', function() {
         break;
         
       case 'next_slide':
+        // 問題5の実践画面からの遷移は別処理で行うため、ここでは通常の遷移のみ
         if (currentScreen === quizTitleScreen && currentQuizId) {
-          console.log('Display: タイトル画面から問題画面へ遷移');
           showQuestion(currentQuizId);
-          // タイマーはサーバーからのprecise_timer_startイベントで開始
         } else if (currentScreen === quizQuestionScreen && currentQuizId) {
-          console.log('Display: 問題画面から解答画面へ遷移');
           showAnswer(currentQuizId);
         }
         break;
@@ -749,7 +747,12 @@ document.addEventListener('DOMContentLoaded', function() {
         break;
         
       case 'show_answer':
-        if (currentQuizId) {
+        // 追加: 問題5の実践画面からの遷移を特別処理
+        if (quizId === '5' && fromPractice) {
+          console.log('Display: 問題5の実践画面から解答画面への遷移');
+          // 解答画面に強制遷移
+          showAnswer('5');
+        } else if (currentQuizId) {
           showAnswer(currentQuizId);
         }
         break;
