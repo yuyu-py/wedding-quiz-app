@@ -2,6 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../database/db'); // db.jsから直接インポート
+const { QueryCommand, GetCommand } = require('@aws-sdk/lib-dynamodb');
 
 // 全てのクイズを取得
 router.get('/', async (req, res) => {
@@ -120,11 +121,6 @@ router.get('/:id/answer-status', async (req, res) => {
     // 問題5の場合は特別対応
     if (id === '5') {
       // 最新のセッションを取得して解答が設定されているか確認
-      const db = require('../database/db');
-      
-      // AWS SDKのCommandを正しくインポート
-      const { QueryCommand, GetCommand } = require('@aws-sdk/lib-dynamodb');
-      
       const sessionParams = {
         TableName: db.TABLES.SESSION,
         IndexName: 'quiz_id-index',
@@ -136,7 +132,6 @@ router.get('/:id/answer-status', async (req, res) => {
         Limit: 1
       };
       
-      // 修正: 正しいQueryCommandコンストラクタを使用
       const sessionResult = await db.dynamodb.send(new QueryCommand(sessionParams));
       
       // 問題5の答えを直接取得
@@ -145,7 +140,6 @@ router.get('/:id/answer-status', async (req, res) => {
         Key: { id: '5' }
       };
       
-      // 修正: 正しいGetCommandコンストラクタを使用
       const quizResult = await db.dynamodb.send(new GetCommand(quizParams));
       
       // セッションか答えが存在しない場合は利用不可
@@ -176,6 +170,56 @@ router.get('/:id/answer-status', async (req, res) => {
   } catch (error) {
     console.error('解答状態の確認中にエラーが発生しました:', error);
     res.status(500).json({ error: 'サーバーエラーが発生しました', available: false });
+  }
+});
+
+// 現在のアプリケーション状態を取得
+router.get('/state', (req, res) => {
+  try {
+    const currentState = global.getAppState();
+    res.json({
+      success: true,
+      state: currentState
+    });
+  } catch (error) {
+    console.error('アプリケーション状態取得中にエラーが発生しました:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'サーバーエラーが発生しました' 
+    });
+  }
+});
+
+// 管理者用: アプリケーション状態を更新
+router.post('/state', (req, res) => {
+  try {
+    const newState = req.body;
+    
+    // 不正な値を防ぐための基本的なバリデーション
+    if (newState && typeof newState === 'object') {
+      const updatedState = global.updateAppState(newState);
+      
+      // 重要: Socket.ioで全クライアントに状態更新を通知
+      if (global.io) {
+        global.io.emit('app_state_update', updatedState);
+      }
+      
+      res.json({
+        success: true,
+        state: updatedState
+      });
+    } else {
+      res.status(400).json({ 
+        success: false,
+        error: '無効な状態データです' 
+      });
+    }
+  } catch (error) {
+    console.error('アプリケーション状態更新中にエラーが発生しました:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'サーバーエラーが発生しました' 
+    });
   }
 });
 

@@ -1,5 +1,6 @@
 // server/socket/socketHandler.js
-const { getDb } = require('../database/db');
+const { UpdateCommand, QueryCommand } = require('@aws-sdk/lib-dynamodb');
+const db = require('../database/db');
 
 // ソケット接続の管理
 let activeConnections = {
@@ -139,6 +140,12 @@ function setupSocketHandlers(io) {
           });
         }
       }
+      
+      // 現在のアプリケーション状態を送信（再接続の同期用）
+      if (global.getAppState) {
+        const appState = global.getAppState();
+        socket.emit('app_state_update', appState);
+      }
     });
     
     // クイズコマンド処理
@@ -151,9 +158,10 @@ function setupSocketHandlers(io) {
         return;
       }
       
-      const db = require('../database/db');
-      
       console.log(`コマンド受信: ${command}, クイズID: ${quizId || 'なし'}, パラメータ:`, params);
+      
+      // アプリケーション状態を更新
+      let stateUpdate = {};
       
       switch (command) {
         case 'start_quiz':
@@ -174,6 +182,7 @@ function setupSocketHandlers(io) {
             activeTimerId: null
           };
           
+          stateUpdate = { screen: 'explanation', quizId: null, phase: null };
           console.log(`クイズが開始されました`);
           break;
           
@@ -196,6 +205,7 @@ function setupSocketHandlers(io) {
             activeTimerId: null
           };
           
+          stateUpdate = { screen: 'quiz_title', quizId, phase: 'title' };
           console.log(`クイズ ${quizId} のタイトルが表示されました - タイマーはまだ開始していません`);
           break;
           
@@ -229,6 +239,8 @@ function setupSocketHandlers(io) {
               startPreciseQuizTimer(currentQuizState.quizId);
               currentQuizState.phase = 'question';
             }, 700); // 遷移完了するまで余裕を持って待機
+            
+            stateUpdate = { screen: 'quiz_question', quizId: currentQuizState.quizId, phase: 'question' };
           } 
           // 問題5の実践画面からの遷移を特別処理
           else if (currentQuizState.quizId === '5' && currentQuizState.phase === 'practice') {
@@ -250,15 +262,20 @@ function setupSocketHandlers(io) {
               .catch(err => {
                 console.error('解答表示フラグの更新中にエラーが発生しました:', err);
               });
+              
+            stateUpdate = { screen: 'quiz_answer', quizId: '5', phase: 'answer' };
           }
-          else {
-            // その他の遷移は通常通り処理
-            console.log('通常の次へスライド処理を実行');
+          else if (currentQuizState.phase === 'question') {
+            // 問題フェーズから解答フェーズへの遷移
+            currentQuizState.phase = 'answer';
             
+            // 解答表示イベントを送信
             io.emit('quiz_event', { 
               event: 'next_slide',
               manual: true
             });
+            
+            stateUpdate = { screen: 'quiz_answer', quizId: currentQuizState.quizId, phase: 'answer' };
           }
           
           console.log('管理者操作: 次のスライドに進みました');
@@ -269,6 +286,16 @@ function setupSocketHandlers(io) {
           io.emit('quiz_event', { 
             event: 'prev_slide' 
           });
+          
+          // 状態更新
+          if (currentQuizState.phase === 'question') {
+            currentQuizState.phase = 'title';
+            stateUpdate = { screen: 'quiz_title', quizId: currentQuizState.quizId, phase: 'title' };
+          } else if (currentQuizState.phase === 'answer') {
+            currentQuizState.phase = 'question';
+            stateUpdate = { screen: 'quiz_question', quizId: currentQuizState.quizId, phase: 'question' };
+          }
+          
           console.log('前のスライドに戻りました');
           break;
           
@@ -317,6 +344,8 @@ function setupSocketHandlers(io) {
                   answer: answer
                 });
               }, 300);
+              
+              stateUpdate = { screen: 'quiz_answer', quizId: '5', phase: 'answer' };
             } catch (error) {
               console.error('問題5の答え設定中にエラーが発生しました:', error);
               socket.emit('command_error', { message: '答えの設定に失敗しました' });
@@ -343,6 +372,31 @@ function setupSocketHandlers(io) {
               .catch(err => {
                 console.error('解答表示フラグの更新中にエラーが発生しました:', err);
               });
+              
+            stateUpdate = { screen: 'quiz_answer', quizId, phase: 'answer' };
+          }
+          break;
+          
+        case 'show_practice':
+          // 問題5の実践待機画面表示
+          if (quizId === '5') {
+            io.emit('quiz_event', { 
+              event: 'show_practice', 
+              quizId: '5',
+              isPractice: true
+            });
+            
+            // 実践画面への強制遷移も送信
+            io.emit('force_transition', {
+              quizId: '5',
+              target: 'practice',
+              timestamp: Date.now(),
+              isPractice: true
+            });
+            
+            // 状態を更新
+            currentQuizState.phase = 'practice';
+            stateUpdate = { screen: 'practice', quizId: '5', phase: 'practice' };
           }
           break;
           
@@ -361,6 +415,7 @@ function setupSocketHandlers(io) {
               timestamp: Date.now()
             });
             
+            stateUpdate = { screen: 'ranking', quizId: null, phase: null, rankingPosition: 'intro' };
             console.log('ランキング準備画面が表示されました');
           } else {
             // 従来の位置指定ランキング表示
@@ -369,6 +424,7 @@ function setupSocketHandlers(io) {
               position: params.position || 'all'
             });
             
+            stateUpdate = { screen: 'ranking', quizId: null, phase: null, rankingPosition: params.position || 'all' };
             console.log(`ランキングが表示されました: ${params.position || 'all'}`);
           }
           break;
@@ -392,11 +448,17 @@ function setupSocketHandlers(io) {
             activeTimerId: null
           };
           
+          stateUpdate = { screen: 'welcome', quizId: null, phase: null, rankingPosition: null };
           console.log('すべてのデータがリセットされました');
           break;
           
         default:
           socket.emit('command_error', { message: '不明なコマンドです' });
+      }
+      
+      // サーバーの状態を更新
+      if (Object.keys(stateUpdate).length > 0 && global.updateAppState) {
+        global.updateAppState(stateUpdate);
       }
     });
     
@@ -515,8 +577,8 @@ function setupSocketHandlers(io) {
     // タイマー終了フラグを設定
     currentQuizState.timerExpired = true;
     
-    // 修正: 型安全な比較に変更（数値5と文字列'5'の両方に対応）
-    if (quizId == '5') { // == を使用して型を無視した比較を行う
+    // 問題5の場合は完全に別処理
+    if (quizId == '5') {  // 型を無視した比較を使用
       console.log(`[DEBUG] 問題5と判定 - 特殊処理実行`);
       handleQuiz5TimerExpiration();
     } else {
@@ -562,16 +624,25 @@ function setupSocketHandlers(io) {
         timestamp: Date.now()
       });
     });
+    
+    // アプリケーション状態も更新
+    if (global.updateAppState) {
+      global.updateAppState({
+        screen: 'practice',
+        quizId: '5',
+        phase: 'practice'
+      });
+    }
   }
   
   // 通常問題のタイマー終了処理
   function handleNormalQuizTimerExpiration(quizId) {
     // 追加のセーフティガード: 問題5が間違って通常処理に入らないようにする
-    if (quizId == '5') {
+    if (quizId == '5') {  // 型を無視した比較
       console.log('[DEBUG] 問題5が通常処理に誤って入りました - 実践画面処理に修正');
       return handleQuiz5TimerExpiration();
     }
-  
+    
     console.log(`通常問題${quizId}: タイマー終了 - 解答画面に移行します`);
     
     // 状態を解答フェーズに更新
@@ -592,11 +663,19 @@ function setupSocketHandlers(io) {
     });
     
     // 解答表示フラグをDBに記録
-    const db = require('../database/db');
     db.markAnswerAsDisplayed(quizId)
       .catch(err => {
         console.error('解答表示フラグの更新中にエラーが発生しました:', err);
       });
+    
+    // アプリケーション状態も更新
+    if (global.updateAppState) {
+      global.updateAppState({
+        screen: 'quiz_answer',
+        quizId,
+        phase: 'answer'
+      });
+    }
   }
   
   // 問題5から実践画面への遷移を強制する新しい関数
@@ -623,6 +702,15 @@ function setupSocketHandlers(io) {
       });
       
       console.log('問題5: 実践画面への遷移を強制しました');
+      
+      // アプリケーション状態も更新
+      if (global.updateAppState) {
+        global.updateAppState({
+          screen: 'practice',
+          quizId: '5',
+          phase: 'practice'
+        });
+      }
     }
   }
   

@@ -46,6 +46,21 @@ document.addEventListener('DOMContentLoaded', function() {
   let timerVisible = false;      // タイマー表示状態を追跡
   let pendingTimerStart = false; // タイマー開始待機状態
   
+  // Socket.io接続（Socket Manager利用）
+  const socket = SocketManager.init();
+  
+  // 状態更新ハンドラを登録
+  SocketManager.onStateUpdate(function(state) {
+    // 受信した状態に基づいて画面を同期
+    syncScreenWithState(state);
+  });
+  
+  // 接続時の処理
+  socket.on('connect', () => {
+    console.log('Socket.io に接続しました');
+    socket.emit('register', { type: 'display' });
+  });
+  
   // 画像のプリロード処理
   function preloadImages() {
     const imagePaths = [
@@ -76,6 +91,73 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // 初期化時に画像をプリロード
   preloadImages();
+  
+  // 状態に基づいて画面を同期する関数
+  function syncScreenWithState(state) {
+    console.log('Display: 画面同期 - 現在の状態:', state);
+    
+    // 画面タイプに基づいて遷移
+    switch (state.screen) {
+      case 'welcome':
+        showScreen(welcomeScreen);
+        break;
+      
+      case 'explanation':
+        showScreen(explanationScreen);
+        break;
+      
+      case 'quiz_title':
+        if (state.quizId) {
+          currentQuizId = state.quizId;
+          quizTitle.textContent = `問題 ${state.quizId}`;
+          showScreen(quizTitleScreen);
+        }
+        break;
+      
+      case 'quiz_question':
+        if (state.quizId) {
+          currentQuizId = state.quizId;
+          showQuestion(state.quizId);
+        }
+        break;
+      
+      case 'quiz_answer':
+        if (state.quizId) {
+          currentQuizId = state.quizId;
+          showAnswer(state.quizId);
+        }
+        break;
+      
+      case 'practice':
+        if (state.quizId === '5' || state.quizId === 5) {
+          currentQuizId = '5';
+          showScreen(practiceScreen);
+        }
+        break;
+      
+      case 'ranking':
+        if (state.rankingPosition === 'intro') {
+          showScreen(rankingIntroScreen);
+        } else {
+          showRanking(state.rankingPosition || 'all');
+        }
+        break;
+    }
+  }
+  
+  // ブラウザの更新時に同期
+  window.addEventListener('load', function() {
+    fetch('/api/quiz/state')
+      .then(response => response.json())
+      .then(data => {
+        if (data.success && data.state) {
+          syncScreenWithState(data.state);
+        }
+      })
+      .catch(error => {
+        console.error('状態同期に失敗:', error);
+      });
+  });
   
   // タイマー表示を確実にする関数
   function ensureTimerVisible() {
@@ -650,15 +732,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
   
-  // Socket.io接続
-  const socket = io();
-  
-  // 接続時の処理
-  socket.on('connect', () => {
-    console.log('Socket.io に接続しました');
-    socket.emit('register', { type: 'display' });
-  });
-  
   // 接続数の更新
   socket.on('connection_stats', (stats) => {
     // プレイヤー数の表示を更新（最大値は39に制限）
@@ -749,14 +822,13 @@ document.addEventListener('DOMContentLoaded', function() {
   // 強制遷移イベント処理
   socket.on('force_transition', (data) => {
     const { quizId, target, timestamp, isPractice, fromPractice } = data;
+    console.log(`強制遷移指示受信: ${target} - クイズID: ${quizId}, isPractice: ${isPractice}, fromPractice: ${fromPractice}`);
     
-    console.log(`[DEBUG-DISPLAY] 強制遷移: target=${target}, QuizID=${quizId}(${typeof quizId}), isPractice=${isPractice}`);
-    
-    // 問題5の特殊ケースを優先処理 - 型安全な比較
-    if (quizId == '5') {
+    // 問題5の特殊ケースを優先処理
+    if (quizId === '5') {
       // 問題5の実践画面への強制遷移
       if (target === 'practice' && isPractice) {
-        console.log('[DEBUG-DISPLAY] 問題5の実践待機画面に強制遷移します');
+        console.log('Display: 問題5の実践待機画面に強制遷移します');
         stopTimer(); // タイマーを停止
         showScreen(practiceScreen);
         return; // 処理を終了
@@ -764,7 +836,7 @@ document.addEventListener('DOMContentLoaded', function() {
       
       // 問題5の実践画面から解答画面への強制遷移
       if (target === 'answer' && fromPractice) {
-        console.log('[DEBUG-DISPLAY] 問題5の実践画面から解答画面への強制遷移');
+        console.log('Display: 問題5の実践画面から解答画面への強制遷移');
         showAnswer('5');
         return; // 処理を終了
       }
@@ -837,22 +909,21 @@ document.addEventListener('DOMContentLoaded', function() {
   socket.on('quiz_event', (data) => {
     const { event, quizId, position, auto, manual, fromPractice, isPractice } = data;
     
-    console.log(`[DEBUG-DISPLAY] イベント受信: ${event}, QuizID: ${quizId}(${typeof quizId}), isPractice: ${isPractice}`);
+    console.log(`イベント受信: ${event}, クイズID: ${quizId}, isPractice: ${isPractice}, fromPractice: ${fromPractice}`);
     
-    // 問題5の特殊イベントを優先処理 - 型安全な比較
-    if (quizId == '5') {
+    // 問題5の特殊イベントを優先処理
+    if (quizId === '5') {
       // 実践待機画面表示
       if (event === 'show_practice' && isPractice) {
-        console.log('[DEBUG-DISPLAY] 問題5実践画面表示処理開始');
+        console.log('Display: 問題5の実践待機画面表示イベント受信');
         stopTimer(); // タイマーを停止
         showScreen(practiceScreen);
-        console.log('[DEBUG-DISPLAY] 問題5実践画面表示完了');
         return; // 処理を終了
       }
       
-      // 問題5の実践画面から解答画面への遷移
+      // 実践画面から解答画面への遷移
       if (event === 'show_answer' && fromPractice) {
-        console.log('[DEBUG-DISPLAY] 問題5の実践画面から解答画面への遷移');
+        console.log('Display: 問題5の実践画面から解答画面への遷移イベント受信');
         showAnswer('5');
         return; // 処理を終了
       }

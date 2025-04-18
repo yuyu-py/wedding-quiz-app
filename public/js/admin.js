@@ -76,8 +76,8 @@ document.addEventListener('DOMContentLoaded', function() {
     
   let currentSequenceIndex = 0;
   
-  // Socket.io接続
-  const socket = io();
+  // Socket.io接続（Socket Manager利用）
+  const socket = SocketManager.init();
   
   // 接続時の処理
   socket.on('connect', () => {
@@ -87,6 +87,27 @@ document.addEventListener('DOMContentLoaded', function() {
     // クイズデータの取得
     fetchQuizzes();
   });
+  
+  // 状態更新関数
+  function updateServerState(stateUpdate) {
+    console.log('Admin: サーバー状態更新:', stateUpdate);
+    
+    // API呼び出し
+    fetch('/api/quiz/state', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(stateUpdate)
+    })
+    .then(response => response.json())
+    .then(data => {
+      console.log('状態更新結果:', data);
+    })
+    .catch(error => {
+      console.error('状態更新エラー:', error);
+    });
+  }
   
   // 登録完了時の処理
   socket.on('registered', (data) => {
@@ -109,8 +130,7 @@ document.addEventListener('DOMContentLoaded', function() {
   socket.on('admin_force_practice', (data) => {
     const { quizId } = data;
     
-    // 型安全な比較
-    if (quizId == '5') {
+    if (quizId === '5') {
       console.log('Admin: 問題5の実践画面に強制遷移します');
       
       // 状態を実践に設定
@@ -132,23 +152,44 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
   
+  // 強制遷移イベント処理
+  socket.on('force_transition', (data) => {
+    const { quizId, target, isPractice } = data;
+    console.log(`[DEBUG] force_transition受信: quizId=${quizId}(${typeof quizId}), target=${target}, isPractice=${isPractice}`);
+    
+    // 修正: 型安全な比較
+    if ((quizId == '5' || quizId === 5) && target === 'practice' && isPractice) {
+      console.log('[DEBUG] 問題5実践画面遷移条件一致 - 処理開始');
+      
+      // 状態を実践に設定
+      currentQuizState.quizId = 5;
+      currentQuizState.phase = 'practice';
+      currentScreen = 'practice';
+      currentMode.textContent = '問題5 実践中';
+      
+      // クイズ5パネルをリセット
+      resetQuiz5Panel();
+      
+      // シーケンス更新
+      const quizPracticeIndex = sequence.findIndex(item => 
+        item.quizId === 5 && item.phase === 'practice');
+      if (quizPracticeIndex !== -1) {
+        currentSequenceIndex = quizPracticeIndex;
+        updateSequenceDisplay(quizPracticeIndex);
+      }
+      
+      console.log('[DEBUG] 問題5実践画面遷移処理完了');
+    } else {
+      if (quizId == '5') {
+        console.log(`[DEBUG] 問題5だが条件不一致: target=${target}, isPractice=${isPractice}`);
+      }
+    }
+  });
+  
   // クイズイベント処理
   socket.on('quiz_event', (data) => {
     const { event, quizId, position, auto, manual, fromPractice, isPractice } = data;
     
-    console.log(`[DEBUG-CLIENT] イベント受信: ${event}, QuizID: ${quizId}, isPractice: ${isPractice}`);
-    
-    // 問題5の特殊イベントを優先処理
-    if (quizId === '5') {
-      // 実践待機画面表示
-      if (event === 'show_practice' && isPractice) {
-        console.log('[DEBUG-CLIENT] 問題5実践画面表示処理開始');
-        
-        // 実際の処理後にログ
-        console.log('[DEBUG-CLIENT] 問題5実践画面表示完了');
-        return; // 処理を終了
-      }
-    }
     // 問題5の実践画面表示イベント
     if (event === 'show_practice' && quizId === '5' && isPractice) {
       console.log('Admin: 問題5の実践画面表示イベント受信');
@@ -346,48 +387,125 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
     
-  // 強制遷移イベントを追跡
-  socket.on('force_transition', (data) => {
-    const { quizId, target, isPractice } = data;
-    console.log(`[DEBUG] force_transition受信: quizId=${quizId}(${typeof quizId}), target=${target}, isPractice=${isPractice}`);
-    
-    // 修正: 型安全な比較
-    if ((quizId == '5' || quizId === 5) && target === 'practice' && isPractice) {
-      console.log('[DEBUG] 問題5実践画面遷移条件一致 - 処理開始');
-      
-      // 状態を実践に設定
-      currentQuizState.quizId = 5;
-      currentQuizState.phase = 'practice';
-      currentScreen = 'practice';
-      currentMode.textContent = '問題5 実践中';
-      
-      // クイズ5パネルをリセット
-      resetQuiz5Panel();
-      
-      // シーケンス更新
-      const quizPracticeIndex = sequence.findIndex(item => 
-        item.quizId === 5 && item.phase === 'practice');
-      if (quizPracticeIndex !== -1) {
-        currentSequenceIndex = quizPracticeIndex;
-        updateSequenceDisplay(quizPracticeIndex);
-      }
-      
-      console.log('[DEBUG] 問題5実践画面遷移処理完了');
-    } else {
-      if (quizId == '5') {
-        console.log(`[DEBUG] 問題5だが条件不一致: target=${target}, isPractice=${isPractice}`);
-      }
-    }
-  });
-    
   // すべてのクイズを取得
   async function fetchQuizzes() {
     try {
       const response = await fetch('/api/quiz');
       quizzes = await response.json();
       console.log('クイズデータを取得しました:', quizzes);
+      
+      // データ取得後に初期状態を同期
+      fetch('/api/quiz/state')
+        .then(response => response.json())
+        .then(data => {
+          if (data.success && data.state) {
+            syncAdminWithState(data.state);
+          }
+        })
+        .catch(error => {
+          console.error('状態同期に失敗:', error);
+        });
     } catch (error) {
       console.error('クイズデータの取得に失敗しました:', error);
+    }
+  }
+  
+  // 管理画面を状態と同期する関数
+  function syncAdminWithState(state) {
+    console.log('管理画面の状態同期:', state);
+    
+    // 画面タイプに応じた状態更新
+    switch(state.screen) {
+      case 'welcome':
+        currentScreen = 'welcome';
+        currentQuizId = null;
+        quizPhase = 'title';
+        updateSequenceDisplay(0);
+        break;
+        
+      case 'explanation':
+        currentScreen = 'explanation';
+        currentQuizId = null;
+        quizPhase = null;
+        updateSequenceDisplay(1);
+        break;
+        
+      case 'quiz_title':
+        if (state.quizId) {
+          currentQuizId = state.quizId;
+          currentScreen = 'quiz_title';
+          quizPhase = 'title';
+          
+          const quizTitleIndex = sequence.findIndex(item => 
+            item.quizId == state.quizId && item.phase === 'title');
+          if (quizTitleIndex !== -1) {
+            updateSequenceDisplay(quizTitleIndex);
+          }
+        }
+        break;
+        
+      case 'quiz_question':
+        if (state.quizId) {
+          currentQuizId = state.quizId;
+          currentScreen = 'quiz_question';
+          quizPhase = 'question';
+          
+          const quizQuestionIndex = sequence.findIndex(item => 
+            item.quizId == state.quizId && item.phase === 'question');
+          if (quizQuestionIndex !== -1) {
+            updateSequenceDisplay(quizQuestionIndex);
+          }
+        }
+        break;
+        
+      case 'quiz_answer':
+        if (state.quizId) {
+          currentQuizId = state.quizId;
+          currentScreen = 'quiz_answer';
+          quizPhase = 'answer';
+          
+          const quizAnswerIndex = sequence.findIndex(item => 
+            item.quizId == state.quizId && item.phase === 'answer');
+          if (quizAnswerIndex !== -1) {
+            updateSequenceDisplay(quizAnswerIndex);
+          }
+        }
+        break;
+        
+      case 'practice':
+        if (state.quizId == 5) {
+          currentQuizId = 5;
+          currentScreen = 'practice';
+          quizPhase = 'practice';
+          
+          const quizPracticeIndex = sequence.findIndex(item => 
+            item.quizId === 5 && item.phase === 'practice');
+          if (quizPracticeIndex !== -1) {
+            updateSequenceDisplay(quizPracticeIndex);
+          }
+          
+          resetQuiz5Panel();
+        }
+        break;
+        
+      case 'ranking':
+        currentScreen = 'ranking';
+        rankingPosition = state.rankingPosition || 'all';
+        
+        const rankingIndex = sequence.findIndex(item => 
+          item.rankingPos === state.rankingPosition);
+        if (rankingIndex !== -1) {
+          updateSequenceDisplay(rankingIndex);
+        }
+        break;
+    }
+    
+    // クイズ5のパネルの表示/非表示を更新
+    toggleQuiz5Panel();
+    
+    // 問題統計を更新
+    if (currentQuizId) {
+      updateQuizStats();
     }
   }
     
@@ -437,6 +555,52 @@ document.addEventListener('DOMContentLoaded', function() {
       currentQuizState.phase = 'answer';
       currentScreen = 'quiz_answer';
       currentMode.textContent = '問題5 解答';
+    }
+    
+    // アプリケーション状態を更新
+    let stateUpdate = {};
+    
+    switch (command) {
+      case 'start_quiz':
+        stateUpdate = { screen: 'explanation', quizId: null, phase: null };
+        break;
+      case 'show_question':
+        stateUpdate = { screen: 'quiz_title', quizId, phase: 'title' };
+        break;
+      case 'next_slide':
+        // 現在の状態に基づいて次の状態を決定
+        if (currentQuizState.phase === 'title') {
+          stateUpdate = { screen: 'quiz_question', quizId: currentQuizId, phase: 'question' };
+        } else if (currentQuizState.phase === 'question') {
+          stateUpdate = { screen: 'quiz_answer', quizId: currentQuizId, phase: 'answer' };
+        } else if (currentQuizState.phase === 'practice' && currentQuizId === 5) {
+          stateUpdate = { screen: 'quiz_answer', quizId: currentQuizId, phase: 'answer' };
+        }
+        break;
+      case 'show_answer':
+        stateUpdate = { screen: 'quiz_answer', quizId, phase: 'answer' };
+        break;
+      case 'show_practice':
+        if (quizId === '5') {
+          stateUpdate = { screen: 'practice', quizId, phase: 'practice' };
+        }
+        break;
+      case 'show_ranking':
+        stateUpdate = { 
+          screen: 'ranking', 
+          quizId: null, 
+          phase: null, 
+          rankingPosition: params.position || 'all' 
+        };
+        break;
+      case 'reset_all':
+        stateUpdate = { screen: 'welcome', quizId: null, phase: null, rankingPosition: null };
+        break;
+    }
+    
+    // サーバーの状態を更新
+    if (Object.keys(stateUpdate).length > 0) {
+      updateServerState(stateUpdate);
     }
     
     socket.emit('quiz_command', {
@@ -725,6 +889,20 @@ document.addEventListener('DOMContentLoaded', function() {
       currentQuizNumber.textContent = '-';
     }
   }
+
+  // ブラウザの更新時に同期
+  window.addEventListener('load', function() {
+    fetch('/api/quiz/state')
+      .then(response => response.json())
+      .then(data => {
+        if (data.success && data.state) {
+          syncAdminWithState(data.state);
+        }
+      })
+      .catch(error => {
+        console.error('状態同期に失敗:', error);
+      });
+  });
     
   // ボタンイベントの設定
   prevSlideButton.addEventListener('click', goToPrevScreen);
