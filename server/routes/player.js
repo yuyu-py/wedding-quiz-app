@@ -171,4 +171,42 @@ router.get('/:id/answers', async (req, res) => {
   }
 });
 
+// 個別の回答を取得するAPI（問題5専用）
+router.get('/:id/answer/:quizId', async (req, res) => {
+  try {
+    const { id, quizId } = req.params;
+    
+    // プレイヤーの存在確認
+    const player = await db.getPlayer(id);
+    if (!player) {
+      return res.status(404).json({ success: false, error: 'プレイヤーが見つかりません' });
+    }
+    
+    // 特定の回答を取得
+    const answerParams = {
+      TableName: db.TABLES.ANSWER,
+      Key: {
+        player_id: id,
+        quiz_id: quizId
+      }
+    };
+    
+    const { GetCommand } = require('@aws-sdk/lib-dynamodb');
+    const answerResult = await db.dynamodb.send(new GetCommand(answerParams));
+    
+    if (!answerResult.Item) {
+      return res.status(404).json({ success: false, error: '回答が見つかりません' });
+    }
+    
+    res.json({
+      success: true,
+      answer: answerResult.Item
+    });
+    
+  } catch (error) {
+    console.error('回答取得中にエラーが発生しました:', error);
+    res.status(500).json({ success: false, error: 'サーバーエラーが発生しました' });
+  }
+});
+
 module.exports = router;

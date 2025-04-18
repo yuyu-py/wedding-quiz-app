@@ -611,8 +611,31 @@ document.addEventListener('DOMContentLoaded', function() {
           }
           return;
         }
+        
+        // 問題5の場合は明示的に最新の回答データを取得
+        console.log('[DEBUG-PLAYER] 問題5: 最新の回答データを取得します');
+        
+        try {
+          // 最新の回答データをサーバーから取得
+          const freshAnswerResponse = await fetch(`/api/player/${playerId}/answer/${quizId}`);
+          const freshAnswerData = await freshAnswerResponse.json();
+          
+          // ローカルキャッシュを更新
+          if (freshAnswerData.success && freshAnswerData.answer) {
+            console.log(`[DEBUG-PLAYER] 問題5: 回答データ更新 - isCorrect: ${freshAnswerData.answer.is_correct}`);
+            
+            // playerAnswersオブジェクトを更新
+            playerAnswers[quizId] = {
+              answer: freshAnswerData.answer.answer,
+              isCorrect: freshAnswerData.answer.is_correct === 1,
+              responseTime: freshAnswerData.answer.response_time
+            };
+          }
+        } catch (refreshError) {
+          console.error('最新の回答データ取得中にエラー:', refreshError);
+        }
       }
-      
+  
       // クイズの正解情報を取得
       const response = await fetch(`/api/admin/quiz/${quizId}/answer`);
       
@@ -638,9 +661,8 @@ document.addEventListener('DOMContentLoaded', function() {
       // ユーザーの回答を確認
       const playerAnswer = playerAnswers[quizId]?.answer || null;
       const isCorrect = playerAnswers[quizId]?.isCorrect || false;
-
-      console.log(`[DEBUG-PLAYER] 回答チェック: プレイヤー回答="${playerAnswer}", 正解="${correctAnswerText}", 判定結果=${isCorrect}`);
-      console.log(`[DEBUG-PLAYER] playerAnswers[${quizId}] =`, JSON.stringify(playerAnswers[quizId]));
+      
+      console.log(`[DEBUG-PLAYER] 答え合わせ表示: answer=${playerAnswer}, isCorrect=${isCorrect}, quizId=${quizId}`);
       
       // ヘッダーを設定
       answerResultHeader.innerHTML = '';
