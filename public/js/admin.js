@@ -109,7 +109,8 @@ document.addEventListener('DOMContentLoaded', function() {
   socket.on('admin_force_practice', (data) => {
     const { quizId } = data;
     
-    if (quizId === '5') {
+    // 型安全な比較
+    if (quizId == '5') {
       console.log('Admin: 問題5の実践画面に強制遷移します');
       
       // 状態を実践に設定
@@ -347,12 +348,12 @@ document.addEventListener('DOMContentLoaded', function() {
     
   // 強制遷移イベントを追跡
   socket.on('force_transition', (data) => {
-    const { quizId, target, timestamp, isPractice, fromPractice } = data;
+    const { quizId, target, isPractice } = data;
+    console.log(`[DEBUG] force_transition受信: quizId=${quizId}(${typeof quizId}), target=${target}, isPractice=${isPractice}`);
     
-    console.log(`[DEBUG-CLIENT] 強制遷移: target=${target}, QuizID=${quizId}, isPractice=${isPractice}`);
-    
-    if (quizId === '5' && target === 'practice' && isPractice) {
-      console.log('Admin: 問題5の実践画面に強制遷移します');
+    // 修正: 型安全な比較
+    if ((quizId == '5' || quizId === 5) && target === 'practice' && isPractice) {
+      console.log('[DEBUG] 問題5実践画面遷移条件一致 - 処理開始');
       
       // 状態を実践に設定
       currentQuizState.quizId = 5;
@@ -369,6 +370,12 @@ document.addEventListener('DOMContentLoaded', function() {
       if (quizPracticeIndex !== -1) {
         currentSequenceIndex = quizPracticeIndex;
         updateSequenceDisplay(quizPracticeIndex);
+      }
+      
+      console.log('[DEBUG] 問題5実践画面遷移処理完了');
+    } else {
+      if (quizId == '5') {
+        console.log(`[DEBUG] 問題5だが条件不一致: target=${target}, isPractice=${isPractice}`);
       }
     }
   });

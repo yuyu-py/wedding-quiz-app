@@ -1109,13 +1109,13 @@ document.addEventListener('DOMContentLoaded', function() {
     socket.on('force_transition', (data) => {
       const { quizId, target, timestamp, isPractice, fromPractice } = data;
       
-      console.log(`[DEBUG-CLIENT] 強制遷移: target=${target}, QuizID=${quizId}, isPractice=${isPractice}`);    
+      console.log(`[DEBUG-PLAYER] 強制遷移: target=${target}, QuizID=${quizId}(${typeof quizId}), isPractice=${isPractice}`);
       
-      // 問題5の特殊ケースを優先処理
-      if (quizId === '5') {
+      // 問題5の特殊ケースを優先処理 - 型安全な比較
+      if (quizId == '5') {
         if (target === 'practice' && isPractice) {
           // 問題5の実践画面への強制遷移
-          console.log('問題5: 実践待機画面に強制遷移します');
+          console.log('[DEBUG-PLAYER] 問題5: 実践待機画面に強制遷移します');
           stopTimer(); // タイマーを停止
           displayCurrentScreen = 'practice';
           showScreen(practiceScreen);
@@ -1124,7 +1124,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (target === 'answer' && fromPractice) {
           // 問題5の実践画面から解答画面への強制遷移
-          console.log('問題5: 実践画面から解答画面に強制遷移します');
+          console.log('[DEBUG-PLAYER] 問題5: 実践画面から解答画面に強制遷移します');
           displayCurrentScreen = 'quiz_answer';
           showAnswerResult('5');
           return; // 処理を終了
@@ -1173,25 +1173,13 @@ document.addEventListener('DOMContentLoaded', function() {
     socket.on('quiz_event', (data) => {
       const { event, quizId, position, auto, manual, fromPractice, isPractice } = data;
       
-      console.log(`[DEBUG-CLIENT] イベント受信: ${event}, QuizID: ${quizId}, isPractice: ${isPractice}`);
+      console.log(`[DEBUG-PLAYER] イベント受信: ${event}, QuizID: ${quizId}(${typeof quizId}), isPractice: ${isPractice}`);
       
-      // 問題5の特殊イベントを優先処理
-      if (quizId === '5') {
+      // 問題5の特殊イベントを優先処理 - 型安全な比較
+      if (quizId == '5') {
         // 実践待機画面表示
         if (event === 'show_practice' && isPractice) {
-          console.log('[DEBUG-CLIENT] 問題5実践画面表示処理開始');
-          
-          // 実際の処理後にログ
-          console.log('[DEBUG-CLIENT] 問題5実践画面表示完了');
-          return; // 処理を終了
-        }
-      }
-      
-      // 問題5の特殊イベントを優先処理
-      if (quizId === '5') {
-        // 実践待機画面表示
-        if (event === 'show_practice' && isPractice) {
-          console.log('Player: 問題5の実践待機画面表示イベント受信');
+          console.log('[DEBUG-PLAYER] 問題5の実践待機画面表示イベント受信');
           stopTimer(); // タイマーを停止
           displayCurrentScreen = 'practice';
           showScreen(practiceScreen);
@@ -1200,12 +1188,12 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // 実践画面から解答画面への遷移
         if (event === 'show_answer' && fromPractice) {
-          console.log('Player: 問題5の実践画面から解答画面への遷移イベント受信');
+          console.log('[DEBUG-PLAYER] 問題5の実践画面から解答画面への遷移イベント受信');
           displayCurrentScreen = 'quiz_answer';
           showAnswerResult('5');
           return; // 処理を終了
         }
-      }
+      }  
       
       // 以下は通常のイベント処理
       switch (event) {

@@ -515,8 +515,8 @@ function setupSocketHandlers(io) {
     // タイマー終了フラグを設定
     currentQuizState.timerExpired = true;
     
-    // 問題5の場合は完全に別処理
-    if (quizId === '5') {
+    // 修正: 型安全な比較に変更（数値5と文字列'5'の両方に対応）
+    if (quizId == '5') { // == を使用して型を無視した比較を行う
       console.log(`[DEBUG] 問題5と判定 - 特殊処理実行`);
       handleQuiz5TimerExpiration();
     } else {
@@ -539,7 +539,7 @@ function setupSocketHandlers(io) {
     console.log('[DEBUG] quiz_event(show_practice)送信前');
     io.emit('quiz_event', { 
       event: 'show_practice', 
-      quizId: '5',
+      quizId: '5',  // 一貫して文字列で送信
       auto: true,
       isPractice: true // 明示的に実践フラグを設定
     });
@@ -548,16 +548,30 @@ function setupSocketHandlers(io) {
     // 強制遷移指示も送信
     console.log('[DEBUG] force_transition(practice)送信前');
     io.emit('force_transition', {
-      quizId: '5',
+      quizId: '5',  // 一貫して文字列で送信
       target: 'practice',
       timestamp: Date.now(),
       isPractice: true
     });
     console.log('[DEBUG] force_transition送信完了');
-  }
+    
+    // 管理者に特別な遷移指示を送信
+    activeConnections.admin.forEach(adminSocket => {
+      adminSocket.emit('admin_force_practice', {
+        quizId: '5',  // 一貫して文字列で送信
+        timestamp: Date.now()
+      });
+    });
+  }  
   
   // 通常問題のタイマー終了処理
   function handleNormalQuizTimerExpiration(quizId) {
+    // 追加のセーフティガード: 問題5が間違って通常処理に入らないようにする
+    if (quizId == '5') {
+      console.log('[DEBUG] 問題5が通常処理に誤って入りました - 実践画面処理に修正');
+      return handleQuiz5TimerExpiration();
+    }
+  
     console.log(`通常問題${quizId}: タイマー終了 - 解答画面に移行します`);
     
     // 状態を解答フェーズに更新
