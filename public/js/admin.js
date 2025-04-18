@@ -131,36 +131,23 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
   
-  // 強制遷移イベント処理の修正
-  socket.on('force_transition', (data) => {
-    const { quizId, target, isPractice } = data;
-    
-    if (quizId === '5' && target === 'practice' && isPractice) {
-      console.log('Admin: 問題5の実践画面に強制遷移します');
-      
-      // 状態を実践に設定
-      currentQuizState.quizId = 5;
-      currentQuizState.phase = 'practice';
-      currentScreen = 'practice';
-      currentMode.textContent = '問題5 実践中';
-      
-      // クイズ5パネルをリセット
-      resetQuiz5Panel();
-      
-      // シーケンス更新
-      const quizPracticeIndex = sequence.findIndex(item => 
-        item.quizId === 5 && item.phase === 'practice');
-      if (quizPracticeIndex !== -1) {
-        currentSequenceIndex = quizPracticeIndex;
-        updateSequenceDisplay(quizPracticeIndex);
-      }
-    }
-  });
-  
   // クイズイベント処理
   socket.on('quiz_event', (data) => {
     const { event, quizId, position, auto, manual, fromPractice, isPractice } = data;
     
+    console.log(`[DEBUG-CLIENT] イベント受信: ${event}, QuizID: ${quizId}, isPractice: ${isPractice}`);
+    
+    // 問題5の特殊イベントを優先処理
+    if (quizId === '5') {
+      // 実践待機画面表示
+      if (event === 'show_practice' && isPractice) {
+        console.log('[DEBUG-CLIENT] 問題5実践画面表示処理開始');
+        
+        // 実際の処理後にログ
+        console.log('[DEBUG-CLIENT] 問題5実践画面表示完了');
+        return; // 処理を終了
+      }
+    }
     // 問題5の実践画面表示イベント
     if (event === 'show_practice' && quizId === '5' && isPractice) {
       console.log('Admin: 問題5の実践画面表示イベント受信');
@@ -360,18 +347,27 @@ document.addEventListener('DOMContentLoaded', function() {
     
   // 強制遷移イベントを追跡
   socket.on('force_transition', (data) => {
-    const { quizId, target } = data;
+    const { quizId, target, timestamp, isPractice, fromPractice } = data;
     
-    if (target === 'practice' && quizId === '5') {
-      // クイズ状態を更新
+    console.log(`[DEBUG-CLIENT] 強制遷移: target=${target}, QuizID=${quizId}, isPractice=${isPractice}`);
+    
+    if (quizId === '5' && target === 'practice' && isPractice) {
+      console.log('Admin: 問題5の実践画面に強制遷移します');
+      
+      // 状態を実践に設定
+      currentQuizState.quizId = 5;
       currentQuizState.phase = 'practice';
       currentScreen = 'practice';
       currentMode.textContent = '問題5 実践中';
+      
+      // クイズ5パネルをリセット
+      resetQuiz5Panel();
       
       // シーケンス更新
       const quizPracticeIndex = sequence.findIndex(item => 
         item.quizId === 5 && item.phase === 'practice');
       if (quizPracticeIndex !== -1) {
+        currentSequenceIndex = quizPracticeIndex;
         updateSequenceDisplay(quizPracticeIndex);
       }
     }

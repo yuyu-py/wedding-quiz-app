@@ -607,10 +607,14 @@ async function getRankings() {
 
 // クイズの解答が公開されているか確認する関数（自動遷移用）
 async function isQuizAnswerAvailable(quizId) {
+  console.log(`[DEBUG] 解答表示状態確認 - QuizID: ${quizId}`);
+  
   // キャッシュをチェック
   const cacheKey = `answer_displayed_${quizId}`;
   if (cache.has(cacheKey)) {
-    return cache.get(cacheKey);
+    const result = cache.get(cacheKey);
+    console.log(`[DEBUG] キャッシュから取得: ${result}`);
+    return result;
   }
   
   try {
@@ -628,10 +632,13 @@ async function isQuizAnswerAvailable(quizId) {
     
     const result = await dynamodb.send(new QueryCommand(params));
     
+    console.log(`[DEBUG] DB結果: ${JSON.stringify(result.Items)}`);
+    
     if (result.Items && result.Items.length > 0) {
       const session = result.Items[0];
-      // session.answer_displayed が true であれば解答が公開されている
+      console.log(`[DEBUG] セッション: ${JSON.stringify(session)}`);
       const isAvailable = session.answer_displayed === true;
+      console.log(`[DEBUG] 解答利用可能: ${isAvailable}`);
       
       // 結果をキャッシュに保存
       cache.set(cacheKey, isAvailable);
@@ -641,7 +648,7 @@ async function isQuizAnswerAvailable(quizId) {
     
     return false;
   } catch (error) {
-    console.error(`クイズ ${quizId} の解答公開状態確認中にエラーが発生しました:`, error);
+    console.error(`[ERROR] 解答状態確認エラー: ${error.message}`);
     return false;
   }
 }

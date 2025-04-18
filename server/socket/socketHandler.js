@@ -510,49 +510,50 @@ function setupSocketHandlers(io) {
   
   // タイマー終了時の処理関数を問題別に分離
   function handleTimerExpiration(quizId) {
-    console.log(`サーバー: クイズ ${quizId} タイマー終了`);
+    console.log(`[DEBUG] タイマー終了処理開始 - QuizID: '${quizId}', 型: ${typeof quizId}`);
     
     // タイマー終了フラグを設定
     currentQuizState.timerExpired = true;
     
     // 問題5の場合は完全に別処理
     if (quizId === '5') {
+      console.log(`[DEBUG] 問題5と判定 - 特殊処理実行`);
       handleQuiz5TimerExpiration();
     } else {
+      console.log(`[DEBUG] 通常問題と判定 (${quizId}) - 標準解答処理実行`);
       handleNormalQuizTimerExpiration(quizId);
     }
   }
   
   // 問題5専用のタイマー終了処理
   function handleQuiz5TimerExpiration() {
-    console.log('問題5: タイマー終了 - 実践画面に移行します');
+    console.log('[DEBUG] 問題5特殊処理開始 - 実践画面への移行処理');
+    console.log(`[DEBUG] 現在のクイズ状態: ${JSON.stringify(currentQuizState)}`);
     
     // 状態を実践フェーズに更新
+    const oldPhase = currentQuizState.phase;
     currentQuizState.phase = 'practice';
+    console.log(`[DEBUG] 状態更新: ${oldPhase} → practice`);
     
     // 実践画面表示イベントを全クライアントに送信
+    console.log('[DEBUG] quiz_event(show_practice)送信前');
     io.emit('quiz_event', { 
       event: 'show_practice', 
       quizId: '5',
       auto: true,
       isPractice: true // 明示的に実践フラグを設定
     });
+    console.log('[DEBUG] quiz_event送信完了');
     
-    // 強制遷移指示も送信して確実に遷移させる
+    // 強制遷移指示も送信
+    console.log('[DEBUG] force_transition(practice)送信前');
     io.emit('force_transition', {
       quizId: '5',
       target: 'practice',
       timestamp: Date.now(),
       isPractice: true
     });
-    
-    // 管理者に特別な遷移指示を送信
-    activeConnections.admin.forEach(adminSocket => {
-      adminSocket.emit('admin_force_practice', {
-        quizId: '5',
-        timestamp: Date.now()
-      });
-    });
+    console.log('[DEBUG] force_transition送信完了');
   }
   
   // 通常問題のタイマー終了処理

@@ -1107,8 +1107,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 強制遷移イベント処理の修正
     socket.on('force_transition', (data) => {
-      const { quizId, target, timestamp, isPractice, fromPractice, answer } = data;
-      console.log(`強制遷移指示受信: ${target} - クイズID: ${quizId}, isPractice: ${isPractice}, fromPractice: ${fromPractice}`);
+      const { quizId, target, timestamp, isPractice, fromPractice } = data;
+      
+      console.log(`[DEBUG-CLIENT] 強制遷移: target=${target}, QuizID=${quizId}, isPractice=${isPractice}`);    
       
       // 問題5の特殊ケースを優先処理
       if (quizId === '5') {
@@ -1170,9 +1171,21 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // クイズイベント処理の修正
     socket.on('quiz_event', (data) => {
-      const { event, quizId, position, auto, manual, fromPractice, isPractice, answer } = data;
+      const { event, quizId, position, auto, manual, fromPractice, isPractice } = data;
       
-      console.log(`イベント受信: ${event}, クイズID: ${quizId}, isPractice: ${isPractice}, fromPractice: ${fromPractice}`);
+      console.log(`[DEBUG-CLIENT] イベント受信: ${event}, QuizID: ${quizId}, isPractice: ${isPractice}`);
+      
+      // 問題5の特殊イベントを優先処理
+      if (quizId === '5') {
+        // 実践待機画面表示
+        if (event === 'show_practice' && isPractice) {
+          console.log('[DEBUG-CLIENT] 問題5実践画面表示処理開始');
+          
+          // 実際の処理後にログ
+          console.log('[DEBUG-CLIENT] 問題5実践画面表示完了');
+          return; // 処理を終了
+        }
+      }
       
       // 問題5の特殊イベントを優先処理
       if (quizId === '5') {
