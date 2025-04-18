@@ -353,6 +353,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // クイズコマンドを送信
     function sendQuizCommand(command, quizId = null, params = {}) {
+      console.log(`クイズコマンド送信: ${command}, クイズID: ${quizId || 'なし'}, パラメータ:`, params);
       socket.emit('quiz_command', {
         command,
         quizId,
@@ -503,34 +504,44 @@ document.addEventListener('DOMContentLoaded', function() {
         currentSequenceIndex++;
         const nextStep = sequence[currentSequenceIndex];
         
+        console.log('次のステップ:', nextStep); // デバッグログ追加
+        
         // 次のシーケンスアイテム情報に基づいてコマンド実行
         if (nextStep.id === 'explanation') {
+          // クイズ説明画面に遷移
           sendQuizCommand('start_quiz');
         }
         else if (nextStep.phase === 'title' && nextStep.quizId) {
           // 問題表示開始
+          console.log(`問題${nextStep.quizId}のタイトル画面に遷移します`);
           startQuizSession(nextStep.quizId).then(success => {
             if (success) {
+              // 成功したら問題表示イベントを送信
               sendQuizCommand('show_question', nextStep.quizId);
+            } else {
+              console.error('クイズセッション開始に失敗しました');
             }
           });
         }
-        else if (nextStep.phase === 'question' || nextStep.phase === 'answer') {
-          // 次のスライドに移動
+        else if (nextStep.phase === 'question') {
+          // 問題タイトルから問題表示への遷移
+          console.log('問題タイトルから問題表示に遷移します');
           sendQuizCommand('next_slide');
         }
-        // 問題5の実践画面からの遷移を明示
+        else if (nextStep.phase === 'answer') {
+          // 問題表示から解答表示への遷移
+          console.log('問題表示から解答表示に遷移します');
+          sendQuizCommand('next_slide');
+        }
+        // 問題5の実践画面からの遷移の特別処理
         else if (currentQuizId === 5 && currentQuizState.phase === 'practice' && nextStep.phase === 'answer') {
-          // 実践画面から解答画面への遷移を明示的に指示
+          console.log('問題5: 実践画面から解答画面への遷移を指示');
           sendQuizCommand('show_answer', '5', { fromPractice: true });
-          
-          console.log('Admin: 問題5 - 実践画面から解答画面への遷移を指示');
-          
-          // フェーズを更新
           currentQuizState.phase = 'answer';
         }
         else if (nextStep.rankingPos) {
-          // ランキング表示（intro, 5, 4, 3, 2, 1, all）
+          // ランキング表示
+          console.log(`ランキング表示: ${nextStep.rankingPos}`);
           sendQuizCommand('show_ranking', null, { position: nextStep.rankingPos });
         }
         

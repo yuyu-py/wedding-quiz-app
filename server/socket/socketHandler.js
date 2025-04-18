@@ -163,9 +163,13 @@ function setupSocketHandlers(io) {
       
       const db = require('../database/db');
       
+      console.log(`受信したコマンド: ${command}, クイズID: ${quizId || 'なし'}, パラメータ:`, params);
+      
       switch (command) {
         case 'start_quiz':
           // クイズの開始をブロードキャスト
+          console.log('クイズ開始コマンド実行');
+          
           io.emit('quiz_event', { 
             event: 'quiz_started' 
           });
@@ -185,6 +189,8 @@ function setupSocketHandlers(io) {
           
         case 'show_question':
           // 問題表示をブロードキャスト
+          console.log(`問題${quizId}の表示コマンド実行`);
+          
           io.emit('quiz_event', { 
             event: 'show_question', 
             quizId 
@@ -203,66 +209,100 @@ function setupSocketHandlers(io) {
           console.log(`クイズ ${quizId} のタイトルが表示されました - タイマーはまだ開始していません`);
           break;
           
-          case 'next_slide':
-            // 現在のフェーズを確認
-            if (currentQuizState.phase === 'title') {
-              // 遷移タイムスタンプを作成（少し先の時間）
-              const transitionTime = Date.now() + 500; // 500ms後
-              
-              // 遷移イベントを送信
-              io.emit('synchronized_transition', {
-                quizId: currentQuizState.quizId,
-                target: 'question',
-                transitionTime: transitionTime, // 同期遷移時刻
-                serverTime: Date.now()          // 現在のサーバー時刻
-              });
-              
-              // タイマー開始準備
-              setTimeout(() => {
-                // タイマー開始
-                startPreciseQuizTimer(currentQuizState.quizId);
-                currentQuizState.phase = 'question';
-              }, 700); // 遷移完了するまで余裕を持って待機
-            } 
-            // 問題5の実践画面からの遷移を特別処理
-            else if (currentQuizState.quizId === '5' && currentQuizState.phase === 'practice') {
-              // フェーズを解答に更新
-              currentQuizState.phase = 'answer';
-              
-              console.log('問題5: 実践画面から解答画面への遷移を実行');
-              
-              // 解答表示イベントを送信
-              io.emit('quiz_event', { 
-                event: 'show_answer', 
-                quizId: '5',
-                manual: true,
-                fromPractice: true // 実践画面からの遷移フラグ
-              });
-              
-              // 全員に強制遷移を指示
-              io.emit('force_transition', {
-                quizId: '5',
-                target: 'answer',
-                timestamp: Date.now(),
-                fromPractice: true
-              });
-              
-              // 解答表示フラグをDBに記録
-              db.markAnswerAsDisplayed('5')
-                .catch(err => {
-                  console.error('解答表示フラグの更新中にエラーが発生しました:', err);
-                });
-            }
-            else {
-              // その他の遷移は通常通り処理
-              io.emit('quiz_event', { 
-                event: 'next_slide',
-                manual: true
-              });
-            }
+        case 'next_slide':
+          console.log('次のスライドコマンド実行 - 現在のフェーズ:', currentQuizState.phase);
+          
+          // 現在のフェーズを確認
+          if (currentQuizState.phase === 'title') {
+            console.log('タイトルフェーズから問題フェーズへの遷移');
             
-            console.log('管理者操作: 次のスライドに進みました');
-            break;
+            // 遷移タイムスタンプを作成（少し先の時間）
+            const transitionTime = Date.now() + 500; // 500ms後
+            
+            // 遷移イベントを送信
+            io.emit('synchronized_transition', {
+              quizId: currentQuizState.quizId,
+              target: 'question',
+              transitionTime: transitionTime, // 同期遷移時刻
+              serverTime: Date.now()          // 現在のサーバー時刻
+            });
+            
+            // 次へ遷移イベントも送信して冗長性を持たせる
+            io.emit('quiz_event', { 
+              event: 'next_slide',
+              manual: true
+            });
+            
+            // タイマー開始準備
+            setTimeout(() => {
+              // タイマー開始
+              startPreciseQuizTimer(currentQuizState.quizId);
+              currentQuizState.phase = 'question';
+            }, 700); // 遷移完了するまで余裕を持って待機
+          } 
+          // 問題5の実践画面からの遷移を特別処理
+          else if (currentQuizState.quizId === '5' && currentQuizState.phase === 'practice') {
+            // フェーズを解答に更新
+            currentQuizState.phase = 'answer';
+            
+            console.log('問題5: 実践画面から解答画面への遷移を実行');
+            
+            // 解答表示イベントを送信
+            io.emit('quiz_event', { 
+              event: 'show_answer', 
+              quizId: '5',
+              manual: true,
+              fromPractice: true // 実践画面からの遷移フラグ
+            });
+            
+            // 解答表示フラグをDBに記録
+            db.markAnswerAsDisplayed('5')
+              .catch(err => {
+                console.error('解答表示フラグの更新中にエラーが発生しました:', err);
+              });
+          }
+          else {
+            // その他の遷移は通常通り処理
+            console.log('通常の次へスライド処理を実行');
+            
+            io.emit('quiz_event', { 
+              event: 'next_slide',
+              manual: true
+            });
+          }
+          
+          console.log('管理者操作: 次のスライドに進みました');
+          break;
+          
+        case 'prev_slide':
+          // 前のスライドに戻る
+          io.emit('quiz_event', { 
+            event: 'prev_slide' 
+          });
+          console.log('前のスライドに戻りました');
+          break;
+          
+        case 'show_answer':
+          // 解答表示をブロードキャスト
+          io.emit('quiz_event', { 
+            event: 'show_answer', 
+            quizId,
+            manual: true, // 手動操作フラグ
+            fromPractice: params.fromPractice || false
+          });
+          
+          // タイマーを停止
+          stopQuizTimer();
+          
+          // クイズ状態を更新
+          currentQuizState.phase = 'answer';
+          currentQuizState.timerExpired = true;
+          
+          // セッションの answer_displayed フラグを更新
+          await db.markAnswerAsDisplayed(quizId);
+          
+          console.log(`クイズ ${quizId} の解答が表示されました（手動）`);
+          break;
           
         case 'show_ranking':
           // ランキング表示改善
