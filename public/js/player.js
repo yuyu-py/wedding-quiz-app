@@ -1168,7 +1168,7 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     });
     
-    // クイズイベント処理の修正
+    // player.jsクイズイベント処理の修正
     socket.on('quiz_event', (data) => {
       const { event, quizId, position, auto, manual, fromPractice, isPractice, answer } = data;
       

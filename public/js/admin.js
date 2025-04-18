@@ -157,7 +157,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
   
-  // クイズイベント処理
+  // admin.jsクイズイベント処理
   socket.on('quiz_event', (data) => {
     const { event, quizId, position, auto, manual, fromPractice, isPractice } = data;
     
@@ -358,7 +358,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
     
-  // 強制遷移イベントを追跡
+  // 強制遷移イベントを追跡console.log()
   socket.on('force_transition', (data) => {
     const { quizId, target } = data;
     

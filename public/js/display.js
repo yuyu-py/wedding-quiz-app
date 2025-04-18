@@ -806,7 +806,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
   
-  // クイズイベント処理
+  // display.jsクイズイベント処理
   socket.on('quiz_event', (data) => {
     const { event, quizId, position, auto, manual, fromPractice, isPractice } = data;
     
