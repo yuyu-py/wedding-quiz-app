@@ -1,0 +1,20 @@
+#connection-status-indicator {
+    position: fixed;
+    bottom: 10px;
+    left: 10px;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: bold;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: opacity 0.5s;
+  }
+  
+  @keyframes blink {
+    0% { opacity: 0.3; }
+    50% { opacity: 1; }
+    100% { opacity: 0.3; }
+  }
