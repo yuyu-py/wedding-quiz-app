@@ -20,7 +20,7 @@ router.post('/register', async (req, res) => {
     
     const playerId = nanoid(10);
     const success = await db.registerPlayer(playerId, name, tableNumber);
-    
+
     if (success) {
       res.json({ 
         success: true, 
@@ -72,6 +72,8 @@ router.post('/answer', async (req, res) => {
     if (!quiz) {
       return res.status(404).json({ error: 'クイズが見つかりません' });
     }
+
+    console.log(`[DEBUG] 回答受付: プレイヤー=${playerId}, 問題=${quizId}, 回答="${answer}", 正解="${quiz.correct_answer}"`);
     
     // デバッグログ追加（問題5のみ）
     if (quizId === '5') {
@@ -80,6 +82,8 @@ router.post('/answer', async (req, res) => {
     
     // 正解かどうか判定
     const isCorrect = answer === quiz.correct_answer;
+
+    console.log(`[DEBUG] 正誤判定: ${isCorrect ? '正解' : '不正解'}, プレイヤー回答="${answer}", 正解="${quiz.correct_answer}", 型=${typeof answer}/${typeof quiz.correct_answer}`);
     
     // 回答を保存
     const success = await db.recordAnswer(playerId, quizId, answer, isCorrect, responseTime);

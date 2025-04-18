@@ -46,6 +46,8 @@ router.post('/quiz/:id/end', async (req, res) => {
 router.post('/quiz/5/set-answer', async (req, res) => {
   try {
     const { answer } = req.body;
+
+    console.log(`[DEBUG] 問題5答え設定リクエスト: answer="${answer}", 型=${typeof answer}`);
     
     if (!answer || (answer !== '新郎' && answer !== '新婦')) {
       return res.status(400).json({ 
@@ -56,6 +58,8 @@ router.post('/quiz/5/set-answer', async (req, res) => {
     
     // 問題5の答えを設定
     const result = await db.setQuiz5Answer(answer);
+
+    console.log(`[DEBUG] 問題5答え設定結果: ${result ? '成功' : '失敗'}, answer="${answer}"`);
     
     if (result) {
       // 答え設定成功時に全クライアントに通知

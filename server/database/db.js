@@ -424,6 +424,8 @@ async function getPlayer(id) {
 // プレイヤーの回答を記録
 async function recordAnswer(playerId, quizId, answer, isCorrect, responseTime) {
   try {
+    console.log(`[DEBUG] DB記録: player=${playerId}, quiz=${quizId}, answer="${answer}", isCorrect=${isCorrect}, responseTime=${responseTime}`);
+    
     const params = {
       TableName: TABLES.ANSWER,
       Item: {

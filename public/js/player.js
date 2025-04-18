@@ -638,6 +638,9 @@ document.addEventListener('DOMContentLoaded', function() {
       // ユーザーの回答を確認
       const playerAnswer = playerAnswers[quizId]?.answer || null;
       const isCorrect = playerAnswers[quizId]?.isCorrect || false;
+
+      console.log(`[DEBUG-PLAYER] 回答チェック: プレイヤー回答="${playerAnswer}", 正解="${correctAnswerText}", 判定結果=${isCorrect}`);
+      console.log(`[DEBUG-PLAYER] playerAnswers[${quizId}] =`, JSON.stringify(playerAnswers[quizId]));
       
       // ヘッダーを設定
       answerResultHeader.innerHTML = '';
