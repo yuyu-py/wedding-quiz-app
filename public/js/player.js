@@ -724,11 +724,13 @@ document.addEventListener('DOMContentLoaded', function() {
         answerResultHeader.appendChild(resultIcon);
         answerResultHeader.appendChild(document.createTextNode(' 時間切れ'));
       } else if (isCorrect) {
+        // シンプルに「正解！」と表示
         answerResultHeader.className = 'answer-result-header correct';
         resultIcon.textContent = 'check_circle';
         answerResultHeader.appendChild(resultIcon);
         answerResultHeader.appendChild(document.createTextNode(' 正解！'));
       } else {
+        // シンプルに「不正解」と表示
         answerResultHeader.className = 'answer-result-header incorrect';
         resultIcon.textContent = 'cancel';
         answerResultHeader.appendChild(resultIcon);
@@ -844,7 +846,7 @@ document.addEventListener('DOMContentLoaded', function() {
           correctIcon.textContent = 'check_circle';
           
           answerResultHeader.appendChild(correctIcon);
-          answerResultHeader.appendChild(document.createTextNode(' 正解！（表示修正済）'));
+          answerResultHeader.appendChild(document.createTextNode(' 正解！'));
           
           console.log(`[DEBUG-Q5] 表示を強制修正しました: ${answerResultHeader.className}`);
         }
