@@ -121,6 +121,10 @@ router.get('/:id/answer-status', async (req, res) => {
     if (id === '5') {
       // 最新のセッションを取得して解答が設定されているか確認
       const db = require('../database/db');
+      
+      // AWS SDKのCommandを正しくインポート
+      const { QueryCommand, GetCommand } = require('@aws-sdk/lib-dynamodb');
+      
       const sessionParams = {
         TableName: db.TABLES.SESSION,
         IndexName: 'quiz_id-index',
@@ -132,7 +136,8 @@ router.get('/:id/answer-status', async (req, res) => {
         Limit: 1
       };
       
-      const sessionResult = await db.dynamodb.send(new db.QueryCommand(sessionParams));
+      // 修正: 正しいQueryCommandコンストラクタを使用
+      const sessionResult = await db.dynamodb.send(new QueryCommand(sessionParams));
       
       // 問題5の答えを直接取得
       const quizParams = {
@@ -140,7 +145,8 @@ router.get('/:id/answer-status', async (req, res) => {
         Key: { id: '5' }
       };
       
-      const quizResult = await db.dynamodb.send(new db.GetCommand(quizParams));
+      // 修正: 正しいGetCommandコンストラクタを使用
+      const quizResult = await db.dynamodb.send(new GetCommand(quizParams));
       
       // セッションか答えが存在しない場合は利用不可
       if (!sessionResult.Items || 
