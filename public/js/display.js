@@ -363,6 +363,8 @@ document.addEventListener('DOMContentLoaded', function() {
   // クイズの解答を表示する関数
   async function showAnswer(quizId) {
     try {
+      console.log(`解答表示開始: クイズID ${quizId}`);
+      
       // 重複呼び出し防止
       if (isTransitioning) {
         console.log('画面遷移中のため、重複した呼び出しを無視します');
@@ -373,9 +375,22 @@ document.addEventListener('DOMContentLoaded', function() {
       // タイマーを停止
       stopTimer();
       
-      // 管理者用APIで解答情報を取得
+      // 解答情報を取得
       const response = await fetch(`/api/admin/quiz/${quizId}/answer`);
+      
+      if (!response.ok) {
+        throw new Error(`APIエラー: ${response.status}`);
+      }
+      
       const answerData = await response.json();
+      
+      // 問題5で答えが空の場合は実践画面に留まる
+      if (quizId === '5' && (!answerData.correct_answer || answerData.correct_answer === '')) {
+        console.log('問題5: 解答が設定されていません。実践画面に留まります。');
+        isTransitioning = false;
+        showScreen(practiceScreen);
+        return;
+      }
       
       // 解答テキストを設定
       answerText.textContent = `答えは ${answerData.correct_answer} です`;
@@ -705,57 +720,56 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
   
-  // 強制遷移イベントのハンドラを追加
+  // 強制遷移イベント処理
   socket.on('force_transition', (data) => {
-    const { quizId, target, timestamp, retry, fromPractice } = data;
-    console.log(`強制遷移指示受信: ${target} - クイズID: ${quizId}`);
+    const { quizId, target, timestamp, isPractice, fromPractice } = data;
+    console.log(`強制遷移指示受信: ${target} - クイズID: ${quizId}, isPractice: ${isPractice}, fromPractice: ${fromPractice}`);
     
-    // 問題5の実践画面への特殊処理
-    if (target === 'practice' && quizId === '5') {
-      // タイマーを確実に停止
-      stopTimer();
-      
-      // 現在の画面が既に実践画面なら処理をスキップ
-      if (currentScreen === practiceScreen) {
-        console.log('既に実践画面を表示中のため処理をスキップします');
-        return;
+    // 問題5の特殊ケースを優先処理
+    if (quizId === '5') {
+      // 問題5の実践画面への強制遷移
+      if (target === 'practice' && isPractice) {
+        console.log('Display: 問題5の実践待機画面に強制遷移します');
+        stopTimer(); // タイマーを停止
+        showScreen(practiceScreen);
+        return; // 処理を終了
       }
       
-      // 実践待機画面に強制遷移
-      console.log('Display: サーバーからの指示により問題5の実践待機画面に強制遷移します');
-      showScreen(practiceScreen);
+      // 問題5の実践画面から解答画面への強制遷移
+      if (target === 'answer' && fromPractice) {
+        console.log('Display: 問題5の実践画面から解答画面への強制遷移');
+        showAnswer('5');
+        return; // 処理を終了
+      }
+    }
+    
+    // 以下は通常の遷移処理
+    if (quizId !== currentQuizId) {
+      console.log('現在のクイズIDと一致しないため無視します');
       return;
     }
     
-    // 問題5の解答画面への特殊処理
-    if (target === 'answer' && quizId === '5' && fromPractice) {
+    // 遷移先に応じた処理
+    if (target === 'answer') {
       // タイマーを停止
       stopTimer();
       
       // 解答画面に強制遷移
-      console.log('Display: 問題5の実践画面から解答画面への強制遷移');
-      showAnswer('5');
-      return;
-    }
-    
-    // クイズIDが一致する場合のみ遷移
-    if (quizId === currentQuizId) {
-      if (target === 'answer') {
-        // タイマーを停止
-        stopTimer();
-        
-        // 解答画面に強制遷移
-        console.log('サーバーからの指示により解答画面に強制遷移します');
-        showAnswer(quizId);
-        
-        // 解答表示フラグを設定
-        markAnswerAsDisplayed(quizId);
-      }
-    }
-    
-    // ランキング遷移処理
-    if (target === 'ranking') {
-      // ランキング準備画面表示
+      console.log('サーバーからの指示により解答画面に強制遷移します');
+      showAnswer(quizId);
+      
+      // 解答表示フラグを設定
+      markAnswerAsDisplayed(quizId);
+    } else if (target === 'practice') {
+      // タイマーを停止
+      stopTimer();
+      
+      // 実践待機画面に強制遷移
+      console.log('サーバーからの指示により実践待機画面に強制遷移します');
+      // 実践待機画面の表示
+      showScreen(practiceScreen);
+    } else if (target === 'ranking') {
+      // ランキング待機画面に遷移
       if (rankingIntroScreen) {
         showScreen(rankingIntroScreen);
       } else {
@@ -770,8 +784,6 @@ document.addEventListener('DOMContentLoaded', function() {
   socket.on('synchronized_transition', (data) => {
     const { quizId, target, transitionTime, serverTime } = data;
     
-    console.log(`同期遷移イベント: 目標=${target}, クイズID=${quizId || 'なし'}`);
-    
     if (quizId === currentQuizId) {
       // サーバーとの時間差を計算
       const receivedTime = Date.now();
@@ -781,25 +793,44 @@ document.addEventListener('DOMContentLoaded', function() {
       const localTransitionTime = transitionTime - serverTimeOffset;
       const waitTime = Math.max(0, localTransitionTime - receivedTime);
       
-      console.log(`同期遷移: 待機時間=${waitTime}ms`);
+      console.log(`Display: 同期遷移イベント - 目標: ${target}, 待機時間: ${waitTime}ms`);
       
       // 指定された時刻まで待ってから遷移
       setTimeout(() => {
-        console.log(`同期遷移実行: ${target}`);
+        console.log(`Display: 同期遷移実行 - ${target}`);
         
         if (target === 'question' && currentScreen.id === 'quiz-title-screen') {
           showQuestion(currentQuizId);
         }
       }, waitTime);
     }
-  });  
+  });
   
-  // クイズイベントの処理
+  // クイズイベント処理
   socket.on('quiz_event', (data) => {
-    const { event, quizId, position, auto, manual, fromPractice, retry } = data;
+    const { event, quizId, position, auto, manual, fromPractice, isPractice } = data;
     
-    console.log(`受信したイベント: ${event}, クイズID: ${quizId || 'なし'}`); // デバッグログ追加
+    console.log(`イベント受信: ${event}, クイズID: ${quizId}, isPractice: ${isPractice}, fromPractice: ${fromPractice}`);
     
+    // 問題5の特殊イベントを優先処理
+    if (quizId === '5') {
+      // 実践待機画面表示
+      if (event === 'show_practice' && isPractice) {
+        console.log('Display: 問題5の実践待機画面表示イベント受信');
+        stopTimer(); // タイマーを停止
+        showScreen(practiceScreen);
+        return; // 処理を終了
+      }
+      
+      // 実践画面から解答画面への遷移
+      if (event === 'show_answer' && fromPractice) {
+        console.log('Display: 問題5の実践画面から解答画面への遷移イベント受信');
+        showAnswer('5');
+        return; // 処理を終了
+      }
+    }
+    
+    // 以下は通常のイベント処理
     switch (event) {
       case 'quiz_started':
         console.log('クイズ開始イベント: 説明画面に遷移');
@@ -835,21 +866,17 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         break;
         
-      case 'show_practice':
-        // 実践待機画面表示 - 優先度を高く扱う
-        if (quizId === '5') {
-          console.log('Display: 問題5の実践待機画面を表示');
-          
-          // タイマーを確実に停止
+      case 'prev_slide':
+        if (currentScreen.id === 'quiz-question-screen') {
           stopTimer();
-          
-          // 他の画面からも強制的に実践画面に遷移
-          showScreen(practiceScreen);
+          showScreen(quizTitleScreen);
+        } else if (currentScreen.id === 'quiz-answer-screen') {
+          showQuestion(currentQuizId);
         }
         break;
-      
+        
       case 'show_answer':
-        // 問題5の実践画面からの遷移を特別処理
+        // 追加: 問題5の実践画面からの遷移を特別処理
         if (quizId === '5' && fromPractice) {
           console.log('Display: 問題5の実践画面から解答画面への遷移');
           showAnswer('5');
@@ -858,8 +885,16 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         break;
       
-      // ランキング表示の改善
+      case 'show_practice':
+        // 実践待機画面表示
+        if (quizId === '5') {
+          console.log('Display: 問題5の実践待機画面を表示');
+          showScreen(practiceScreen);
+        }
+        break;
+      
       case 'show_ranking':
+        // ランキング表示の改善
         if (position === 'intro') {
           // ランキング準備画面表示 - 文字のみ
           if (rankingIntroScreen) {

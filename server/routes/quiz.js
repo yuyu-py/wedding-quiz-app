@@ -117,44 +117,58 @@ router.get('/:id/answer-status', async (req, res) => {
   try {
     const { id } = req.params;
     
-    // 問題5は特別処理 - 実践フェーズの完了後のみ解答公開
+    // 問題5の場合は特別対応
     if (id === '5') {
-      // 最新のセッションで実践フェーズ完了かつ解答表示フラグが立っているか確認
+      // 最新のセッションを取得して解答が設定されているか確認
       const db = require('../database/db');
-      
-      // セッションテーブルから該当クイズIDの最新セッションを取得
-      const params = {
+      const sessionParams = {
         TableName: db.TABLES.SESSION,
         IndexName: 'quiz_id-index',
         KeyConditionExpression: 'quiz_id = :quizId',
         ExpressionAttributeValues: {
           ':quizId': '5'
         },
-        ScanIndexForward: false, // 降順（最新のものから）
-        Limit: 1 // 最新の1件のみ
+        ScanIndexForward: false, // 最新のものを先頭に
+        Limit: 1
       };
       
-      const result = await db.dynamodb.send(new db.QueryCommand(params));
+      const sessionResult = await db.dynamodb.send(new db.QueryCommand(sessionParams));
       
-      if (result.Items && result.Items.length > 0) {
-        const session = result.Items[0];
-        
-        // answer_displayed が true で、かつ custom_answer が設定されている場合のみ解答公開中
-        const isAvailable = session.answer_displayed === true && 
-                           (session.custom_answer === '新郎' || session.custom_answer === '新婦');
-        
-        return res.json({ available: isAvailable });
+      // 問題5の答えを直接取得
+      const quizParams = {
+        TableName: db.TABLES.QUIZ,
+        Key: { id: '5' }
+      };
+      
+      const quizResult = await db.dynamodb.send(new db.GetCommand(quizParams));
+      
+      // セッションか答えが存在しない場合は利用不可
+      if (!sessionResult.Items || 
+          sessionResult.Items.length === 0 || 
+          !quizResult.Item) {
+        return res.json({ available: false });
       }
       
-      return res.json({ available: false });
+      const session = sessionResult.Items[0];
+      const quiz = quizResult.Item;
+      
+      // 答えが設定されていて（空でなく）、かつ表示フラグが立っている場合のみ利用可能
+      const isAvailable = (quiz.correct_answer && 
+                           quiz.correct_answer !== '' && 
+                           session.answer_displayed === true);
+      
+      return res.json({ 
+        available: isAvailable,
+        answer: isAvailable ? quiz.correct_answer : null
+      });
     }
     
-    // 問題1-4は通常処理
+    // 通常問題の場合は既存の処理
     const isAnswerAvailable = await db.isQuizAnswerAvailable(id);
+    return res.json({ available: isAnswerAvailable });
     
-    res.json({ available: isAnswerAvailable });
   } catch (error) {
-    console.error('解答公開状態の確認中にエラーが発生しました:', error);
+    console.error('解答状態の確認中にエラーが発生しました:', error);
     res.status(500).json({ error: 'サーバーエラーが発生しました', available: false });
   }
 });
