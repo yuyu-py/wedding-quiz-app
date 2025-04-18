@@ -61,6 +61,11 @@ router.post('/answer', async (req, res) => {
   try {
     const { playerId, quizId, answer, responseTime } = req.body;
     
+    // 問題5のデバッグ
+    if (quizId === '5') {
+      console.log(`[DEBUG-Q5-SERVER] 回答受付: プレイヤー=${playerId}, 問題=${quizId}, 回答="${answer}", 型=${typeof answer}`);
+    }
+    
     // プレイヤーの存在確認
     const player = await db.getPlayer(playerId);
     if (!player) {
@@ -73,44 +78,36 @@ router.post('/answer', async (req, res) => {
       return res.status(404).json({ error: 'クイズが見つかりません' });
     }
     
-    // 問題5の特殊ケース
+    // 問題5のデバッグ
     if (quizId === '5') {
-      console.log(`[DEBUG] 回答受付: プレイヤー=${playerId}, 問題=${quizId}, 回答="${answer}", 正解="${quiz.correct_answer}"`);
-      
-      // 正解の有無で処理を分岐
-      if (!quiz.correct_answer || quiz.correct_answer === '') {
-        // 正解がまだ設定されていない場合、一時的に不正解とするが警告ログを出す
-        console.log(`[WARNING] 問題5: 正解が未設定のため、仮判定で記録します。後で再評価されます。`);
-        
-        // 回答を保存 - 再評価される前提
-        const success = await db.recordAnswer(playerId, quizId, answer, false, responseTime);
-        
-        if (success) {
-          res.json({
-            success: true,
-            playerId,
-            quizId,
-            answer,
-            isCorrect: false, // 仮の判定
-            responseTime,
-            message: '回答が記録されました（実践後に正解が決定されます）'
-          });
-        } else {
-          res.status(500).json({ error: '回答の記録に失敗しました' });
-        }
-        return;
-      }
+      console.log(`[DEBUG-Q5-SERVER] クイズデータ: ${JSON.stringify(quiz)}`);
     }
     
-    // 正解かどうか判定（通常問題または正解が設定済みの問題5）
+    // デバッグログ追加（問題5のみ）
+    if (quizId === '5') {
+      console.log(`問題5回答処理: プレイヤー回答="${answer}", システム正解="${quiz.correct_answer}"`);
+    }
+    
+    // 正解かどうか判定
     const isCorrect = answer === quiz.correct_answer;
     
-    console.log(`[DEBUG] 正誤判定: ${isCorrect ? '正解' : '不正解'}, プレイヤー回答="${answer}", 正解="${quiz.correct_answer}", 型=${typeof answer}/${typeof quiz.correct_answer}`);
+    // 問題5のデバッグ
+    if (quizId === '5') {
+      console.log(`[DEBUG-Q5-SERVER] 正誤判定: ${isCorrect ? '正解' : '不正解'}, プレイヤー回答="${answer}", 正解="${quiz.correct_answer}", 型=${typeof answer}/${typeof quiz.correct_answer}`);
+      
+      // 問題5の特殊ケース：正解が空の場合（まだ管理者が設定していない）
+      if (quiz.correct_answer === '') {
+        console.log(`[DEBUG-Q5-SERVER] 問題5: 正解未設定で仮判定`);
+      }
+    }
     
     // 回答を保存
     const success = await db.recordAnswer(playerId, quizId, answer, isCorrect, responseTime);
     
-    console.log(`[DEBUG] DB記録: player=${playerId}, quiz=${quizId}, answer="${answer}", isCorrect=${isCorrect}, responseTime=${responseTime}`);
+    // 問題5のデバッグ
+    if (quizId === '5') {
+      console.log(`[DEBUG-Q5-SERVER] DB記録: player=${playerId}, quiz=${quizId}, answer="${answer}", isCorrect=${isCorrect}, responseTime=${responseTime}`);
+    }
     
     if (success) {
       res.json({
@@ -176,6 +173,11 @@ router.get('/:id/answer/:quizId', async (req, res) => {
   try {
     const { id, quizId } = req.params;
     
+    // 問題5のデバッグ
+    if (quizId === '5') {
+      console.log(`[DEBUG-Q5-SERVER] 回答取得リクエスト: player=${id}, quiz=${quizId}`);
+    }
+    
     // プレイヤーの存在確認
     const player = await db.getPlayer(id);
     if (!player) {
@@ -193,6 +195,11 @@ router.get('/:id/answer/:quizId', async (req, res) => {
     
     const { GetCommand } = require('@aws-sdk/lib-dynamodb');
     const answerResult = await db.dynamodb.send(new GetCommand(answerParams));
+    
+    // 問題5のデバッグ
+    if (quizId === '5') {
+      console.log(`[DEBUG-Q5-SERVER] 回答取得結果: ${JSON.stringify(answerResult.Item || {})}`);
+    }
     
     if (!answerResult.Item) {
       return res.status(404).json({ success: false, error: '回答が見つかりません' });

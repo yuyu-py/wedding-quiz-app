@@ -163,6 +163,8 @@ async function insertSampleQuizData() {
 // クイズ5の答えを設定
 async function setQuiz5Answer(answer) {
   try {
+    console.log(`[DEBUG-Q5-DB] 問題5答え設定開始: answer="${answer}", 型=${typeof answer}`);
+    
     // キャッシュをクリア
     cache.del(`quiz_5`);
     
@@ -176,7 +178,8 @@ async function setQuiz5Answer(answer) {
       ReturnValues: 'UPDATED_NEW'
     };
     
-    await dynamodb.send(new UpdateCommand(params));
+    const result = await dynamodb.send(new UpdateCommand(params));
+    console.log(`[DEBUG-Q5-DB] 問題5答え更新結果: ${JSON.stringify(result)}`);
     
     // 現在のセッションにカスタム答えを記録
     // 最新の未終了セッションを取得
@@ -197,6 +200,7 @@ async function setQuiz5Answer(answer) {
       
       if (result.Items && result.Items.length > 0) {
         const session = result.Items[0];
+        console.log(`[DEBUG-Q5-DB] 現在のセッション: ${JSON.stringify(session)}`);
         
         const updateParams = {
           TableName: TABLES.SESSION,
@@ -210,16 +214,88 @@ async function setQuiz5Answer(answer) {
           }
         };
         
-        await dynamodb.send(new UpdateCommand(updateParams));
+        const updateResult = await dynamodb.send(new UpdateCommand(updateParams));
+        console.log(`[DEBUG-Q5-DB] セッション更新結果: ${JSON.stringify(updateResult)}`);
+      } else {
+        console.log(`[DEBUG-Q5-DB] 問題5の進行中セッションが見つかりません`);
       }
     } catch (error) {
-      console.error('セッション情報の更新中にエラーが発生しました:', error);
+      console.error('[ERROR-Q5-DB] セッション情報の更新中にエラー:', error);
       // クイズの答えだけは更新できているので、true を返す
     }
     
+    // 既存回答の正誤判定を更新する関数呼び出し
+    await updateExistingAnswersForQuiz5(answer);
+    
     return true;
   } catch (error) {
-    console.error('クイズ5の答え設定中にエラーが発生しました:', error);
+    console.error('[ERROR-Q5-DB] クイズ5の答え設定中にエラー:', error);
+    return false;
+  }
+}
+
+// 問題5用の既存回答更新専用関数
+async function updateExistingAnswersForQuiz5(answer) {
+  try {
+    console.log(`[DEBUG-Q5-DB] 問題5既存回答更新開始: answer="${answer}"`);
+    
+    // 問題5のすべての回答を取得
+    const answersParams = {
+      TableName: TABLES.ANSWER,
+      IndexName: 'quiz_id-index', 
+      KeyConditionExpression: 'quiz_id = :quizId',
+      ExpressionAttributeValues: {
+        ':quizId': '5'
+      }
+    };
+    
+    const answersResult = await dynamodb.send(new QueryCommand(answersParams));
+    const answers = answersResult.Items || [];
+    
+    console.log(`[DEBUG-Q5-DB] 問題5既存回答数: ${answers.length}`);
+    console.log(`[DEBUG-Q5-DB] 回答詳細: ${JSON.stringify(answers)}`);
+    
+    // 各回答を再評価
+    let updateCount = 0;
+    
+    for (const answerItem of answers) {
+      // プレイヤーの回答と設定された正解を比較
+      const isCorrect = answerItem.answer === answer ? 1 : 0;
+      const oldIsCorrect = answerItem.is_correct;
+      
+      console.log(`[DEBUG-Q5-DB] 回答比較: "${answerItem.answer}" vs "${answer}" => ${isCorrect} (現在値=${oldIsCorrect})`);
+      
+      if (isCorrect !== oldIsCorrect) {
+        // 正誤判定を更新
+        const updateParams = {
+          TableName: TABLES.ANSWER,
+          Key: {
+            player_id: answerItem.player_id,
+            quiz_id: answerItem.quiz_id
+          },
+          UpdateExpression: 'set is_correct = :isCorrect',
+          ExpressionAttributeValues: {
+            ':isCorrect': isCorrect
+          },
+          ReturnValues: 'UPDATED_NEW'
+        };
+        
+        try {
+          const updateResult = await dynamodb.send(new UpdateCommand(updateParams));
+          console.log(`[DEBUG-Q5-DB] 回答更新成功: player=${answerItem.player_id}, 判定=${oldIsCorrect}→${isCorrect}, 結果=${JSON.stringify(updateResult)}`);
+          updateCount++;
+        } catch (updateError) {
+          console.error(`[ERROR-Q5-DB] 回答更新失敗: player=${answerItem.player_id}`, updateError);
+        }
+      } else {
+        console.log(`[DEBUG-Q5-DB] 判定に変更なし: player=${answerItem.player_id}, 判定=${oldIsCorrect}`);
+      }
+    }
+    
+    console.log(`[DEBUG-Q5-DB] 問題5回答更新完了: 全${answers.length}件中${updateCount}件更新`);
+    return true;
+  } catch (error) {
+    console.error('[ERROR-Q5-DB] 問題5既存回答更新でエラー:', error);
     return false;
   }
 }
@@ -230,7 +306,14 @@ async function getQuiz(id) {
   
   // キャッシュをチェック
   if (cache.has(cacheKey)) {
-    return cache.get(cacheKey);
+    const cachedQuiz = cache.get(cacheKey);
+    
+    // 問題5のデバッグ
+    if (id === '5') {
+      console.log(`[DEBUG-Q5-DB] クイズ5キャッシュヒット: ${JSON.stringify(cachedQuiz)}`);
+    }
+    
+    return cachedQuiz;
   }
   
   try {
@@ -248,6 +331,7 @@ async function getQuiz(id) {
     // 問題5の場合は、現在のセッションから最新の回答を取得
     if (id === '5') {
       const quiz = result.Item;
+      console.log(`[DEBUG-Q5-DB] クイズ5取得: ${JSON.stringify(quiz)}`);
       
       try {
         // 最新の未終了セッションを取得
@@ -271,11 +355,11 @@ async function getQuiz(id) {
           // セッションにカスタム答えがあればそれを使用
           if (session.custom_answer) {
             quiz.correct_answer = session.custom_answer;
-            console.log(`問題5: セッションからカスタム答え "${quiz.correct_answer}" を使用します`);
+            console.log(`[DEBUG-Q5-DB] 問題5: セッションからカスタム答え "${quiz.correct_answer}" を使用します`);
           }
         }
       } catch (error) {
-        console.error('問題5のセッション情報取得中にエラーが発生しました:', error);
+        console.error('[ERROR-Q5-DB] 問題5のセッション情報取得中にエラー:', error);
       }
       
       // 結果をキャッシュに保存
@@ -287,10 +371,11 @@ async function getQuiz(id) {
     cache.set(cacheKey, result.Item);
     return result.Item;
   } catch (error) {
-    console.error(`クイズ ${id} の取得中にエラーが発生しました:`, error);
+    console.error(`[ERROR-Q5-DB] クイズ ${id} の取得中にエラー:`, error);
     return null;
   }
 }
+
 
 // すべてのクイズを取得
 async function getAllQuizzes() {
@@ -424,7 +509,10 @@ async function getPlayer(id) {
 // プレイヤーの回答を記録
 async function recordAnswer(playerId, quizId, answer, isCorrect, responseTime) {
   try {
-    console.log(`[DEBUG] DB記録: player=${playerId}, quiz=${quizId}, answer="${answer}", isCorrect=${isCorrect}, responseTime=${responseTime}`);
+    // 問題5のデバッグ
+    if (quizId === '5') {
+      console.log(`[DEBUG-Q5-DB] 回答記録: player=${playerId}, quiz=${quizId}, answer="${answer}", isCorrect=${isCorrect}, responseTime=${responseTime}`);
+    }
     
     const params = {
       TableName: TABLES.ANSWER,
@@ -443,9 +531,14 @@ async function recordAnswer(playerId, quizId, answer, isCorrect, responseTime) {
     // ランキングキャッシュをクリア
     cache.del('rankings');
     
+    // 問題5のデバッグ
+    if (quizId === '5') {
+      console.log(`[DEBUG-Q5-DB] 回答記録完了: player=${playerId}, quiz=${quizId}`);
+    }
+    
     return true;
   } catch (error) {
-    console.error(`プレイヤー ${playerId} のクイズ ${quizId} への回答記録中にエラーが発生しました:`, error);
+    console.error(`[ERROR-Q5-DB] プレイヤー ${playerId} のクイズ ${quizId} への回答記録中にエラー:`, error);
     return false;
   }
 }

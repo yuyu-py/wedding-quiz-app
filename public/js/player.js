@@ -592,6 +592,15 @@ document.addEventListener('DOMContentLoaded', function() {
       answerCheckInterval = null;
     }
     
+    // 問題5用のデバッグログを追加
+    if (quizId === '5') {
+      console.log(`[DEBUG-Q5] 答え合わせ開始 - 事前状態: ${JSON.stringify({
+        playerAnswer: playerAnswers[quizId]?.answer || 'なし',
+        isCorrect: playerAnswers[quizId]?.isCorrect,
+        currentQuizId: currentQuizId
+      })}`);
+    }
+    
     console.log(`答え合わせ画面表示開始: クイズID ${quizId}`);
     
     try {
@@ -611,17 +620,30 @@ document.addEventListener('DOMContentLoaded', function() {
           }
           return;
         }
+        
+        console.log(`[DEBUG-Q5] 解答公開確認結果: ${JSON.stringify(statusResult)}`);
       }
       
       // クイズの正解情報を取得
       const response = await fetch(`/api/admin/quiz/${quizId}/answer`);
+      
+      // 問題5: レスポンスをデバッグ出力
+      if (quizId === '5') {
+        const responseClone = response.clone();
+        const responseText = await responseClone.text();
+        console.log(`[DEBUG-Q5] サーバーレスポンス: ${responseText}`);
+      }
       
       if (!response.ok) {
         throw new Error(`APIエラー: ${response.status}`);
       }
       
       const answerData = await response.json();
-      console.log(`答え情報取得成功: ${answerData.correct_answer}`);
+      
+      // 問題5: 取得したデータを詳細に表示
+      if (quizId === '5') {
+        console.log(`[DEBUG-Q5] 正解データ: ${JSON.stringify(answerData)}`);
+      }
       
       // 問題5で答えが空の場合は実践画面に留まる
       if (quizId === '5' && (!answerData.correct_answer || answerData.correct_answer === '')) {
@@ -638,6 +660,57 @@ document.addEventListener('DOMContentLoaded', function() {
       // ユーザーの回答を確認
       const playerAnswer = playerAnswers[quizId]?.answer || null;
       const isCorrect = playerAnswers[quizId]?.isCorrect || false;
+      
+      // 問題5: 判定値を詳細に表示
+      if (quizId === '5') {
+        console.log(`[DEBUG-Q5] 判定検証: playerAnswer="${playerAnswer}", correctAnswer="${correctAnswerText}", isCorrect=${isCorrect}, playerAnswersオブジェクト=${JSON.stringify(playerAnswers[quizId])}`);
+        
+        // 直接比較してみる
+        const directComparison = playerAnswer === correctAnswerText;
+        console.log(`[DEBUG-Q5] 直接比較: ${directComparison} (${typeof playerAnswer} vs ${typeof correctAnswerText})`);
+        
+        // スペースやケースの違いも確認
+        const normalizedPlayer = String(playerAnswer).trim();
+        const normalizedCorrect = String(correctAnswerText).trim();
+        console.log(`[DEBUG-Q5] 正規化後比較: "${normalizedPlayer}" === "${normalizedCorrect}" => ${normalizedPlayer === normalizedCorrect}`);
+      }
+      
+      // 問題5の場合、最新の回答データをサーバーから取得
+      if (quizId === '5') {
+        console.log('[DEBUG-Q5] サーバーから最新の回答データを取得');
+        try {
+          const freshAnswerResponse = await fetch(`/api/player/${playerId}/answer/${quizId}`);
+          if (freshAnswerResponse.ok) {
+            const freshAnswerData = await freshAnswerResponse.json();
+            console.log(`[DEBUG-Q5] 最新回答データ: ${JSON.stringify(freshAnswerData)}`);
+            
+            if (freshAnswerData.success && freshAnswerData.answer) {
+              // 得られた最新データで正誤状態を上書き
+              const serverIsCorrect = freshAnswerData.answer.is_correct === 1;
+              console.log(`[DEBUG-Q5] サーバー上の正誤状態: ${serverIsCorrect}, ローカルの状態: ${isCorrect}`);
+              
+              if (serverIsCorrect !== isCorrect) {
+                console.log(`[DEBUG-Q5] 正誤状態を更新: ${isCorrect} → ${serverIsCorrect}`);
+                
+                // クライアント側のキャッシュを更新
+                if (playerAnswers[quizId]) {
+                  playerAnswers[quizId].isCorrect = serverIsCorrect;
+                  isCorrect = serverIsCorrect; // 現在の関数スコープの変数も更新
+                }
+              }
+            }
+          } else {
+            console.log(`[DEBUG-Q5] 回答データ取得失敗: ${freshAnswerResponse.status}`);
+          }
+        } catch (refreshError) {
+          console.error(`[ERROR-Q5] 最新回答データ取得エラー: ${refreshError.message}`);
+        }
+      }
+      
+      // 問題5: ヘッダー設定前にデバッグ
+      if (quizId === '5') {
+        console.log(`[DEBUG-Q5] ヘッダー設定前: answerResultHeader=${answerResultHeader.className}`);
+      }
       
       // ヘッダーを設定
       answerResultHeader.innerHTML = '';
@@ -660,6 +733,11 @@ document.addEventListener('DOMContentLoaded', function() {
         resultIcon.textContent = 'cancel';
         answerResultHeader.appendChild(resultIcon);
         answerResultHeader.appendChild(document.createTextNode(' 不正解'));
+      }
+      
+      // 問題5: ヘッダー設定後のデバッグ
+      if (quizId === '5') {
+        console.log(`[DEBUG-Q5] ヘッダー設定後: answerResultHeader=${answerResultHeader.className}`);
       }
       
       // 正解テキストを設定
@@ -749,6 +827,29 @@ document.addEventListener('DOMContentLoaded', function() {
         });
       }
       
+      // 問題5特別処理: データが不一致なら強制上書き
+      if (quizId === '5') {
+        console.log('[DEBUG-Q5] 問題5特別処理: 表示の強制修正チェック');
+        
+        // 選んだ回答が正解と同じなら「正解」表示に強制修正
+        if (playerAnswer === correctAnswerText && !isCorrect) {
+          console.log(`[DEBUG-Q5] 表示不一致を検出: 選択=${playerAnswer}, 正解=${correctAnswerText}だが不正解表示`);
+          
+          // ヘッダーを正解表示に強制修正
+          answerResultHeader.className = 'answer-result-header correct';
+          answerResultHeader.innerHTML = '';
+          
+          const correctIcon = document.createElement('span');
+          correctIcon.className = 'material-symbols-rounded';
+          correctIcon.textContent = 'check_circle';
+          
+          answerResultHeader.appendChild(correctIcon);
+          answerResultHeader.appendChild(document.createTextNode(' 正解！（表示修正済）'));
+          
+          console.log(`[DEBUG-Q5] 表示を強制修正しました: ${answerResultHeader.className}`);
+        }
+      }
+      
       // 答え画像コンテナを初期化（問題1と2以外は常に非表示）
       const questionId = parseInt(quizId);
       
@@ -780,7 +881,7 @@ document.addEventListener('DOMContentLoaded', function() {
       isTransitioning = false;
       
     } catch (error) {
-      console.error('答え合わせ画面表示中にエラーが発生:', error);
+      console.error(`[ERROR-Q5] 答え合わせ画面表示中にエラー: ${error.message}`);
       
       // エラー時のリトライ処理
       let retryCount = parseInt(localStorage.getItem(`retry_count_${quizId}`) || "0");
@@ -803,119 +904,6 @@ document.addEventListener('DOMContentLoaded', function() {
         // 遷移フラグをリセット
         isTransitioning = false;
       }
-    }
-  }
-  
-  // プレイヤーのランキングを取得して表示
-  async function fetchAndShowRanking() {
-    if (!playerId) return;
-    
-    try {
-      // 回答履歴を最新に更新
-      await fetchPlayerAnswers();
-      
-      console.log("fetchAndShowRanking実行中 - ランキングデータ取得前");
-      
-      // ランキング全体を取得
-      const response = await fetch('/api/quiz/ranking/all');
-      const rankings = await response.json();
-      
-      console.log('取得したランキングデータ:', rankings);
-      console.log('現在のプレイヤーID:', playerId);
-      
-      // 自分の順位を探す
-      let playerRanking = null;
-      let playerPosition = 0;
-      
-      for (let i = 0; i < rankings.length; i++) {
-        if (rankings[i].player_id === playerId) {
-          playerRanking = rankings[i];
-          playerPosition = i + 1;
-          console.log('プレイヤーランキング情報を発見:', playerRanking, '順位:', playerPosition);
-          break;
-        }
-      }
-  
-      // ランキング情報を表示
-      if (playerRanking) {
-        console.log('プレイヤーランキング情報を表示します');
-        
-        // 正答数 - 直接DOM要素に設定
-        if (correctCount) {
-          correctCount.textContent = playerRanking.correct_count.toString();
-          console.log('正答数セット:', playerRanking.correct_count);
-        }
-        
-        if (waitingCorrectCount) {
-          waitingCorrectCount.textContent = playerRanking.correct_count.toString();
-          console.log('待機画面正答数セット:', playerRanking.correct_count);
-        }
-        
-        // ミリ秒から秒に変換して表示（小数点2桁）
-        const seconds = (playerRanking.total_time / 1000).toFixed(2);
-        
-        if (totalTime) {
-          totalTime.textContent = seconds;
-          console.log('合計時間セット:', seconds);
-        }
-        
-        if (waitingTotalTime) {
-          waitingTotalTime.textContent = seconds;
-          console.log('待機画面合計時間セット:', seconds);
-        }
-        
-        // 順位を設定
-        console.log('順位設定:', playerPosition);
-        
-        // 大きな順位表示
-        const rankNumberElement = document.getElementById('rank-number');
-        const topRankDisplayElement = document.getElementById('top-rank-display');
-        
-        if (rankNumberElement) {
-          rankNumberElement.textContent = playerPosition.toString();
-        }
-        
-        // ランキングメッセージ
-        let rankingMessage = '';
-        
-        if (playerPosition <= 5) {
-          // 上位5位以内のスタイルを適用
-          if (topRankDisplayElement) {
-            topRankDisplayElement.classList.remove('hidden');
-            topRankDisplayElement.style.color = '#ffc107'; // 金色
-            console.log('上位表示を有効化');
-          }
-          rankingMessage = `おめでとうございます！あなたは${playerPosition}位です！景品があるので、指示がありましたら前に来てください！`;
-        } else {
-          // 5位以下の表示スタイルを適用
-          if (topRankDisplayElement) {
-            topRankDisplayElement.classList.remove('hidden');
-            topRankDisplayElement.style.color = '#333333'; // 黒色
-            console.log('5位以下の順位表示');
-          }
-          rankingMessage = `あなたは${playerPosition}位でした。ご参加ありがとうございました！`;
-        }
-        
-        if (rankingPosition) {
-          rankingPosition.textContent = rankingMessage;
-          console.log('ランキングメッセージセット:', rankingMessage);
-        }
-      } else {
-        console.warn('ランキング内にプレイヤーが見つかりません。playerId:', playerId);
-        if (rankingPosition) {
-          rankingPosition.textContent = 'ランキングデータが取得できませんでした';
-        }
-      }
-      
-      // 待機画面を表示
-      showScreen(rankingWaitingScreen);
-      
-    } catch (error) {
-      console.error('ランキングの取得に失敗しました:', error);
-      if (rankingPosition) {
-        rankingPosition.textContent = 'ランキングデータの取得に失敗しました';
-      }
-      showScreen(rankingWaitingScreen);
     }
   }
   
@@ -1387,3 +1375,88 @@ document.addEventListener('DOMContentLoaded', function() {
     showScreen(registerScreen);
   }
 });
+
+// player.jsの末尾に追加
+// デバッグ用グローバル関数
+window.debugQuiz5 = function() {
+  console.log('問題5デバッグ情報:');
+  console.log('- 現在のプレイヤーID:', playerId);
+  console.log('- 保存されている回答:', playerAnswers['5']);
+  
+  // 最新の回答データを取得して表示
+  fetch(`/api/player/${playerId}/answer/5`)
+    .then(res => res.json())
+    .then(data => {
+      console.log('- サーバーの最新回答データ:', data);
+      
+      // クライアント側の状態とサーバー側を比較
+      if (data.success && data.answer) {
+        const serverIsCorrect = data.answer.is_correct === 1;
+        const clientIsCorrect = playerAnswers['5']?.isCorrect || false;
+        
+        console.log('状態比較:');
+        console.log(`- クライアント側: isCorrect=${clientIsCorrect}`);
+        console.log(`- サーバー側: is_correct=${serverIsCorrect}`);
+        
+        if (serverIsCorrect !== clientIsCorrect) {
+          console.log('⚠️ 不一致検出: クライアントとサーバーの状態が異なります');
+        } else {
+          console.log('✓ 一致: クライアントとサーバーの状態は同じです');
+        }
+      }
+    })
+    .catch(err => {
+      console.error('データ取得エラー:', err);
+    });
+  
+  // 正解データを取得して表示
+  fetch('/api/admin/quiz/5/answer')
+    .then(res => res.json())
+    .then(data => {
+      console.log('- 問題5の正解データ:', data);
+      
+      if (data.correct_answer && playerAnswers['5']) {
+        const isMatch = data.correct_answer === playerAnswers['5'].answer;
+        console.log(`- 回答と正解の一致: ${isMatch ? '一致' : '不一致'}`);
+        console.log(`- 自分の回答: "${playerAnswers['5'].answer}"`);
+        console.log(`- 現在の正解: "${data.correct_answer}"`);
+      }
+    })
+    .catch(err => {
+      console.error('正解データ取得エラー:', err);
+    });
+};
+
+// 強制的に状態を修正するヘルパー
+window.fixQuiz5State = function() {
+  fetch('/api/admin/quiz/5/answer')
+    .then(res => res.json())
+    .then(data => {
+      if (data.correct_answer && playerAnswers['5']) {
+        const shouldBeCorrect = data.correct_answer === playerAnswers['5'].answer;
+        
+        console.log(`修正前状態: isCorrect=${playerAnswers['5'].isCorrect}, shouldBe=${shouldBeCorrect}`);
+        
+        playerAnswers['5'].isCorrect = shouldBeCorrect;
+        console.log(`状態を修正しました: isCorrect=${playerAnswers['5'].isCorrect}`);
+        
+        // 答え合わせ画面を再表示
+        if (currentScreen === answerResultScreen) {
+          showAnswerResult('5');
+        }
+      }
+    });
+};
+
+// 基本的なデバッグ情報をページ読み込み時に表示
+setTimeout(() => {
+  if (currentQuizId === '5') {
+    console.log('[自動デバッグ] 問題5が表示されています');
+    window.debugQuiz5();
+  }
+}, 1000);
+
+// デバッグコマンドのヘルプ
+console.log('=== 問題5デバッグツール ===');
+console.log('デバッグ情報の表示: window.debugQuiz5()');
+console.log('表示状態の修正: window.fixQuiz5State()');

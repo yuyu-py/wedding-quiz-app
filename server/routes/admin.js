@@ -47,7 +47,7 @@ router.post('/quiz/5/set-answer', async (req, res) => {
   try {
     const { answer } = req.body;
     
-    console.log(`[DEBUG] 問題5答え設定リクエスト: answer="${answer}", 型=${typeof answer}`);
+    console.log(`[DEBUG-Q5-ADMIN] 問題5答え設定リクエスト: answer="${answer}", 型=${typeof answer}`);
     
     if (!answer || (answer !== '新郎' && answer !== '新婦')) {
       return res.status(400).json({ 
@@ -59,12 +59,12 @@ router.post('/quiz/5/set-answer', async (req, res) => {
     // 問題5の答えを設定
     const result = await db.setQuiz5Answer(answer);
     
-    console.log(`[DEBUG] 問題5答え設定結果: ${result ? '成功' : '失敗'}, answer="${answer}"`);
+    console.log(`[DEBUG-Q5-ADMIN] 問題5答え設定結果: ${result ? '成功' : '失敗'}, answer="${answer}"`);
     
     if (result) {
       // 追加: 既存の回答を再評価する処理
       try {
-        console.log(`[DEBUG] 問題5の既存回答を再評価します`);
+        console.log(`[DEBUG-Q5-ADMIN] 問題5の既存回答を再評価します`);
         // 問題5のすべての回答を取得
         const answersParams = {
           TableName: db.TABLES.ANSWER,
@@ -79,12 +79,14 @@ router.post('/quiz/5/set-answer', async (req, res) => {
         const answersResult = await db.dynamodb.send(new QueryCommand(answersParams));
         const answers = answersResult.Items || [];
         
-        console.log(`[DEBUG] 既存回答数: ${answers.length}`);
+        console.log(`[DEBUG-Q5-ADMIN] 既存回答数: ${answers.length}`);
         
         // 各回答を再評価
         for (const answerItem of answers) {
           const isCorrect = answerItem.answer === answer ? 1 : 0;
           const oldIsCorrect = answerItem.is_correct;
+          
+          console.log(`[DEBUG-Q5-ADMIN] 回答評価: player=${answerItem.player_id}, 回答="${answerItem.answer}", 正解="${answer}", 判定=${isCorrect}`);
           
           if (isCorrect !== oldIsCorrect) {
             // 正誤判定を更新
@@ -102,18 +104,20 @@ router.post('/quiz/5/set-answer', async (req, res) => {
             };
             
             const { UpdateCommand } = require('@aws-sdk/lib-dynamodb');
-            await db.dynamodb.send(new UpdateCommand(updateParams));
-            console.log(`[DEBUG] 回答を更新: player=${answerItem.player_id}, 回答="${answerItem.answer}", 判定=${oldIsCorrect}→${isCorrect}`);
+            const updateResult = await db.dynamodb.send(new UpdateCommand(updateParams));
+            console.log(`[DEBUG-Q5-ADMIN] 回答を更新: player=${answerItem.player_id}, 回答="${answerItem.answer}", 判定=${oldIsCorrect}→${isCorrect}, 結果=${JSON.stringify(updateResult)}`);
+          } else {
+            console.log(`[DEBUG-Q5-ADMIN] 判定に変更なし: player=${answerItem.player_id}, 判定=${oldIsCorrect}`);
           }
         }
         
         // ランキングキャッシュをクリア
         if (typeof db.cache !== 'undefined' && db.cache.del) {
           db.cache.del('rankings');
-          console.log(`[DEBUG] ランキングキャッシュをクリア`);
+          console.log(`[DEBUG-Q5-ADMIN] ランキングキャッシュをクリア`);
         }
       } catch (recalcError) {
-        console.error('既存回答の再評価中にエラーが発生しました:', recalcError);
+        console.error('[ERROR-Q5-ADMIN] 既存回答の再評価中にエラー:', recalcError);
       }
       
       // 答え設定成功時に全クライアントに通知
@@ -135,7 +139,7 @@ router.post('/quiz/5/set-answer', async (req, res) => {
       });
     }
   } catch (error) {
-    console.error('クイズ5の答え設定中にエラーが発生しました:', error);
+    console.error('[ERROR-Q5-ADMIN] クイズ5の答え設定中にエラー:', error);
     res.status(500).json({ 
       success: false,
       error: 'サーバーエラーが発生しました' 
