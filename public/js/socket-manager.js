@@ -1,5 +1,3 @@
-// /public/js/socket-manager.js (新規作成)
-
 // グローバルなSocket.io接続管理
 const SocketManager = {
     socket: null,
