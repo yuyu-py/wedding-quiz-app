@@ -1019,7 +1019,7 @@ document.addEventListener('DOMContentLoaded', function() {
             topRankDisplayElement.style.color = '#ffc107'; // 金色
             console.log('上位表示を有効化');
           }
-          rankingMessage = `おめでとうございます！あなたは${playerPosition}位です！景品があるので、指示がありましたら前に来てください！`;
+          rankingMessage = `おめでとうございます！あなたは${playerPosition}位です！指示がありましたら前に来てください！`;
         } else {
           // 5位以下の表示スタイルを適用
           if (topRankDisplayElement) {
@@ -1027,7 +1027,7 @@ document.addEventListener('DOMContentLoaded', function() {
             topRankDisplayElement.style.color = '#333333'; // 黒色
             console.log('5位以下の順位表示');
           }
-          rankingMessage = `あなたは${playerPosition}位でした。ご参加ありがとうございました！`;
+          rankingMessage = `ご参加ありがとうございました！遊んでくれてありがとう！`;
         }
         
         if (rankingPosition) {

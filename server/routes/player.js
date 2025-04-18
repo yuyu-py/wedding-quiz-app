@@ -10,7 +10,7 @@ router.post('/register', async (req, res) => {
     const { name, tableNumber } = req.body;
     
     if (!name || name.trim() === '') {
-      return res.status(400).json({ error: '名前は必須です' });
+      return res.status(400).json({ error: 'フルネームは必須です' });
     }
     
     // テーブル番号のバリデーション - オプショナルに変更
