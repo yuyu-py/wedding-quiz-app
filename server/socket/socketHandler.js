@@ -247,6 +247,14 @@ function setupSocketHandlers(io) {
             
             console.log('問題5: 実践画面から解答画面への遷移を実行');
             
+            // 強制遷移通知を送信
+            io.emit('force_transition', {
+              quizId: '5',
+              target: 'answer',
+              timestamp: Date.now(),
+              fromPractice: true
+            });
+            
             // 解答表示イベントを送信
             io.emit('quiz_event', { 
               event: 'show_answer', 
@@ -274,34 +282,58 @@ function setupSocketHandlers(io) {
           console.log('管理者操作: 次のスライドに進みました');
           break;
           
-        case 'prev_slide':
-          // 前のスライドに戻る
-          io.emit('quiz_event', { 
-            event: 'prev_slide' 
-          });
-          console.log('前のスライドに戻りました');
-          break;
-          
         case 'show_answer':
-          // 解答表示をブロードキャスト
-          io.emit('quiz_event', { 
-            event: 'show_answer', 
-            quizId,
-            manual: true, // 手動操作フラグ
-            fromPractice: params.fromPractice || false
-          });
-          
-          // タイマーを停止
-          stopQuizTimer();
-          
-          // クイズ状態を更新
-          currentQuizState.phase = 'answer';
-          currentQuizState.timerExpired = true;
-          
-          // セッションの answer_displayed フラグを更新
-          await db.markAnswerAsDisplayed(quizId);
-          
-          console.log(`クイズ ${quizId} の解答が表示されました（手動）`);
+          // 問題5の実践画面からの遷移の場合
+          if (quizId === '5' && params.fromPractice) {
+            // フェーズを解答に更新
+            currentQuizState.phase = 'answer';
+            
+            console.log('問題5: 実践画面から解答画面への遷移を実行');
+            
+            // 全クライアントに解答画面への遷移を通知
+            io.emit('force_transition', {
+              quizId: '5',
+              target: 'answer',
+              timestamp: Date.now(),
+              fromPractice: true
+            });
+            
+            // 全クライアントに解答表示イベントも送信
+            io.emit('quiz_event', { 
+              event: 'show_answer', 
+              quizId: '5',
+              manual: true,
+              fromPractice: true
+            });
+            
+            // 解答表示フラグをDBに記録
+            db.markAnswerAsDisplayed('5')
+              .catch(err => {
+                console.error('解答表示フラグの更新中にエラーが発生しました:', err);
+              });
+          }
+          // 通常の解答表示の場合
+          else {
+            // 強制遷移通知を送信
+            io.emit('force_transition', {
+              quizId,
+              target: 'answer',
+              timestamp: Date.now()
+            });
+            
+            // 解答表示イベントを送信
+            io.emit('quiz_event', { 
+              event: 'show_answer', 
+              quizId,
+              manual: true
+            });
+            
+            // 解答表示フラグをDBに記録
+            db.markAnswerAsDisplayed(quizId)
+              .catch(err => {
+                console.error('解答表示フラグの更新中にエラーが発生しました:', err);
+              });
+          }
           break;
           
         case 'show_ranking':
@@ -352,9 +384,6 @@ function setupSocketHandlers(io) {
           
           console.log('すべてのデータがリセットされました');
           break;
-          
-        default:
-          socket.emit('command_error', { message: '不明なコマンドです' });
       }
     });
     
@@ -575,11 +604,13 @@ function setupSocketHandlers(io) {
       // タイマー終了時の処理
       if (remaining <= 0) {
         clearInterval(syncInterval);
+        
+        // 問題5も含めてタイマー終了処理を実行
         handleTimerExpiration(quizId);
       }
     }, 250); // 250ミリ秒間隔で同期（より頻繁に）
     
-    // タイマー終了処理の設定
+    // タイマー終了処理の設定（バックアップ用）
     const timerId = setTimeout(() => {
       clearInterval(syncInterval);
       handleTimerExpiration(quizId);
@@ -603,9 +634,11 @@ function setupSocketHandlers(io) {
     if (quizId === '5') {
       currentQuizState.phase = 'practice';
       
+      console.log(`問題5: タイマー終了により実践画面に移行します`);
+      
       // 短い遅延を入れて全画面の処理完了を待つ
       setTimeout(() => {
-        // 強制遷移を二回送信して確実性を高める
+        // 全クライアント（管理者含む）に実践画面への強制遷移を指示
         io.emit('force_transition', {
           quizId,
           target: 'practice',
@@ -619,25 +652,13 @@ function setupSocketHandlers(io) {
           auto: true
         });
         
-        console.log(`問題5: タイマー終了により実践待機画面に移行します`);
-        
-        // 2秒後にもう一度通知（クライアント側の処理ラグ対策）
-        setTimeout(() => {
-          io.emit('force_transition', {
+        // 管理者に特別イベントを送信して確実に遷移させる
+        activeConnections.admin.forEach(adminSocket => {
+          adminSocket.emit('admin_force_practice', {
             quizId,
-            target: 'practice',
-            timestamp: Date.now(),
-            retry: true
+            timestamp: Date.now()
           });
-          
-          // 実践画面表示イベントを送信
-          io.emit('quiz_event', { 
-            event: 'show_practice', 
-            quizId,
-            auto: true,
-            retry: true
-          });
-        }, 2000);
+        });
       }, 200);
     } else {
       // 通常問題は解答画面へ

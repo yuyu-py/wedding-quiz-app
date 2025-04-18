@@ -738,10 +738,9 @@ document.addEventListener('DOMContentLoaded', function() {
       return;
     }
     
-    // 通常の強制遷移処理
-    if (target === 'answer') {
-      // クイズIDが一致する場合のみ遷移
-      if (quizId === currentQuizId) {
+    // クイズIDが一致する場合のみ遷移
+    if (quizId === currentQuizId) {
+      if (target === 'answer') {
         // タイマーを停止
         stopTimer();
         
@@ -752,7 +751,10 @@ document.addEventListener('DOMContentLoaded', function() {
         // 解答表示フラグを設定
         markAnswerAsDisplayed(quizId);
       }
-    } else if (target === 'ranking') {
+    }
+    
+    // ランキング遷移処理
+    if (target === 'ranking') {
       // ランキング準備画面表示
       if (rankingIntroScreen) {
         showScreen(rankingIntroScreen);
@@ -833,25 +835,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         break;
         
-      case 'prev_slide':
-        if (currentScreen.id === 'quiz-question-screen') {
-          stopTimer();
-          showScreen(quizTitleScreen);
-        } else if (currentScreen.id === 'quiz-answer-screen') {
-          showQuestion(currentQuizId);
-        }
-        break;
-        
-      case 'show_answer':
-        // 問題5の実践画面からの遷移を特別処理
-        if (quizId === '5' && fromPractice) {
-          console.log('Display: 問題5の実践画面から解答画面への遷移');
-          showAnswer('5');
-        } else if (currentQuizId) {
-          showAnswer(currentQuizId);
-        }
-        break;
-      
       case 'show_practice':
         // 実践待機画面表示 - 優先度を高く扱う
         if (quizId === '5') {
@@ -865,8 +848,18 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         break;
       
+      case 'show_answer':
+        // 問題5の実践画面からの遷移を特別処理
+        if (quizId === '5' && fromPractice) {
+          console.log('Display: 問題5の実践画面から解答画面への遷移');
+          showAnswer('5');
+        } else if (currentQuizId) {
+          showAnswer(currentQuizId);
+        }
+        break;
+      
+      // ランキング表示の改善
       case 'show_ranking':
-        // ランキング表示の改善
         if (position === 'intro') {
           // ランキング準備画面表示 - 文字のみ
           if (rankingIntroScreen) {
