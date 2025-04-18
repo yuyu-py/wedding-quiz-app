@@ -528,7 +528,7 @@ function setupSocketHandlers(io) {
   // 問題5専用のタイマー終了処理
   function handleQuiz5TimerExpiration() {
     console.log('[DEBUG] 問題5特殊処理開始 - 実践画面への移行処理');
-    console.log(`[DEBUG] 現在のクイズ状態: quizId=${currentQuizState.quizId}, phase=${currentQuizState.phase}, timerExpired=${currentQuizState.timerExpired}`);
+    console.log(`[DEBUG] 現在のクイズ状態: quizId=${currentQuizState.quizId}, phase=${currentQuizState.phase}, timerExpired=${currentQuizState.timerExpired}, timerStartTime=${currentQuizState.timerStartTime}`);
     
     // 状態を実践フェーズに更新
     const oldPhase = currentQuizState.phase;
