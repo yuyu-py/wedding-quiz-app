@@ -46,7 +46,7 @@ router.post('/quiz/:id/end', async (req, res) => {
 router.post('/quiz/5/set-answer', async (req, res) => {
   try {
     const { answer } = req.body;
-
+    
     console.log(`[DEBUG] 問題5答え設定リクエスト: answer="${answer}", 型=${typeof answer}`);
     
     if (!answer || (answer !== '新郎' && answer !== '新婦')) {
@@ -58,10 +58,64 @@ router.post('/quiz/5/set-answer', async (req, res) => {
     
     // 問題5の答えを設定
     const result = await db.setQuiz5Answer(answer);
-
+    
     console.log(`[DEBUG] 問題5答え設定結果: ${result ? '成功' : '失敗'}, answer="${answer}"`);
     
     if (result) {
+      // 追加: 既存の回答を再評価する処理
+      try {
+        console.log(`[DEBUG] 問題5の既存回答を再評価します`);
+        // 問題5のすべての回答を取得
+        const answersParams = {
+          TableName: db.TABLES.ANSWER,
+          IndexName: 'quiz_id-index', 
+          KeyConditionExpression: 'quiz_id = :quizId',
+          ExpressionAttributeValues: {
+            ':quizId': '5'
+          }
+        };
+        
+        const { QueryCommand } = require('@aws-sdk/lib-dynamodb');
+        const answersResult = await db.dynamodb.send(new QueryCommand(answersParams));
+        const answers = answersResult.Items || [];
+        
+        console.log(`[DEBUG] 既存回答数: ${answers.length}`);
+        
+        // 各回答を再評価
+        for (const answerItem of answers) {
+          const isCorrect = answerItem.answer === answer ? 1 : 0;
+          const oldIsCorrect = answerItem.is_correct;
+          
+          if (isCorrect !== oldIsCorrect) {
+            // 正誤判定を更新
+            const updateParams = {
+              TableName: db.TABLES.ANSWER,
+              Key: {
+                player_id: answerItem.player_id,
+                quiz_id: answerItem.quiz_id
+              },
+              UpdateExpression: 'set is_correct = :isCorrect',
+              ExpressionAttributeValues: {
+                ':isCorrect': isCorrect
+              },
+              ReturnValues: 'UPDATED_NEW'
+            };
+            
+            const { UpdateCommand } = require('@aws-sdk/lib-dynamodb');
+            await db.dynamodb.send(new UpdateCommand(updateParams));
+            console.log(`[DEBUG] 回答を更新: player=${answerItem.player_id}, 回答="${answerItem.answer}", 判定=${oldIsCorrect}→${isCorrect}`);
+          }
+        }
+        
+        // ランキングキャッシュをクリア
+        if (typeof db.cache !== 'undefined' && db.cache.del) {
+          db.cache.del('rankings');
+          console.log(`[DEBUG] ランキングキャッシュをクリア`);
+        }
+      } catch (recalcError) {
+        console.error('既存回答の再評価中にエラーが発生しました:', recalcError);
+      }
+      
       // 答え設定成功時に全クライアントに通知
       if (global.io) {
         global.io.emit('quiz5_answer_set', {

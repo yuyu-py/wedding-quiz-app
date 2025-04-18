@@ -72,21 +72,45 @@ router.post('/answer', async (req, res) => {
     if (!quiz) {
       return res.status(404).json({ error: 'クイズが見つかりません' });
     }
-
-    console.log(`[DEBUG] 回答受付: プレイヤー=${playerId}, 問題=${quizId}, 回答="${answer}", 正解="${quiz.correct_answer}"`);
     
-    // デバッグログ追加（問題5のみ）
+    // 問題5の特殊ケース
     if (quizId === '5') {
-      console.log(`問題5回答処理: プレイヤー回答="${answer}", システム正解="${quiz.correct_answer}"`);
+      console.log(`[DEBUG] 回答受付: プレイヤー=${playerId}, 問題=${quizId}, 回答="${answer}", 正解="${quiz.correct_answer}"`);
+      
+      // 正解の有無で処理を分岐
+      if (!quiz.correct_answer || quiz.correct_answer === '') {
+        // 正解がまだ設定されていない場合、一時的に不正解とするが警告ログを出す
+        console.log(`[WARNING] 問題5: 正解が未設定のため、仮判定で記録します。後で再評価されます。`);
+        
+        // 回答を保存 - 再評価される前提
+        const success = await db.recordAnswer(playerId, quizId, answer, false, responseTime);
+        
+        if (success) {
+          res.json({
+            success: true,
+            playerId,
+            quizId,
+            answer,
+            isCorrect: false, // 仮の判定
+            responseTime,
+            message: '回答が記録されました（実践後に正解が決定されます）'
+          });
+        } else {
+          res.status(500).json({ error: '回答の記録に失敗しました' });
+        }
+        return;
+      }
     }
     
-    // 正解かどうか判定
+    // 正解かどうか判定（通常問題または正解が設定済みの問題5）
     const isCorrect = answer === quiz.correct_answer;
-
+    
     console.log(`[DEBUG] 正誤判定: ${isCorrect ? '正解' : '不正解'}, プレイヤー回答="${answer}", 正解="${quiz.correct_answer}", 型=${typeof answer}/${typeof quiz.correct_answer}`);
     
     // 回答を保存
     const success = await db.recordAnswer(playerId, quizId, answer, isCorrect, responseTime);
+    
+    console.log(`[DEBUG] DB記録: player=${playerId}, quiz=${quizId}, answer="${answer}", isCorrect=${isCorrect}, responseTime=${responseTime}`);
     
     if (success) {
       res.json({
