@@ -611,31 +611,8 @@ document.addEventListener('DOMContentLoaded', function() {
           }
           return;
         }
-        
-        // 問題5の場合は明示的に最新の回答データを取得
-        console.log('[DEBUG-PLAYER] 問題5: 最新の回答データを取得します');
-        
-        try {
-          // 最新の回答データをサーバーから取得
-          const freshAnswerResponse = await fetch(`/api/player/${playerId}/answer/${quizId}`);
-          const freshAnswerData = await freshAnswerResponse.json();
-          
-          // ローカルキャッシュを更新
-          if (freshAnswerData.success && freshAnswerData.answer) {
-            console.log(`[DEBUG-PLAYER] 問題5: 回答データ更新 - isCorrect: ${freshAnswerData.answer.is_correct}`);
-            
-            // playerAnswersオブジェクトを更新
-            playerAnswers[quizId] = {
-              answer: freshAnswerData.answer.answer,
-              isCorrect: freshAnswerData.answer.is_correct === 1,
-              responseTime: freshAnswerData.answer.response_time
-            };
-          }
-        } catch (refreshError) {
-          console.error('最新の回答データ取得中にエラー:', refreshError);
-        }
       }
-  
+      
       // クイズの正解情報を取得
       const response = await fetch(`/api/admin/quiz/${quizId}/answer`);
       
@@ -661,8 +638,6 @@ document.addEventListener('DOMContentLoaded', function() {
       // ユーザーの回答を確認
       const playerAnswer = playerAnswers[quizId]?.answer || null;
       const isCorrect = playerAnswers[quizId]?.isCorrect || false;
-      
-      console.log(`[DEBUG-PLAYER] 答え合わせ表示: answer=${playerAnswer}, isCorrect=${isCorrect}, quizId=${quizId}`);
       
       // ヘッダーを設定
       answerResultHeader.innerHTML = '';
@@ -1132,15 +1107,14 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 強制遷移イベント処理の修正
     socket.on('force_transition', (data) => {
-      const { quizId, target, timestamp, isPractice, fromPractice } = data;
+      const { quizId, target, timestamp, isPractice, fromPractice, answer } = data;
+      console.log(`強制遷移指示受信: ${target} - クイズID: ${quizId}, isPractice: ${isPractice}, fromPractice: ${fromPractice}`);
       
-      console.log(`[DEBUG-PLAYER] 強制遷移: target=${target}, QuizID=${quizId}(${typeof quizId}), isPractice=${isPractice}`);
-      
-      // 問題5の特殊ケースを優先処理 - 型安全な比較
-      if (quizId == '5') {
+      // 問題5の特殊ケースを優先処理
+      if (quizId === '5') {
         if (target === 'practice' && isPractice) {
           // 問題5の実践画面への強制遷移
-          console.log('[DEBUG-PLAYER] 問題5: 実践待機画面に強制遷移します');
+          console.log('問題5: 実践待機画面に強制遷移します');
           stopTimer(); // タイマーを停止
           displayCurrentScreen = 'practice';
           showScreen(practiceScreen);
@@ -1149,7 +1123,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (target === 'answer' && fromPractice) {
           // 問題5の実践画面から解答画面への強制遷移
-          console.log('[DEBUG-PLAYER] 問題5: 実践画面から解答画面に強制遷移します');
+          console.log('問題5: 実践画面から解答画面に強制遷移します');
           displayCurrentScreen = 'quiz_answer';
           showAnswerResult('5');
           return; // 処理を終了
@@ -1196,15 +1170,15 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // クイズイベント処理の修正
     socket.on('quiz_event', (data) => {
-      const { event, quizId, position, auto, manual, fromPractice, isPractice } = data;
+      const { event, quizId, position, auto, manual, fromPractice, isPractice, answer } = data;
       
-      console.log(`[DEBUG-PLAYER] イベント受信: ${event}, QuizID: ${quizId}(${typeof quizId}), isPractice: ${isPractice}`);
+      console.log(`イベント受信: ${event}, クイズID: ${quizId}, isPractice: ${isPractice}, fromPractice: ${fromPractice}`);
       
-      // 問題5の特殊イベントを優先処理 - 型安全な比較
-      if (quizId == '5') {
+      // 問題5の特殊イベントを優先処理
+      if (quizId === '5') {
         // 実践待機画面表示
         if (event === 'show_practice' && isPractice) {
-          console.log('[DEBUG-PLAYER] 問題5の実践待機画面表示イベント受信');
+          console.log('Player: 問題5の実践待機画面表示イベント受信');
           stopTimer(); // タイマーを停止
           displayCurrentScreen = 'practice';
           showScreen(practiceScreen);
@@ -1213,12 +1187,12 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // 実践画面から解答画面への遷移
         if (event === 'show_answer' && fromPractice) {
-          console.log('[DEBUG-PLAYER] 問題5の実践画面から解答画面への遷移イベント受信');
+          console.log('Player: 問題5の実践画面から解答画面への遷移イベント受信');
           displayCurrentScreen = 'quiz_answer';
           showAnswerResult('5');
           return; // 処理を終了
         }
-      }  
+      }
       
       // 以下は通常のイベント処理
       switch (event) {

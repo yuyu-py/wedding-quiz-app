@@ -573,14 +573,15 @@ async function getRankings() {
       const answersResult = await dynamodb.send(new QueryCommand(answersParams));
       const answers = answersResult.Items || [];
       
-      // 正答数と合計回答時間を計算
-      const correctCount = answers.filter(a => a.is_correct === 1).length;
-      const totalTime = answers.reduce((sum, a) => sum + a.response_time, 0);
+      // 修正: 正答した問題のみの合計回答時間を計算
+      const correctAnswers = answers.filter(a => a.is_correct === 1);
+      const correctCount = correctAnswers.length;
+      const totalTime = correctAnswers.reduce((sum, a) => sum + a.response_time, 0);
       
       rankingData.push({
         player_id: player.id,
         player_name: player.name,
-        table_number: player.table_number || '-', // テーブルナンバーを追加 (未設定の場合は'-'を表示)
+        table_number: player.table_number || '-',
         correct_count: correctCount,
         total_time: totalTime,
         quiz_count: answers.length
@@ -595,8 +596,35 @@ async function getRankings() {
       return a.total_time - b.total_time; // 回答時間で昇順
     });
     
-    // 上位30件に制限
-    const limitedRankings = rankingData.slice(0, 50);
+    // 同率順位を計算して追加
+    let currentRank = 1;
+    let prevCorrectCount = null;
+    let prevTotalTime = null;
+    
+    const rankedData = rankingData.map((item, index) => {
+      if (index > 0 && 
+          item.correct_count === prevCorrectCount && 
+          item.total_time === prevTotalTime) {
+        // 前のプレイヤーと同じスコアなら同じ順位
+        // ランクはそのまま
+      } else if (index > 0) {
+        // 異なるスコアなら実際のインデックス+1を順位とする
+        currentRank = index + 1;
+      }
+      
+      // 比較用に値を保存
+      prevCorrectCount = item.correct_count;
+      prevTotalTime = item.total_time;
+      
+      // 順位を追加
+      return {
+        ...item,
+        rank: currentRank
+      };
+    });
+    
+    // 上位50件に制限
+    const limitedRankings = rankedData.slice(0, 50);
     
     // 結果をキャッシュに保存
     cache.set(cacheKey, limitedRankings);

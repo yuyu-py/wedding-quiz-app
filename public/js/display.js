@@ -499,6 +499,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const rankingItem = document.createElement('div');
     rankingItem.className = 'ranking-item';
     rankingItem.dataset.position = position;
+    rankingItem.dataset.playerId = ranking.player_id; // プレイヤーID追加
     
     const positionDiv = document.createElement('div');
     positionDiv.className = 'ranking-position';
@@ -584,34 +585,59 @@ document.addEventListener('DOMContentLoaded', function() {
       }
       
       // 特定の順位だけを表示する場合
-      if (position !== 'all' && position !== 'intro' && position >= 1 && position <= 5) {
-        const position_num = parseInt(position);
-        const index = position_num - 1; // 1位→0, 2位→1, ...
+      if (position !== 'all' && position !== 'intro' && !isNaN(parseInt(position))) {
+        const positionNum = parseInt(position);
         
-        if (displayedRankings.length > index) {
-          const ranking = displayedRankings[index];
-          
-          // ランキングアイテムを作成
-          const rankingItem = createRankingItem(ranking, position_num);
-          
-          // 既に表示されていなければ追加（常に上部に追加）
-          const existingItem = document.querySelector(`[data-position="${position_num}"]`);
-          if (!existingItem) {
-            // 先頭に追加（一番上に最新のランキングを表示）
-            rankingContainer.insertBefore(rankingItem, rankingContainer.firstChild);
-          }
+        // 修正: 指定された順位のプレイヤーをすべて取得（同率順位対応）
+        const sameRankPlayers = displayedRankings.filter(player => player.rank === positionNum);
+        
+        if (sameRankPlayers.length > 0) {
+          // すべての同率プレイヤーを表示
+          sameRankPlayers.forEach(ranking => {
+            // 既に表示されていなければ追加
+            const existingItem = document.querySelector(`.ranking-item[data-player-id="${ranking.player_id}"]`);
+            if (!existingItem) {
+              const rankingItem = createRankingItem(ranking, ranking.rank);
+              // データ属性にプレイヤーIDを追加
+              rankingItem.dataset.playerId = ranking.player_id;
+              // 先頭に追加
+              rankingContainer.insertBefore(rankingItem, rankingContainer.firstChild);
+            }
+          });
         }
       } else if (position === 'all') {
-        // 全表示の場合は上位5件を表示
+        // 全表示の場合は上位5位までの異なる順位を表示
         rankingContainer.innerHTML = ''; // コンテナをクリア
         
-        const topRankings = displayedRankings.slice(0, 5);
-        // 1位から5位まで順に表示（降順）
-        for (let i = 0; i < topRankings.length; i++) {
-          const position = i + 1;
-          const ranking = topRankings[i];
-          const rankingItem = createRankingItem(ranking, position);
-          rankingContainer.appendChild(rankingItem);
+        // 表示済みの順位を追跡
+        const displayedRanks = new Set();
+        
+        // 順位ごとにグループ化
+        const rankGroups = {};
+        displayedRankings.forEach(player => {
+          if (!rankGroups[player.rank]) {
+            rankGroups[player.rank] = [];
+          }
+          rankGroups[player.rank].push(player);
+        });
+        
+        // 順位順（1位から5位まで）に表示
+        const ranks = Object.keys(rankGroups).map(Number).sort((a, b) => a - b);
+        for (const rank of ranks) {
+          if (rank <= 5) {
+            const playersWithRank = rankGroups[rank];
+            playersWithRank.forEach(player => {
+              const rankingItem = createRankingItem(player, rank);
+              rankingItem.dataset.playerId = player.player_id;
+              rankingContainer.appendChild(rankingItem);
+            });
+            displayedRanks.add(rank);
+            
+            // 5つの異なる順位が表示されたら終了
+            if (displayedRanks.size >= 5) {
+              break;
+            }
+          }
         }
       }
       
