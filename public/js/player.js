@@ -201,9 +201,9 @@ document.addEventListener('DOMContentLoaded', function() {
   async function tryShowAnswerResult(quizId) {
     if (!quizId) return;
     
-    // 問題5は特殊対応するため、ここでは処理しない
+    // 問題5は特殊対応するため自動チェックしない
     if (quizId === '5') {
-      console.log('問題5の答え合わせは管理者操作で行われます');
+      console.log('問題5は自動的な答え合わせを行いません');
       return;
     }
     
@@ -552,17 +552,22 @@ document.addEventListener('DOMContentLoaded', function() {
         responseTime
       });
       
-      // 回答待機画面に切り替え - すべての問題で待機画面で制限時間終了を待つ
+      // 回答待機画面に切り替え
       yourAnswer.textContent = answer;
       showScreen(answeredScreen);
       
-      // 重要: 自動的に答え合わせ画面に遷移せず、サーバーからの強制遷移を待つ
-      if (answerCheckInterval) {
-        clearInterval(answerCheckInterval);
-        answerCheckInterval = null;
+      // 重要: 問題5では自動的な答え合わせをしない
+      if (quizId === '5') {
+        console.log('問題5: 回答後は制限時間終了を待ち、実践画面への遷移を待機します');
+        // すべての自動チェックを無効化
+        if (answerCheckInterval) {
+          clearInterval(answerCheckInterval);
+          answerCheckInterval = null;
+        }
+      } else {
+        // 問題1-4では通常のタイマー終了を待機
+        console.log(`問題${quizId}: 回答後は制限時間終了を待機します`);
       }
-      
-      console.log(`問題${quizId}: 回答後は制限時間終了まで待機します`);
       
     } catch (error) {
       console.error('回答の送信に失敗しました:', error);
@@ -590,6 +595,24 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log(`答え合わせ画面表示開始: クイズID ${quizId}`);
     
     try {
+      // 問題5の場合は特別に解答公開チェック
+      if (quizId === '5') {
+        // 実践フェーズ後かつ解答公開状態を確認
+        const statusResponse = await fetch(`/api/quiz/${quizId}/answer-status`);
+        const statusResult = await statusResponse.json();
+        
+        if (!statusResult.available) {
+          console.log('問題5: 解答がまだ公開されていません。実践画面に留まります。');
+          isTransitioning = false;
+          
+          // 画面状態を確認して適切な画面を表示
+          if (currentScreen !== practiceScreen) {
+            showScreen(practiceScreen);
+          }
+          return;
+        }
+      }
+      
       // クイズの正解情報を取得
       const response = await fetch(`/api/admin/quiz/${quizId}/answer`);
       

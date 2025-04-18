@@ -203,58 +203,66 @@ function setupSocketHandlers(io) {
           console.log(`クイズ ${quizId} のタイトルが表示されました - タイマーはまだ開始していません`);
           break;
           
-        case 'next_slide':
-          // 現在のフェーズを確認
-          if (currentQuizState.phase === 'title') {
-            // 遷移タイムスタンプを作成（少し先の時間）
-            const transitionTime = Date.now() + 500; // 500ms後
-            
-            // 遷移イベントを送信
-            io.emit('synchronized_transition', {
-              quizId: currentQuizState.quizId,
-              target: 'question',
-              transitionTime: transitionTime, // 同期遷移時刻
-              serverTime: Date.now()          // 現在のサーバー時刻
-            });
-            
-            // タイマー開始準備
-            setTimeout(() => {
-              // タイマー開始
-              startPreciseQuizTimer(currentQuizState.quizId);
-              currentQuizState.phase = 'question';
-            }, 700); // 遷移完了するまで余裕を持って待機
-          } 
-          // 問題5の実践画面からの遷移を特別処理
-          else if (currentQuizState.quizId === '5' && currentQuizState.phase === 'practice') {
-            // フェーズを解答に更新
-            currentQuizState.phase = 'answer';
-            
-            console.log('問題5: 実践画面から解答画面への遷移を実行');
-            
-            // 解答表示イベントを送信
-            io.emit('quiz_event', { 
-              event: 'show_answer', 
-              quizId: '5',
-              manual: true,
-              fromPractice: true // 実践画面からの遷移フラグ
-            });
-            
-            // 解答表示フラグをDBに記録
-            db.markAnswerAsDisplayed('5')
-              .catch(err => {
-                console.error('解答表示フラグの更新中にエラーが発生しました:', err);
+          case 'next_slide':
+            // 現在のフェーズを確認
+            if (currentQuizState.phase === 'title') {
+              // 遷移タイムスタンプを作成（少し先の時間）
+              const transitionTime = Date.now() + 500; // 500ms後
+              
+              // 遷移イベントを送信
+              io.emit('synchronized_transition', {
+                quizId: currentQuizState.quizId,
+                target: 'question',
+                transitionTime: transitionTime, // 同期遷移時刻
+                serverTime: Date.now()          // 現在のサーバー時刻
               });
-          }
-          else {
-            // その他の遷移は通常通り処理
-            io.emit('quiz_event', { 
-              event: 'next_slide',
-              manual: true
-            });
-          }
-          
-          console.log('管理者操作: 次のスライドに進みました');
-          break;
+              
+              // タイマー開始準備
+              setTimeout(() => {
+                // タイマー開始
+                startPreciseQuizTimer(currentQuizState.quizId);
+                currentQuizState.phase = 'question';
+              }, 700); // 遷移完了するまで余裕を持って待機
+            } 
+            // 問題5の実践画面からの遷移を特別処理
+            else if (currentQuizState.quizId === '5' && currentQuizState.phase === 'practice') {
+              // フェーズを解答に更新
+              currentQuizState.phase = 'answer';
+              
+              console.log('問題5: 実践画面から解答画面への遷移を実行');
+              
+              // 解答表示イベントを送信
+              io.emit('quiz_event', { 
+                event: 'show_answer', 
+                quizId: '5',
+                manual: true,
+                fromPractice: true // 実践画面からの遷移フラグ
+              });
+              
+              // 全員に強制遷移を指示
+              io.emit('force_transition', {
+                quizId: '5',
+                target: 'answer',
+                timestamp: Date.now(),
+                fromPractice: true
+              });
+              
+              // 解答表示フラグをDBに記録
+              db.markAnswerAsDisplayed('5')
+                .catch(err => {
+                  console.error('解答表示フラグの更新中にエラーが発生しました:', err);
+                });
+            }
+            else {
+              // その他の遷移は通常通り処理
+              io.emit('quiz_event', { 
+                event: 'next_slide',
+                manual: true
+              });
+            }
+            
+            console.log('管理者操作: 次のスライドに進みました');
+            break;
           
         case 'show_ranking':
           // ランキング表示改善
@@ -551,25 +559,46 @@ function setupSocketHandlers(io) {
     // タイマー終了フラグを設定
     currentQuizState.timerExpired = true;
     
-    // 問題5（ストップウォッチ問題）の場合は実践画面へ遷移
+    // 問題5（ストップウォッチ問題）の場合は特別処理
     if (quizId === '5') {
       currentQuizState.phase = 'practice';
       
-      // 強制遷移指示を送信
-      io.emit('force_transition', {
-        quizId,
-        target: 'practice',
-        timestamp: Date.now()
-      });
-      
-      // 実践画面表示イベントを送信
-      io.emit('quiz_event', { 
-        event: 'show_practice', 
-        quizId,
-        auto: true
-      });
-      
-      console.log(`問題5: タイマー終了により実践待機画面に移行します`);
+      // 短い遅延を入れて全画面の処理完了を待つ
+      setTimeout(() => {
+        // 強制遷移を二回送信して確実性を高める
+        io.emit('force_transition', {
+          quizId,
+          target: 'practice',
+          timestamp: Date.now()
+        });
+        
+        // 実践画面表示イベントを送信
+        io.emit('quiz_event', { 
+          event: 'show_practice', 
+          quizId,
+          auto: true
+        });
+        
+        console.log(`問題5: タイマー終了により実践待機画面に移行します`);
+        
+        // 2秒後にもう一度通知（クライアント側の処理ラグ対策）
+        setTimeout(() => {
+          io.emit('force_transition', {
+            quizId,
+            target: 'practice',
+            timestamp: Date.now(),
+            retry: true
+          });
+          
+          // 実践画面表示イベントを送信
+          io.emit('quiz_event', { 
+            event: 'show_practice', 
+            quizId,
+            auto: true,
+            retry: true
+          });
+        }, 2000);
+      }, 200);
     } else {
       // 通常問題は解答画面へ
       currentQuizState.phase = 'answer';

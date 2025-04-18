@@ -117,7 +117,39 @@ router.get('/:id/answer-status', async (req, res) => {
   try {
     const { id } = req.params;
     
-    // 最新のクイズセッションを取得して解答が公開されているか確認
+    // 問題5は特別処理 - 実践フェーズの完了後のみ解答公開
+    if (id === '5') {
+      // 最新のセッションで実践フェーズ完了かつ解答表示フラグが立っているか確認
+      const db = require('../database/db');
+      
+      // セッションテーブルから該当クイズIDの最新セッションを取得
+      const params = {
+        TableName: db.TABLES.SESSION,
+        IndexName: 'quiz_id-index',
+        KeyConditionExpression: 'quiz_id = :quizId',
+        ExpressionAttributeValues: {
+          ':quizId': '5'
+        },
+        ScanIndexForward: false, // 降順（最新のものから）
+        Limit: 1 // 最新の1件のみ
+      };
+      
+      const result = await db.dynamodb.send(new db.QueryCommand(params));
+      
+      if (result.Items && result.Items.length > 0) {
+        const session = result.Items[0];
+        
+        // answer_displayed が true で、かつ custom_answer が設定されている場合のみ解答公開中
+        const isAvailable = session.answer_displayed === true && 
+                           (session.custom_answer === '新郎' || session.custom_answer === '新婦');
+        
+        return res.json({ available: isAvailable });
+      }
+      
+      return res.json({ available: false });
+    }
+    
+    // 問題1-4は通常処理
     const isAnswerAvailable = await db.isQuizAnswerAvailable(id);
     
     res.json({ available: isAnswerAvailable });
