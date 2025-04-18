@@ -1173,6 +1173,14 @@ document.addEventListener('DOMContentLoaded', function() {
       const { event, quizId, position, auto, manual, fromPractice, isPractice, answer } = data;
       
       console.log(`イベント受信: ${event}, クイズID: ${quizId}, isPractice: ${isPractice}, fromPractice: ${fromPractice}`);
+      console.log('詳細なイベント情報:', {
+        event: data.event,
+        quizId: data.quizId,
+        isPractice: data.isPractice,
+        fromPractice: data.fromPractice,
+        currentScreen: currentScreen ? currentScreen.id : 'not set',
+        displayCurrentScreen: displayCurrentScreen // player.jsの場合
+      });
       
       // 問題5の特殊イベントを優先処理
       if (quizId === '5') {

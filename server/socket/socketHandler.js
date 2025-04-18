@@ -510,7 +510,13 @@ function setupSocketHandlers(io) {
   
   // タイマー終了時の処理関数を問題別に分離
   function handleTimerExpiration(quizId) {
-    console.log(`サーバー: クイズ ${quizId} タイマー終了`);
+    console.log(`タイマー終了処理: クイズID ${quizId}`);
+    console.log('現在のクイズ状態:', {
+      currentQuizState,
+      quizId,
+      phase: currentQuizState.phase,
+      timerExpired: currentQuizState.timerExpired
+    });
     
     // タイマー終了フラグを設定
     currentQuizState.timerExpired = true;
@@ -526,6 +532,11 @@ function setupSocketHandlers(io) {
   // 問題5専用のタイマー終了処理
   function handleQuiz5TimerExpiration() {
     console.log('問題5: タイマー終了 - 実践画面に移行します');
+    console.log('現在の状態:', {
+      currentQuizState: { ...currentQuizState },
+      phase: currentQuizState.phase,
+      timerExpired: currentQuizState.timerExpired
+    });
     
     // 状態を実践フェーズに更新
     currentQuizState.phase = 'practice';

@@ -160,6 +160,15 @@ document.addEventListener('DOMContentLoaded', function() {
   // admin.jsクイズイベント処理
   socket.on('quiz_event', (data) => {
     const { event, quizId, position, auto, manual, fromPractice, isPractice } = data;
+
+    console.log('詳細なイベント情報:', {
+      event: data.event,
+      quizId: data.quizId,
+      isPractice: data.isPractice,
+      fromPractice: data.fromPractice,
+      currentScreen: currentScreen ? currentScreen.id : 'not set',
+      displayCurrentScreen: displayCurrentScreen // player.jsの場合
+    });
     
     // 問題5の実践画面表示イベント
     if (event === 'show_practice' && quizId === '5' && isPractice) {
